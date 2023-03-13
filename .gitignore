@@ -1,2 +1,6 @@
 data/**
 results/**
+build/**
+CMakeFiles/**
+CMakeCache.txt
+UNKNOWN.egg-info/**
