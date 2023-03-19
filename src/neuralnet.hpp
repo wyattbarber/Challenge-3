@@ -44,9 +44,12 @@ class NeuralNetwork {
 
     std::vector<Eigen::MatrixXd> weights;
     std::vector<Eigen::VectorXd> biases;
-    std::vector<Eigen::VectorXd> hidden;
+    std::vector<Eigen::VectorXd> z;
+    std::vector<Eigen::VectorXd> a;
 
     Eigen::VectorXd activation(Eigen::VectorXd);
     Eigen::VectorXd d_activation(Eigen::VectorXd);
+    double activation(double);
+    double d_activation(double);
 
 };

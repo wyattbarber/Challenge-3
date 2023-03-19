@@ -14,7 +14,8 @@ NeuralNetwork::NeuralNetwork(std::vector<size_t> dims)
       this->biases.push_back(b_i);
 
       Eigen::VectorXd h_i = Eigen::VectorXd::Zero(dims.at(i));
-      this->hidden.push_back(h_i);
+      this->z.push_back(h_i);
+      this->a.push_back(h_i);
    }
 }
 
@@ -24,11 +25,13 @@ Eigen::VectorXd NeuralNetwork::forwardPass(Eigen::VectorXd input)
    py::print("Calling forward pass...");
 #endif
 
-   hidden.at(0) = input * weights.at(0);
-   for(size_t i = 1; i < weights.size(); ++i){
-      hidden.at(i) = this->activation(hidden.at(i-1)) * weights.at(i);
+   z.at(0) = input * weights.at(0);
+   a.at(0) = this->activation(z.at(0));
+   for(size_t i = 1; i < n_layers; ++i){
+      z.at(i) = a.at(i-1) * weights.at(i);
+      a.at(i) = this->activation(z.at(i));
    }
-   return this->activation(hidden.at(hidden.size()-1));
+   return a.at(n_layers-1);
 }
 
 std::vector<double>* NeuralNetwork::backprop(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate, int passes)
@@ -42,87 +45,89 @@ std::vector<double>* NeuralNetwork::backprop(std::vector<Eigen::VectorXd> inputs
 
    for(int iter = 0; iter < passes; ++iter)
    {
-      for(size_t i = 0; i < inputs.size(); ++i)
+      for(int i = 0; i < inputs.size(); ++i)
       {
          // Test forward pass and calculate error for this input set
 #ifdef VERBOSE
-         py::print("Test point 1");
+         py::print("Calling forward pass and calculating error");
 #endif
          Eigen::VectorXd output = this->forwardPass(inputs.at(i));
          double error = abs((output - outputs.at(i)).array()).sum();
          errors.push_back(error);
 
          // Iterate over layers
-         for(size_t j = hidden.size()-1; j >= 1 ; --j)
+         for(int j = n_layers-1; j >= 0 ; --j)
          {
 #ifdef VERBOSE
-            py::print("Test point 2");
+            py::print("Backpropagating over layer ", j, " of ", n_layers);
 #endif
-            // Iterate over each node in this layer
-            for(size_t k = 0; k < hidden.at(j).size(); ++k)
+            // Iterate over all weights and nodes in this layer
+            #pragma omp parallel for
+            for(int k = 0; k < weights.at(j).size(); ++k)
             {
-#ifdef VERBOSE
-               py::print("Test point 3");
-#endif
-               Eigen::VectorXd grad = weights.at(j).row(k);
-               Eigen::VectorXd a  = this->activation(hidden.at(j-1));
-               Eigen::VectorXd d_a  = this->d_activation(hidden.at(j));
-               for(size_t l = 0; l < grad.size(); ++l)
-               {
-#ifdef VERBOSE
-                  py::print("Test point 4");
-#endif
-                  grad(l) *= error * d_a(l);
-                  weights.at(j)(l,k) -= rate * a(l) * grad(l); 
-                  biases.at(j)(l) -= rate * grad(l);
+               size_t col = std::floor(i / weights.at(j).cols()); // Index of this node
+               size_t row = i % weights.at(j).cols(); // Index of this weight
+
+               // Calculate gradient at this weight
+               double grad;
+               if(j > 0){  
+                  // Hidden or output layer
+                  grad = weights.at(j)(row, col) * error * this->d_activation(z.at(j-1)(row));
+                  weights.at(j)(row, col) += rate * grad * a.at(j-1)(row);
+               } else {
+                  // Input layer
+                  grad = weights.at(0)(row, col) * error * this->d_activation(inputs.at(i)(row));
+                  weights.at(0)(row, col) += rate * grad * inputs.at(i)(row);
                }
+               biases.at(0)(col) += rate * grad;
             }
          }
-         // Update input layer
-         // Iterate over each node in this layer
-         for(size_t k = 0; k < hidden.at(0).size(); ++k)
-         {
-#ifdef VERBOSE
-            py::print("Test point 5");
-#endif
-            Eigen::VectorXd grad = weights.at(0).col(k);
-            Eigen::VectorXd a  = this->activation(inputs.at(i));
-            Eigen::VectorXd d_a  = this->d_activation(hidden.at(0));
-            for(size_t l = 0; l < grad.size(); ++l)
-            {
-#ifdef VERBOSE
-               py::print("Test point 6");
-#endif
-               grad(l) *= error * d_a(l);
-               weights.at(0)(l,k) -= rate * a(l) * grad(l); 
-               biases.at(0)(l) -= rate * grad(l);
-            }
-         }
-      }      
+      }
    }
-#ifdef VERBOSE
-   py::print("Test point 7");
-#endif
    return &errors;
 }
 
-Eigen::VectorXd NeuralNetwork::activation(Eigen::VectorXd input)
+/**!Activation function
+*/
+double NeuralNetwork::activation(double input)
 {
-   for(auto i = input.begin(); i != input.end(); ++i){
-      if(*i < 0){
-         *i = 0;
-      }
+   double out = 0;
+   if(input > 0){
+      out = input;
    }
-   return input;
+   return out;
 }
 
-Eigen::VectorXd NeuralNetwork::d_activation(Eigen::VectorXd input){
-   for(auto i = input.begin(); i != input.end(); ++i){
-      if(*i < 0){
-         *i = 0;
-      } else {
-         *i = 1;
-      }
+/**!Vectorized activation function
+*/
+Eigen::VectorXd NeuralNetwork::activation(Eigen::VectorXd input)
+{
+   Eigen::VectorXd out = Eigen::VectorXd::Zero(input.size());
+   #pragma omp parallel for
+   for(auto i = 0; i < input.size(); ++i){
+      out(i) = this->activation(input(i));
    }
-   return input;
+   return out;
+}
+
+/**! Derivative of activation function
+*/
+double NeuralNetwork::d_activation(double input)
+{
+   double out = 0;
+   if(input > 0){
+      out = 1;
+   }
+   return out;
+}
+
+/**!Vectorized derivative of activation function
+*/
+Eigen::VectorXd NeuralNetwork::d_activation(Eigen::VectorXd input){
+   Eigen::VectorXd out = Eigen::VectorXd::Zero(input.size());
+   #pragma omp parallel for
+   for(auto i = 0; i < input.size(); ++i){
+      out(i) = this->d_activation(input(i));
+   }
+   return out;
 }
