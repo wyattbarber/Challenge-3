@@ -11,6 +11,8 @@ PYBIND11_MODULE(neuralnet, m){
 
     py::class_<NeuralNetwork>(m, "NeuralNetwork")
         .def(py::init<std::vector<size_t>>())
-        .def("forwardPass", &NeuralNetwork::forwardPass, "Performs one forward pass through the model")
-        .def("backprop", &NeuralNetwork::backprop, "Performs backpropagation on a set of training data");
+        .def("forwardPass", &NeuralNetwork::forwardPass, "Performs one forward pass through the model",
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("backprop", &NeuralNetwork::backprop, "Performs backpropagation on a set of training data",
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
 }
