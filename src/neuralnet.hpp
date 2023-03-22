@@ -4,6 +4,11 @@
 
 #define VERBOSE
 
+enum ActivationFunc{
+    ReLU,
+    Sigmoid,
+};
+
 class NeuralNetwork {
 
     public:
@@ -17,7 +22,7 @@ class NeuralNetwork {
      * 
      * @param dims list of layer sizes
      */
-    NeuralNetwork(std::vector<size_t> dims);
+    NeuralNetwork(std::vector<size_t> dims, ActivationFunc f);
 
     /**
      * Runs one forward pass through the model
@@ -36,11 +41,12 @@ class NeuralNetwork {
      * 
      * @return list containing the error of each test
     */
-   std::vector<double>* backprop(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate=0.1, int passes=5);
+    std::vector<double>* train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate=0.1, int passes=5);
 
 
     protected:
     size_t n_layers;
+    ActivationFunc function_type;
 
     std::vector<Eigen::MatrixXd> weights;
     std::vector<Eigen::VectorXd> biases;
@@ -52,5 +58,8 @@ class NeuralNetwork {
     Eigen::VectorXd d_activation(Eigen::VectorXd);
     double activation(double);
     double d_activation(double);
+
+    void err_propagate(Eigen::VectorXd);
+    void param_propagate(double);
 
 };
