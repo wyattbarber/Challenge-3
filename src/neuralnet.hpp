@@ -22,7 +22,7 @@ class NeuralNetwork {
      * 
      * @param dims list of layer sizes
      */
-    NeuralNetwork(std::vector<size_t> dims, ActivationFunc f);
+    NeuralNetwork(std::vector<size_t> dims, std::vector<ActivationFunc> f);
 
     /**
      * Runs one forward pass through the model
@@ -41,12 +41,12 @@ class NeuralNetwork {
      * 
      * @return list containing the error of each test
     */
-    std::vector<double>* train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate=0.1, int passes=5);
+    std::vector<double> train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate=0.1, int passes=5);
 
 
     protected:
     size_t n_layers;
-    ActivationFunc function_type;
+    std::vector<ActivationFunc> function_types;
 
     std::vector<Eigen::MatrixXd> weights;
     std::vector<Eigen::VectorXd> biases;
@@ -54,10 +54,10 @@ class NeuralNetwork {
     std::vector<Eigen::VectorXd> a;
     std::vector<Eigen::VectorXd> d;
 
-    Eigen::VectorXd activation(Eigen::VectorXd);
-    Eigen::VectorXd d_activation(Eigen::VectorXd);
-    double activation(double);
-    double d_activation(double);
+    Eigen::VectorXd activation(Eigen::VectorXd, int);
+    Eigen::VectorXd d_activation(Eigen::VectorXd, int);
+    double activation(double, int);
+    double d_activation(double, int);
 
     void err_propagate(Eigen::VectorXd);
     void param_propagate(double);
