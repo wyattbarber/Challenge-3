@@ -47,10 +47,10 @@ def test_normal(data, exp):
         train.append(t)
         test.append(e)
     
-    model.train(train, test, 0.1, 5)
+    model.train(train, test, 0.5, 10)
 
     if exp == 1:
-        assert model.forwardPass(data)[0] > 0.2
+        assert model.forwardPass(data)[0] > 0.8
     else:
-        assert model.forwardPass(data)[0] < 0.8
+        assert model.forwardPass(data)[0] < 0.2
 

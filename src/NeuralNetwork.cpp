@@ -2,6 +2,9 @@
 #include "neuralnet.hpp"
 namespace py = pybind11;
 #include <cmath>
+#include <assert.h>
+
+#undef NDEBUG
 
 NeuralNetwork::NeuralNetwork(std::vector<size_t> dims, std::vector<ActivationFunc> f)
 {
