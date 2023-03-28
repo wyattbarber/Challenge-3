@@ -8,6 +8,7 @@ namespace py = pybind11;
 
 NeuralNetwork::NeuralNetwork(std::vector<size_t> dims, std::vector<ActivationFunc> f)
 {
+   this->dims = dims;
    this->n_layers = dims.size();
    this->function_types = f;
 
@@ -48,10 +49,10 @@ Eigen::VectorXd NeuralNetwork::forwardPass(Eigen::VectorXd input)
          a.at(i) = this->activation(z.at(i) + biases.at(i), i-1); 
       }
 // #ifdef VERBOSE
-//       py::print("Layer", i, "output : ");
+//       py::print("Layer", i, "input -> output:");
 //       for(int k = 0; k < a.at(i).size(); ++k)
 //       {
-//          py::print('\t', a.at(i)(k));
+//          py::print('\t', z.at(i)(k), "->", a.at(i)(k));
 //       }
 //       py::print("");
 // #endif
@@ -66,18 +67,18 @@ std::vector<double> NeuralNetwork::train(std::vector<Eigen::VectorXd> inputs, st
 // #endif
 
    std::vector<double> errors;
-   errors.reserve(passes * inputs.size());
 
    for(int iter = 0; iter < passes; ++iter)
    {
 // #ifdef VERBOSE
 //       py::print("Backpropagation pass number", iter);
 // #endif
+      double e = 0.0;
       for(int i = 0; i < inputs.size(); ++i)
       {
          // Test forward pass and calculate error for this input set
          Eigen::VectorXd error = this->forwardPass(inputs.at(i)) - outputs.at(i);
-         errors.push_back(abs(error.array()).sum());
+         e += error.array().abs().sum() / inputs.size();
 // #ifdef VERBOSE
 //          py::print("Total error of backpropagation pass", iter, ", input", i, ":", abs(error.array()).sum());
 // #endif
@@ -85,57 +86,45 @@ std::vector<double> NeuralNetwork::train(std::vector<Eigen::VectorXd> inputs, st
          this->err_propagate(error);
          this->param_propagate(rate);
       }
-
+      errors.push_back(e);
    }
    return errors;
 }
 
-/** Activation function
-*/
-double NeuralNetwork::activation(double input, int layer)
-{
-   double out = 0;
-   switch(function_types.at(layer)){
-      case ReLU:
-         if(input > 0){
-            out = input;
-         }
-         break;
-      case Sigmoid:
-         out = 1 / (1 + std::exp(-1 * input));
-         break;
-   }
-   return out;
-}
 
 /** Vectorized activation function
 */
 Eigen::VectorXd NeuralNetwork::activation(Eigen::VectorXd input, int layer)
 {
    Eigen::VectorXd out = Eigen::VectorXd::Zero(input.size());
-   //#pragma omp parallel for
-   for(auto i = 0; i < input.size(); ++i){
-      out(i) = this->activation(input(i), layer);
-   }
-   return out;
-}
-
-/** Derivative of activation function
-*/
-double NeuralNetwork::d_activation(double input, int layer)
-{
-   double out = 0;
    switch(function_types.at(layer)){
       case ReLU:
-         if(input > 0){
-            out = 1;
+         for(int i = 0; i < input.size(); ++i){
+            if(input(i) > 0){
+               out(i) = input(i);
+            }
          }
          break;
+      
       case Sigmoid:
-         double a = this->activation(input, layer);
-         out = a * (1 - a);
+         for(int i = 0; i < input.size(); ++i)
+         {
+            out(i) = 1 / (1 + std::exp(-1 * input(i)));
+         }
          break;
-   }
+
+      case SoftMax:
+         // Caps unnormalized outputs at 1x10^300, to avoid getting errors due to exp() reporting infinity.
+         out = input.array().exp().min(1e300).matrix();
+         // py::print("Softmax");
+         // for(int k = 0; k < out.size(); ++k)
+         // {
+         //    py::print('\t', out(k));
+         // }
+         // py::print("Sum:", out.array().min(1e300).sum());
+         out /= out.array().min(1e300).sum();
+         break;
+     }
    return out;
 }
 
@@ -143,9 +132,17 @@ double NeuralNetwork::d_activation(double input, int layer)
 */
 Eigen::VectorXd NeuralNetwork::d_activation(Eigen::VectorXd input, int layer){
    Eigen::VectorXd out = Eigen::VectorXd::Zero(input.size());
-   //#pragma omp parallel for
-   for(auto i = 0; i < input.size(); ++i){
-      out(i) = this->d_activation(input(i), layer);
+   switch(function_types.at(layer)){
+      case ReLU:
+         for(int i = 0; i < input.size(); ++i){
+            if(input(i) > 0){
+               out(i) = 1;
+            }
+         }
+         break;
+      case Sigmoid:
+         out = a.at(layer+1).cwiseProduct(Eigen::VectorXd::Ones(input.size()) - a.at(layer+1));
+         break;
    }
    return out;
 }
@@ -158,11 +155,40 @@ void NeuralNetwork::err_propagate(Eigen::VectorXd error)
 // #ifdef VERBOSE
 //       py::print("Propagating error over layer", j+1);
 // #endif
+
+      // Calculate softmax derivative matrix 
+      Eigen::MatrixXd d_sftm = Eigen::MatrixXd::Zero(z.at(j).size(), z.at(j).size());
+      if(function_types.at(j-1) == ActivationFunc::SoftMax)
+      {  
+         for(int i = 0; i < z.at(j).size(); ++i)
+         {
+            for(int k = 0; k < z.at(j).size(); ++k)
+            {
+               if(i == k)
+               {
+                  d_sftm(i,k) = a.at(j)(i) * (1 - a.at(j)(k));
+               } else {
+                  d_sftm(i,k) = a.at(j)(i) * -a.at(j)(k);
+               }
+            }
+         }
+      }
+
       if(j == n_layers-1)
       {
-         d.at(j) = error.cwiseProduct(this->d_activation(z.at(j), j-1));
+         if(function_types.at(j-1) == ActivationFunc::SoftMax)
+         {
+            d.at(j) = d_sftm * error;
+         } else {  
+            d.at(j) = error.cwiseProduct(this->d_activation(z.at(j), j-1));
+         }
       } else {
-         d.at(j) = (weights.at(j) * d.at(j+1)).cwiseProduct(this->d_activation(z.at(j), j-1));
+         if(function_types.at(j-1) == ActivationFunc::SoftMax)
+         {
+            d.at(j) = d_sftm * (weights.at(j) * d.at(j+1));
+         } else {  
+            d.at(j) = (weights.at(j) * d.at(j+1)).cwiseProduct(this->d_activation(z.at(j), j-1));
+         }
       }
 // #ifdef VERBOSE
 //       py::print("Sum of error at layer", j+1, ":", abs(d.at(j).array()).sum());
@@ -188,4 +214,19 @@ void NeuralNetwork::param_propagate(double rate)
          biases.at(l+1)(n) -= rate * d.at(l+1)(n);
       }
    }  
+}
+
+void NeuralNetwork::reset()
+{
+   for(size_t i = 0; i < n_layers; ++i){
+      if(i < n_layers-1)
+      {
+         weights.at(i) = Eigen::MatrixXd::Random(dims.at(i), dims.at(i+1));
+      }
+
+      biases.at(i) = Eigen::VectorXd::Zero(dims.at(i));
+      z.at(i) = Eigen::VectorXd::Zero(dims.at(i));
+      a.at(i) = Eigen::VectorXd::Zero(dims.at(i));
+      d.at(i) = Eigen::VectorXd::Zero(dims.at(i));
+   }
 }

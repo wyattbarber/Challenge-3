@@ -8,6 +8,7 @@ def test_construct():
 # Simply test that method runs without exceptions and output is in reasonable range
 def test_forward_pass():
     model = nn.NeuralNetwork([9, 5, 1], [ nn.ActivationFunctions.ReLU, nn.ActivationFunctions.ReLU])
+
     output = model.forwardPass([1 if i%2 else 0 for i in range(10)])
     assert all([abs(o) <= 1 for o in output])
 
@@ -54,3 +55,52 @@ def test_normal(data, exp):
     else:
         assert model.forwardPass(data)[0] < 0.2
 
+
+
+# Test if nn implementation can learn to classify normally distributed data
+@pytest.mark.parametrize("data,exp",[
+        (np.random.normal(-1, 1, 10), [0,1]),
+        (np.random.normal(-1, 1, 10), [0,1]),
+        (np.random.normal(1, 1, 10), [1,0]),
+        (np.random.normal(1, 1, 10), [1,0])
+    ]
+)
+def test_softmax(data, exp):
+    model = nn.NeuralNetwork([10, 2, 2], [nn.ActivationFunctions.ReLU, nn.ActivationFunctions.SoftMax])
+
+    train = []
+    test = []
+    for i in range(100):
+        if i % 2 == 0:
+            t = np.random.normal(-1, 1, 10)
+            e = [0,1]
+        else:
+            t = np.random.normal(1, 1, 10)
+            e =  [1,0]
+        train.append(t)
+        test.append(e)
+    
+    model.train(train, test, 0.5, 10)
+
+    if exp == [0,1]:
+        assert model.forwardPass(data)[1] > 0.8 and model.forwardPass(data)[0] < 0.2
+    else:
+        assert model.forwardPass(data)[0] > 0.8 and model.forwardPass(data)[1] < 0.2
+
+
+def test_test():
+    train = []
+    test = []
+    for i in range(100):
+        if i % 2 == 0:
+            t = np.random.normal(-1, 1, 10)
+            e = [0,1]
+        else:
+            t = np.random.normal(1, 1, 10)
+            e =  [1,0]
+        train.append(t)
+        test.append(e)
+    
+    error = nn.test([10, 2, 2], [nn.ActivationFunctions.ReLU, nn.ActivationFunctions.SoftMax], train, test, 0.05, 5, 0.5, 10)
+
+    assert (np.mean(error) >= 0) and (np.mean(error) < 0.5), "Model error was nonsensical or didn't reflect proper training occuring"

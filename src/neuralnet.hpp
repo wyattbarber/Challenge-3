@@ -7,6 +7,7 @@
 enum ActivationFunc{
     ReLU,
     Sigmoid,
+    SoftMax,
 };
 
 class NeuralNetwork {
@@ -43,9 +44,13 @@ class NeuralNetwork {
     */
     std::vector<double> train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate=0.1, int passes=5);
 
+    /** Resets the model to random inital weights
+    */
+    void reset();
 
     protected:
     size_t n_layers;
+    std::vector<size_t> dims;
     std::vector<ActivationFunc> function_types;
 
     std::vector<Eigen::MatrixXd> weights;
@@ -56,10 +61,28 @@ class NeuralNetwork {
 
     Eigen::VectorXd activation(Eigen::VectorXd, int);
     Eigen::VectorXd d_activation(Eigen::VectorXd, int);
-    double activation(double, int);
-    double d_activation(double, int);
 
     void err_propagate(Eigen::VectorXd);
     void param_propagate(double);
 
 };
+
+
+/** Performs a round of cross validation on one model.
+ * 
+ * Randomly selects training and testing data from the inputs and targets vectors.
+ * If the output of the model is size 1, then the error is calculated as the absolute 
+ * difference between output and target. If the output size is greater than 1, a mutli-state classifier is assumed,
+ * and the error is 1 if the max index matches the max of the target vector, zero otherwise.
+ * 
+ * @param model NeuralNetwork instance to test
+ * @param inputs vector of input data for test and training
+ * @param targets vector of correct output data for test and training
+ * @param test_density percentage of input data to hold out for testing
+ * @param N number of times to repeat the test with new random subsamples of the input data
+ * 
+ * @return length N vector of doubles, representing the average error of each test iteration
+*/
+std::vector<double> test(std::vector<size_t> dims, std::vector<ActivationFunc> f, 
+std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> targets,
+double test_density, int N, double rate, int epochs);
