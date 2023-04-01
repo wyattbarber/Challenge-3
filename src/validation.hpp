@@ -1,11 +1,11 @@
 #include <pybind11/pybind11.h>
-#include "neuralnet.hpp"
 #include <algorithm>
 #include <random>
+#include "layer.hpp"
 namespace py = pybind11;
 
 
-std::vector<double> test(std::vector<size_t> dims, std::vector<ActivationFunc> f, std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> targets, double test_density, int N, double rate, int epochs) 
+std::vector<double> test(std::vector<int> dims, std::vector<activation::ActivationFunc> f, std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> targets, double test_density, int N, double rate, int epochs) 
 {
     std::vector<double> out(N);
 
@@ -23,7 +23,7 @@ std::vector<double> test(std::vector<size_t> dims, std::vector<ActivationFunc> f
     for(int n = 0; n < N; ++n)
     {
         // Create a model
-        NeuralNetwork model(dims, f);
+        Network model(dims, f);
 
         // Randomize training subset
         std::random_device rd;
@@ -47,7 +47,7 @@ std::vector<double> test(std::vector<size_t> dims, std::vector<ActivationFunc> f
         // Calculate error on holdout data
         for(int i = 0; i < n_test; ++i)
         {
-            Eigen::VectorXd y = model.forwardPass(inputs.at(rand_idx.at(i)));
+            Eigen::VectorXd y = model.forward(inputs.at(rand_idx.at(i)));
             if(y.size() < 2) 
             {
                 error += abs(y(0) - targets.at(rand_idx.at(i))(0)) / n_test;
