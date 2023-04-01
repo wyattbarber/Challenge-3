@@ -29,16 +29,14 @@ class Layer {
      * 
      * @param in_size size of the input vector to this layer
      * @param out_size size of the output vector from this layer
-     * @param input layer that feeds into this one. Null if this is the first layer.
      */
-    Layer(int in_size, int out_size, Layer* input){
+    Layer(int in_size, int out_size){
         this->weights = Eigen::MatrixXd::Random(in_size, out_size);
         this->biases = Eigen::VectorXd::Zero(out_size);
         this->z = Eigen::VectorXd::Zero(out_size);
         this->a = Eigen::VectorXd::Zero(out_size);
         this->d = Eigen::VectorXd::Zero(out_size);
-
-        this->input_layer = input;
+        this->in = Eigen::VectorXd::Zero(in_size);
     }
 
     /**
@@ -46,41 +44,9 @@ class Layer {
      * 
      * @param input input vector
     */
-    Eigen::VectorXd forward(Eigen::VectorXd input){py::print("Base Forward"); return Eigen::VectorXd::Zero(a.size());};
+    virtual Eigen::VectorXd forward(Eigen::VectorXd input) = 0;
     
-    /**
-     * Runs a backpropagation epoch through the model
-     * 
-     * @param inputs list of N input vectors to train on
-     * @param expected list of N correct output vectors
-     * @param rate learning rate, default 0.1
-     * @param passes number of times to pass over the input data, default 5
-     * 
-     * @return list containing the error of each test
-    */
-    std::vector<double> train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate, int passes){
-        std::vector<double> errors;
-        py::print("Training called with", inputs.size(), "input data and", outputs.size(), "output data");
-        for(int iter = 0; iter < passes; ++iter)
-        {
-            double e = 0.0;
-            for(int i = 0; i < inputs.size(); ++i)
-            {
-                py::print("Training epoch", iter, "item", i);
-                // Test forward pass and calculate error for this input set
-                Eigen::VectorXd error = this->forward(inputs.at(i)) - outputs.at(i);
-                e += error.array().abs().sum() / inputs.size();
-
-                py::print("Backpropagating");
-                this->error(error);
-                py::print("Updating parameters");
-                this->update(rate);
-            }
-            errors.push_back(e);
-        }
-        return errors;
-    }
-
+    
     /** Resets the model to random inital weights
     */
     void reset(){
@@ -100,13 +66,13 @@ class Layer {
      * Propagates error over this layer, and back over input layers
      * @param error error gradient of following layer
     */
-    void error(Eigen::VectorXd error){return;};
+    virtual Eigen::VectorXd error(Eigen::VectorXd error) = 0;
 
     /**
      * Updates parameters of this layer based on the previously propagated error
      * @param rate learning rate
     */
-    void update(double rate){return;};
+    virtual void update(double rate) = 0;
 
     protected:
     Layer* input_layer;
@@ -116,43 +82,57 @@ class Layer {
     Eigen::VectorXd z;
     Eigen::VectorXd a;
     Eigen::VectorXd d;
+    Eigen::VectorXd in;
 };
 
 
 class ReLU : public Layer {
     public:
-    ReLU(int in_size, int out_size, Layer* input) : Layer(in_size, out_size, input){};
+    ReLU(int in_size, int out_size) : Layer(in_size, out_size){};
 
-    Eigen::VectorXd forward(Eigen::VectorXd input)
+    Eigen::VectorXd forward(Eigen::VectorXd input) override
     {
-        py::print("ReLU Forward Pass");
-        if(input_layer == nullptr)
-        {   
-            z = (input * weights) + biases;
-        } else {
-            z = (input_layer->forward(input) * weights) + biases;
+        in = input;
+        z = (weights.transpose() * input) + biases;
+        py::print("Weighted inputs:");
+        for(int j = 0; j < z.size(); ++j)
+        {
+            py::print('\t', z(j));
         }
-        a = z.array().max(0).matrix();
+        for(int i = 0; i < z.size(); ++i)
+        {
+            if(z(i) < 0.0)
+            {
+                a(i) = 0.0;
+            } else {
+                a(i) = z(i);
+            }
+        }
         return a;
     }
 
     protected:
-    void error(Eigen::VectorXd error)
+    Eigen::VectorXd error(Eigen::VectorXd err) override
     {
         // Calculate this layers error gradient
         d = Eigen::VectorXd::Zero(d.size());
         for(int i = 0; i < z.size(); ++i)
         {
-            if(z(i)>0.0) d(i) = 1;
-        }
-
-        //backpropagate
-        input_layer->error(d);
+            if(z(i) > 0.0) 
+            {
+                d(i) = err(i);
+            }
+        } 
+        return weights * d;
     }
 
-    void update(double rate)
+    void update(double rate) override
     {
-        for(int n = 0; n < d.size(); ++n) weights.col(n) -= rate * d(n) * a;
+        for(int n = 0; n < d.size(); ++n) 
+        {
+            py::print("Updating node", n, "with gradient", d(n));
+            weights.col(n) -= rate * d(n) * in;
+        }
         biases -= rate * d;
     }
 };
@@ -160,17 +140,12 @@ class ReLU : public Layer {
 
 class Sigmoid : public Layer{
     public:
-    Sigmoid(int in_size, int out_size, Layer* input) : Layer(in_size, out_size, input){};
+    Sigmoid(int in_size, int out_size) : Layer(in_size, out_size){};
 
-    Eigen::VectorXd forward(Eigen::VectorXd input)
+    Eigen::VectorXd forward(Eigen::VectorXd input) override
     {
-        py::print("Sigmoid Forward Pass");
-        if(input_layer == nullptr)
-        {   
-            z = (input * weights) + biases;
-        } else {
-            z = (input_layer->forward(input) * weights) + biases;
-        }
+        in = input;
+        z = (weights.transpose() * input) + biases;
         
         for(int i = 0; i < z.size(); ++i)
         {
@@ -181,22 +156,24 @@ class Sigmoid : public Layer{
     };
 
     protected:
-    void error(Eigen::VectorXd error)
+    Eigen::VectorXd error(Eigen::VectorXd err) override
     {
         // Calculate this layers error gradient
         d = Eigen::VectorXd::Zero(d.size());
         for(int i = 0; i < d.size(); ++i)
         {
-            d(i) = a(i) * (1.0 - a(i));
+            d(i) = err(i) * (a(i) * (1.0 - a(i)));
         }
-
-        //backpropagate
-        input_layer->error(d);
+        return weights * d;
     };
 
-    void update(double rate)
+    void update(double rate) override
     {
-        for(int n = 0; n < d.size(); ++n) weights.col(n) -= rate * d(n) * a;
+        for(int n = 0; n < d.size(); ++n) 
+        {
+            py::print("Updating node", n, "with gradient", d(n));
+            weights.col(n) -= rate * d(n) * in;
+        }
         biases -= rate * d;
     };
 
@@ -206,32 +183,92 @@ class Sigmoid : public Layer{
 class Network {
     public:
     Network(std::vector<int> dims, std::vector<activation::ActivationFunc> funcs){
-        for(int i = 1; i < dims.size()-2; ++i)
+        this->layers = std::vector<Layer*>(dims.size()-1);
+        for(int i = 1; i < dims.size(); ++i)
         {
-            Layer* h;
-            switch(funcs.at(i)){
+            switch(funcs.at(i-1))
+            {
                 case activation::ReLU:
-                    *h = ReLU(dims.at(i), dims.at(i+1), &this->layers.back());
+                    this->layers.at(i-1) = new ReLU(dims[i-1], dims[i]);
                     break;
                 case activation::Sigmoid:
-                    *h = Sigmoid(dims.at(i), dims.at(i+1), &this->layers.back());
+                    this->layers.at(i-1) = new Sigmoid(dims[i], dims[i-1]);
                     break;
                 case activation::SoftMax:
-                    *h = Sigmoid(dims.at(i), dims.at(i+1), &this->layers.back());
+                    this->layers.at(i-1) = new Sigmoid(dims[i], dims[i-1]);
                     break;
-            };
-            this->layers.push_back(*h);
+            }
         }
     }
 
-    Eigen::VectorXd forward(Eigen::VectorXd input){py::print("Network forward pass"); return layers.back().forward(input);}
+    Eigen::VectorXd forward(Eigen::VectorXd input){
+        int i = 1;
+        std::vector<Eigen::VectorXd> hidden(layers.size()+1);
+        hidden[0] = input;
 
-    std::vector<double> train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate, int passes){
-        return layers.back().train(inputs, outputs, rate, passes);
+        for(int l = 0; l < layers.size(); ++l)
+        {   
+            py::print("Input to layer",i,":");
+            for(int j = 0; j < hidden[l].size(); ++j)
+            {
+                py::print('\t', hidden[l](j));
+            }
+            hidden[l+1] = layers[l]->forward(hidden[l]);
+            py::print("Output of layer",i,":");
+            for(int j = 0; j < hidden[l+1].size(); ++j)
+            {
+                py::print('\t', hidden[l+1](j));
+            }
+            ++i;
+        }
+        return hidden[layers.size()];
     }
 
+    /**
+     * Runs a backpropagation epoch through the model
+     * 
+     * @param inputs list of N input vectors to train on
+     * @param expected list of N correct output vectors
+     * @param rate learning rate, default 0.1
+     * @param passes number of times to pass over the input data, default 5
+     * 
+     * @return list containing the error of each test
+    */
+    std::vector<double> train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate, int passes){
+        std::vector<double> avg_err;
+        py::print("Training called with", inputs.size(), "input data and", outputs.size(), "output data");
+        for(int iter = 0; iter < passes; ++iter)
+        {
+            double e = 0.0;
+            for(int i = 0; i < inputs.size(); ++i)
+            {
+                py::print("Training epoch", iter, "item", i);
+
+                // Test forward pass and calculate error for this input set
+                Eigen::VectorXd errors = this->forward(inputs.at(i)) - outputs.at(i);
+                e += errors.array().abs().sum() / double(inputs.size());
+
+                for(int i = layers.size()-1; i >= 0; --i)
+                {
+                    py::print("Backpropagating");
+                    errors = layers[i]->error(errors);
+                }
+
+  
+                for(auto l = layers.begin(); l != layers.end(); ++l)
+                {   
+                    py::print("Updating parameters");
+                    (*l)->update(rate);
+                }
+            }
+            avg_err.push_back(e);
+        }
+        return avg_err;
+    }
+
+
     protected:
-    std::vector<Layer> layers;
+    std::vector<Layer*> layers;
 };
 
 #endif

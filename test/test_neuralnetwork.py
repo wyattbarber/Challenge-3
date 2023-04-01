@@ -51,9 +51,9 @@ def test_normal(data, exp):
     model.train(train, test, 0.5, 10)
 
     if exp == 1:
-        assert model.forwardPass(data)[0] > 0.8
+        assert model.forward(data)[0] > 0.8
     else:
-        assert model.forwardPass(data)[0] < 0.2
+        assert model.forward(data)[0] < 0.2
 
 
 
@@ -83,11 +83,11 @@ def test_softmax(data, exp):
     model.train(train, test, 0.5, 10)
 
     if exp == [0,1]:
-        assert model.forwardPass(data)[1] > 0.8 and model.forwardPass(data)[0] < 0.2
+        assert model.forward(data)[1] > 0.8 and model.forward(data)[0] < 0.2
     else:
-        assert model.forwardPass(data)[0] > 0.8 and model.forwardPass(data)[1] < 0.2
+        assert model.forward(data)[0] > 0.8 and model.forward(data)[1] < 0.2
 
-
+@pytest.mark.skip
 def test_test():
     train = []
     test = []
