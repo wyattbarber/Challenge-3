@@ -109,7 +109,7 @@ Eigen::VectorXd NeuralNetwork::activation(Eigen::VectorXd input, int layer)
       case Sigmoid:
          for(int i = 0; i < input.size(); ++i)
          {
-            out(i) = 1 / (1 + std::exp(-1 * input(i)));
+            out(i) = 1.0 / (1.0 + std::exp(-1 * input(i)));
          }
          break;
 
@@ -136,7 +136,7 @@ Eigen::VectorXd NeuralNetwork::d_activation(Eigen::VectorXd input, int layer){
       case ReLU:
          for(int i = 0; i < input.size(); ++i){
             if(input(i) > 0){
-               out(i) = 1;
+               out(i) = 1.0;
             }
          }
          break;
@@ -166,7 +166,7 @@ void NeuralNetwork::err_propagate(Eigen::VectorXd error)
             {
                if(i == k)
                {
-                  d_sftm(i,k) = a.at(j)(i) * (1 - a.at(j)(k));
+                  d_sftm(i,k) = a.at(j)(i) * (1.0 - a.at(j)(k));
                } else {
                   d_sftm(i,k) = a.at(j)(i) * -a.at(j)(k);
                }
