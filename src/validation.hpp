@@ -1,11 +1,16 @@
+#ifndef _VALIDATION_HPP
+#define _VALIDATION_HPP
+
+
 #include <pybind11/pybind11.h>
 #include <algorithm>
 #include <random>
 #include "layer.hpp"
 namespace py = pybind11;
 
+std::vector<double> test_dimensions(std::vector<std::vector<int>> dims, std::vector<activation::ActivationFunc> f, std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> targets, double test_density, int N, double rate, int epochs);
 
-std::vector<double> test(std::vector<int> dims, std::vector<activation::ActivationFunc> f, std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> targets, double test_density, int N, double rate, int epochs) 
+std::vector<double> test(std::vector<int> dims, std::vector<activation::ActivationFunc> f, std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> targets, double test_density, int N, double rate, int epochs)
 {
     std::vector<double> out(N);
 
@@ -19,7 +24,7 @@ std::vector<double> test(std::vector<int> dims, std::vector<activation::Activati
         targets_argmax.push_back(std::distance(targets.at(i).begin(), std::max_element(targets.at(i).begin(), targets.at(i).end())));
     }
 
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(int n = 0; n < N; ++n)
     {
         // Create a model
@@ -64,3 +69,6 @@ std::vector<double> test(std::vector<int> dims, std::vector<activation::Activati
 
     return out;
 }
+
+
+#endif
