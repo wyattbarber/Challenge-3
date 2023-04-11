@@ -23,5 +23,15 @@ PYBIND11_MODULE(neuralnet, m){
         .def("forward", &Network::forward, "Performs a single forward pass through the model",
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
 
+    py::class_<Adam, Network>(m, "AdamNetwork")
+        .def(py::init<std::vector<int>, std::vector<activation::ActivationFunc>>())
+        .def("train", &Adam::train, "Performs backpropagation on a set of training data",
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("forward", &Adam::forward, "Performs a single forward pass through the model",
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
+
+
     m.def("test", &test, "Performs cross validation on one model and reports its percent error");
+    m.def("test_layers", &test_dimensions, "Performs cross validation over models with different layer count and sizes",
+        py::call_guard<py::gil_scoped_release>());
 }
