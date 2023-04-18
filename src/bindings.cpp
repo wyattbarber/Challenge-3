@@ -1,10 +1,12 @@
-#include <pybind11/pybind11.h>
 #include "layer.hpp"
 #include "validation.hpp"
-namespace py = pybind11;
+#include "autoencoder.hpp"
+
+#include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 #include <pybind11/iostream.h>
+namespace py = pybind11;
 
 
 PYBIND11_MODULE(neuralnet, m){
@@ -29,6 +31,20 @@ PYBIND11_MODULE(neuralnet, m){
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
         .def("forward", &Adam::forward, "Performs a single forward pass through the model",
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
+
+    py::class_<Autoencoder>(m, "Autoencoder")
+        .def(py::init<size_t, size_t>())
+        .def("train", &Autoencoder::train, "Performs backpropagation on a set of training data",
+           py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("encode", &Autoencoder::encode, "Transforms a datapoint to latent space",
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("decode", &Autoencoder::decode, "Generates an approximation from a latent representation",
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
+    
+    py::class_<DeepAutoencoder>(m, "DeepAutoencoder")
+        .def(py::init<std::vector<size_t>>())
+        .def("train", &DeepAutoencoder::train, "Performs backpropagation on a set of training data",
+           py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
 
 
     m.def("test", &test, "Performs cross validation on one model and reports its percent error");
