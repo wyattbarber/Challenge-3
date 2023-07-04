@@ -8,7 +8,7 @@ namespace py = pybind11;
 
 
 PYBIND11_MODULE(neuralnet, m){
-    m.doc() ="CIS 678 Challenge #3 C++ backend";
+    m.doc() ="Various neural network implementations";
 
     py::enum_<activation::ActivationFunc>(m, "ActivationFunctions")
         .value("ReLU", activation::ActivationFunc::ReLU)
@@ -48,7 +48,7 @@ PYBIND11_MODULE(neuralnet, m){
         .def("decode", &DeepAutoencoder::decode, "Generates an approximation from a latent representation",
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
 
-     py::class_<CoupledAutoencoder>(m, "CoupledAutoencoder")
+    py::class_<CoupledAutoencoder>(m, "CoupledAutoencoder")
         .def(py::init<std::vector<size_t>, std::vector<size_t>, size_t>())
         .def("train", py::overload_cast<Eigen::MatrixXd, Eigen::MatrixXd, double, int, double>(&CoupledAutoencoder::train), "Performs backpropagation on a set of training data",
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
@@ -59,10 +59,16 @@ PYBIND11_MODULE(neuralnet, m){
         .def("decode", &CoupledAutoencoder::decode, "Generates an approximation from a latent representation",
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
 
-
-
-
-    // m.def("test", &test, "Performs cross validation on one model and reports its percent error");
-    // m.def("test_layers", &test_dimensions, "Performs cross validation over models with different layer count and sizes",
-    //     py::call_guard<py::gil_scoped_release>());
+    py::class_<VariationalAutoencoder>(m, "VariationalAutoencoder")
+        .def(py::init<std::vector<size_t>>())
+        .def("train", py::overload_cast<Eigen::MatrixXd, double, int>(&VariationalAutoencoder::train), "Performs backpropagation on a set of training data",
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("train", py::overload_cast<Eigen::MatrixXd, double, int, double, double>(&VariationalAutoencoder::train), "Performs backpropagation on a set of training data using the Adam algorithm",
+           py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("encode", &VariationalAutoencoder::encode, "Transforms a datapoint to latent space",
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("decode", &VariationalAutoencoder::decode, "Generates an approximation from a latent representation",
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("sample", &VariationalAutoencoder::sample, "Generates a sample vector from normal distribution mean and standard deviation vectors");
+    
 }

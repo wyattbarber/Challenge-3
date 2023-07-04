@@ -4,6 +4,14 @@ neuralnet.egg-info/PKG-INFO
 neuralnet.egg-info/SOURCES.txt
 neuralnet.egg-info/dependency_links.txt
 neuralnet.egg-info/top_level.txt
+src/Autoencoder.cpp
+src/CoupledAutoencoder.cpp
+src/DeepAutoencoder.cpp
+src/Network.cpp
+src/ReLU.cpp
+src/Sigmoid.cpp
+src/Softmax.cpp
+src/Variational.cpp
 src/bindings.cpp
 test/test_kcae.py
 test/test_neuralnetwork.py

@@ -16,13 +16,6 @@ namespace activation
     };
 };
 
-double rnorm()
-{
-    static std::mt19937 rng;
-    static std::normal_distribution<double> nd(0.0, 2.0);
-    return nd(rng);
-}
-
 class Layer
 {
 
@@ -120,8 +113,6 @@ public:
     };
 
 protected:
-    Layer *input_layer;
-
     Eigen::MatrixXd weights;
     Eigen::VectorXd biases;
     Eigen::VectorXd z;

@@ -12,7 +12,7 @@ protected:
     size_t latent_size;
 
 public:
-    CoupledAutoencoder(std::vector<size_t> dims1, std::vector<size_t> dims2, size_t latent) : latent_size(latent);
+    CoupledAutoencoder(std::vector<size_t> dims1, std::vector<size_t> dims2, size_t latent);
 
     Eigen::VectorXd encode(Eigen::VectorXd input, int domain);
 
