@@ -1,6 +1,4 @@
-#include "network.hpp"
-// #include "validation.hpp"
-#include "autoencoder.hpp"
+#include "neuralnet.hpp"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>

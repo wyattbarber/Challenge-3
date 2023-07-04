@@ -1,22 +1,20 @@
 from glob import glob
 from setuptools import setup
-import distutils.cmd
-import subprocess
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
-pybindext = Pybind11Extension(
+ext_modules = [
+    Pybind11Extension(
         "neuralnet",
-        sorted(glob("src/*.cpp")),
+        sorted(glob("src/*.cpp")),  # Sort source files for reproducibility
         cxx_std=17,
         extra_compile_args=['/openmp', '-IC:\\msys64\\mingw64\\include\\eigen3'],
         extra_link_args=['-lopenmp']
-)
-
-ext_modules = [
-    pybindext,
+    ),
 ]
 
 setup(
+    name = "neuralnet",
+    version="1.1.0",
     cmdclass={
         "build_ext": build_ext
         }, 
