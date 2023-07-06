@@ -4,12 +4,14 @@
 #include "Autoencoder.hpp"
 #include "ReLU.hpp"
 #include "Sigmoid.hpp"
+#include "Linear.hpp"
 
 class VariationalAutoencoder
 {
 protected:
     std::vector<Autoencoder> layers;
-    Sigmoid mean, deviation;
+    Sigmoid mean; 
+    Sigmoid deviation;
     Sigmoid sampler;
 
     std::default_random_engine generator;
@@ -30,9 +32,9 @@ public:
 
     void update(double rate, double b1, double b2, int t);
 
-    std::vector<double> train(Eigen::MatrixXd data, double rate, int epochs);
+    std::vector<double> train(Eigen::MatrixXd data, double rate, int epochs, int L);
 
-    std::vector<double> train(Eigen::MatrixXd data, double rate, int epochs, double b1, double b2);
+    std::vector<double> train(Eigen::MatrixXd data, double rate, int epochs, int L, double b1, double b2);
 
     Eigen::VectorXd sample(Eigen::VectorXd mean, Eigen::VectorXd deviation);
 };

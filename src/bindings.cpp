@@ -61,9 +61,9 @@ PYBIND11_MODULE(neuralnet, m){
 
     py::class_<VariationalAutoencoder>(m, "VariationalAutoencoder")
         .def(py::init<std::vector<size_t>>())
-        .def("train", py::overload_cast<Eigen::MatrixXd, double, int>(&VariationalAutoencoder::train), "Performs backpropagation on a set of training data",
+        .def("train", py::overload_cast<Eigen::MatrixXd, double, int, int>(&VariationalAutoencoder::train), "Performs backpropagation on a set of training data",
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-        .def("train", py::overload_cast<Eigen::MatrixXd, double, int, double, double>(&VariationalAutoencoder::train), "Performs backpropagation on a set of training data using the Adam algorithm",
+        .def("train", py::overload_cast<Eigen::MatrixXd, double, int, int, double, double>(&VariationalAutoencoder::train), "Performs backpropagation on a set of training data using the Adam algorithm",
            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
         .def("encode", &VariationalAutoencoder::encode, "Transforms a datapoint to latent space",
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())

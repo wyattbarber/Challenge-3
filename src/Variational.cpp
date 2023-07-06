@@ -67,7 +67,7 @@ void VariationalAutoencoder::update(double rate, double b1, double b2, int t)
     sampler.update(rate, b1, b2, t);
 }
 
-std::vector<double> VariationalAutoencoder::train(Eigen::MatrixXd data, double rate, int epochs)
+std::vector<double> VariationalAutoencoder::train(Eigen::MatrixXd data, double rate, int epochs, int L)
 {
     std::vector<double> out(epochs);
 
@@ -85,31 +85,22 @@ std::vector<double> VariationalAutoencoder::train(Eigen::MatrixXd data, double r
         {
             // Encode a datapoint to generate a distribution
             std::pair<Eigen::VectorXd, Eigen::VectorXd> dist = encode(data.col(i));
-
-            // Sample the distribution to create a reconstructible embedding
-            Eigen::VectorXd embedding = sample(dist.first, dist.second);
+            // Calculate KL divergence partial derivatives
+            Eigen::VectorXd grad_m = dist.first * -1.0;
+            Eigen::VectorXd grad_d = dist.second * -1.0;
+            grad_d.unaryExpr([](double x){ return x - (1.0 / (x + DBL_MIN)); });
 
             // Generate a reconstruction from the sample
-            Eigen::VectorXd approx = decode(embedding);
+            Eigen::VectorXd approx = decode(sample(dist.first, dist.second));
 
             // Calculate reconstruction error
             Eigen::VectorXd error = approx - data.col(i);
+
+            errorReconstruct(error);
             avg_loss += error.norm();
 
-            // Backpropagate reconstruction error
-            Eigen::VectorXd error_reconstruct = errorReconstruct(error);
-
-            // Calculate KL divergence partial derivatives
-            dist.second.unaryExpr([](double x)
-                                  {
-                if(x == 0.0){
-                    return DBL_MIN;
-                } else {
-                    return x - (1.0 / x);
-                } });
-
             // Backpropagate embedding error, penalized by KL divergence
-            errorLatent(error_reconstruct + dist.first, error_reconstruct + dist.second);
+            errorLatent(grad_m, grad_d);
 
             // Update parameters
             update(rate);
@@ -119,7 +110,7 @@ std::vector<double> VariationalAutoencoder::train(Eigen::MatrixXd data, double r
     return out;
 }
 
-std::vector<double> VariationalAutoencoder::train(Eigen::MatrixXd data, double rate, int epochs, double b1, double b2)
+std::vector<double> VariationalAutoencoder::train(Eigen::MatrixXd data, double rate, int epochs, int L, double b1, double b2)
 {
     std::vector<double> out(epochs);
 
@@ -137,34 +128,25 @@ std::vector<double> VariationalAutoencoder::train(Eigen::MatrixXd data, double r
         {
             // Encode a datapoint to generate a distribution
             std::pair<Eigen::VectorXd, Eigen::VectorXd> dist = encode(data.col(i));
-
-            // Sample the distribution to create a reconstructible embedding
-            Eigen::VectorXd embedding = sample(dist.first, dist.second);
+            // Calculate KL divergence partial derivatives
+            Eigen::VectorXd grad_m = dist.first * -1.0;
+            Eigen::VectorXd grad_d = dist.second * -1.0;
+            grad_d.unaryExpr([](double x){ return x - (1.0 / (x + DBL_MIN)); });
 
             // Generate a reconstruction from the sample
-            Eigen::VectorXd approx = decode(embedding);
+            Eigen::VectorXd approx = decode(sample(dist.first, dist.second));
 
             // Calculate reconstruction error
             Eigen::VectorXd error = approx - data.col(i);
+
+            errorReconstruct(error);
             avg_loss += error.norm();
 
-            // Backpropagate reconstruction error
-            Eigen::VectorXd error_reconstruct = errorReconstruct(error);
-
-            // Calculate KL divergence partial derivatives
-            dist.second.unaryExpr([](double x)
-                                  {
-                if(x == 0.0){
-                    return DBL_MIN;
-                } else {
-                    return x - (1.0 / x);
-                } });
-
             // Backpropagate embedding error, penalized by KL divergence
-            errorLatent(error_reconstruct + dist.first, error_reconstruct + dist.second);
+            errorLatent(grad_m, grad_d);
 
             // Update parameters
-            update(rate, b1, b2, (epoch * data.cols()) + i + 1);
+            update(rate, b1, b2, (epoch * data.size()) + i + 1);
         }
         out[epoch] = avg_loss / data_norm;
     }

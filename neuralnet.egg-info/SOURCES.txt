@@ -7,10 +7,12 @@ neuralnet.egg-info/top_level.txt
 src/Autoencoder.cpp
 src/CoupledAutoencoder.cpp
 src/DeepAutoencoder.cpp
+src/Linear.cpp
 src/Network.cpp
 src/ReLU.cpp
 src/Sigmoid.cpp
 src/Softmax.cpp
+src/Tanh.cpp
 src/Variational.cpp
 src/bindings.cpp
 test/test_kcae.py
