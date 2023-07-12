@@ -12,7 +12,6 @@ public:
 
     Eigen::VectorXd forward(Eigen::VectorXd input) override;
 
-protected:
     Eigen::VectorXd error(Eigen::VectorXd err) override;
 };
 

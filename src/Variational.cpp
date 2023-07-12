@@ -20,7 +20,7 @@ std::pair<Eigen::VectorXd, Eigen::VectorXd> VariationalAutoencoder::encode(Eigen
 
     Eigen::VectorXd m = mean.forward(hidden.back());
     Eigen::VectorXd d = deviation.forward(hidden.back());
-    return std::make_pair(m, d);
+    return {m, d};
 }
 
 Eigen::VectorXd VariationalAutoencoder::decode(Eigen::VectorXd latent)
@@ -88,10 +88,11 @@ std::vector<double> VariationalAutoencoder::train(Eigen::MatrixXd data, double r
             // Calculate KL divergence partial derivatives
             Eigen::VectorXd grad_m = dist.first * -1.0;
             Eigen::VectorXd grad_d = dist.second * -1.0;
-            grad_d.unaryExpr([](double x){ return x - (1.0 / (x + DBL_MIN)); });
+            grad_d.unaryExpr([](double x)
+                             { return x - (1.0 / (x + DBL_MIN)); });
 
             // Generate a reconstruction from the sample
-            Eigen::VectorXd approx = decode(sample(dist.first, dist.second));
+            Eigen::VectorXd approx = decode(dist.first + (ndist(generator) * dist.second));
 
             // Calculate reconstruction error
             Eigen::VectorXd error = approx - data.col(i);
@@ -126,42 +127,40 @@ std::vector<double> VariationalAutoencoder::train(Eigen::MatrixXd data, double r
         double avg_loss = 0.0;
         for (int i = 0; i < data.cols(); ++i)
         {
-            // Encode a datapoint to generate a distribution
-            std::pair<Eigen::VectorXd, Eigen::VectorXd> dist = encode(data.col(i));
-            // Calculate KL divergence partial derivatives
-            Eigen::VectorXd grad_m = dist.first * -1.0;
-            Eigen::VectorXd grad_d = dist.second * -1.0;
-            grad_d.unaryExpr([](double x){ return x - (1.0 / (x + DBL_MIN)); });
+            for (int l = 0; l < L; ++l)
+            {
+                // Encode a datapoint to generate a distribution
+                std::pair<Eigen::VectorXd, Eigen::VectorXd> dist = encode(data.col(i));
+                // Generate a reconstruction from the sample
+                double sample = ndist(generator);
+                Eigen::VectorXd approx = decode(dist.first + (dist.second * sample));
 
-            // Generate a reconstruction from the sample
-            Eigen::VectorXd approx = decode(sample(dist.first, dist.second));
+                // Calculate KL divergence
+                Eigen::VectorXd m2 = dist.first;
+                m2.unaryExpr([](double x)
+                             { return std::pow(x, 2.0); });
+                Eigen::VectorXd d2 = dist.second;
+                d2.unaryExpr([](double x)
+                             { return std::pow(x, 2.0); });
+                Eigen::VectorXd lnd = dist.second;
+                lnd.unaryExpr([](double x)
+                              { return std::log(x) + 1; });
+                Eigen::VectorXd kl = 0.5 * (m2 + d2 - lnd);
 
-            // Calculate reconstruction error
-            Eigen::VectorXd error = approx - data.col(i);
+                // Calculate reconstruction error
+                Eigen::VectorXd error = (approx - data.col(i));
+                avg_loss += error.norm();
 
-            errorReconstruct(error);
-            avg_loss += error.norm();
+                Eigen::VectorXd error_hidden = errorReconstruct(error);
 
-            // Backpropagate embedding error, penalized by KL divergence
-            errorLatent(grad_m, grad_d);
+                // Backpropagate embedding error, penalized by KL divergence
+                errorLatent(error_hidden +  dist.first, error_hidden + dist.second + dist.second.cwiseInverse());
 
-            // Update parameters
-            update(rate, b1, b2, (epoch * data.size()) + i + 1);
+                // Update parameters
+                update(rate, b1, b2, (epoch * data.size()) + i + 1);
+            }
         }
         out[epoch] = avg_loss / data_norm;
     }
-    return out;
-}
-
-Eigen::VectorXd VariationalAutoencoder::sample(Eigen::VectorXd mean, Eigen::VectorXd deviation)
-{
-    Eigen::VectorXd out = Eigen::VectorXd::Zero(mean.size());
-
-    for (int i = 0; i < mean.size(); ++i)
-    {
-        double e = ndist(generator);
-        out(i) = mean(i) + (deviation(i) * e);
-    }
-
     return out;
 }

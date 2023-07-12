@@ -68,7 +68,6 @@ PYBIND11_MODULE(neuralnet, m){
         .def("encode", &VariationalAutoencoder::encode, "Transforms a datapoint to latent space",
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
         .def("decode", &VariationalAutoencoder::decode, "Generates an approximation from a latent representation",
-            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-        .def("sample", &VariationalAutoencoder::sample, "Generates a sample vector from normal distribution mean and standard deviation vectors");
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
     
 }

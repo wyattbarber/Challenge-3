@@ -10,9 +10,9 @@ class VariationalAutoencoder
 {
 protected:
     std::vector<Autoencoder> layers;
-    Sigmoid mean; 
-    Sigmoid deviation;
-    Sigmoid sampler;
+    Linear mean; 
+    ReLU deviation;
+    ReLU sampler;
 
     std::default_random_engine generator;
     std::normal_distribution<double> ndist;
@@ -35,8 +35,6 @@ public:
     std::vector<double> train(Eigen::MatrixXd data, double rate, int epochs, int L);
 
     std::vector<double> train(Eigen::MatrixXd data, double rate, int epochs, int L, double b1, double b2);
-
-    Eigen::VectorXd sample(Eigen::VectorXd mean, Eigen::VectorXd deviation);
 };
 
 #endif
