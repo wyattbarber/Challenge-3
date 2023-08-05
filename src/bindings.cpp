@@ -1,5 +1,4 @@
 #include "neuralnet.hpp"
-
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
@@ -70,4 +69,10 @@ PYBIND11_MODULE(neuralnet, m){
         .def("decode", &VariationalAutoencoder::decode, "Generates an approximation from a latent representation",
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
     
+    py::class_<DenoisingAutoencoder, DeepAutoencoder>(m, "DenoisingAutoencoder")
+        .def(py::init<std::vector<size_t>>())
+        .def("train", py::overload_cast<Eigen::MatrixXd, Eigen::MatrixXd, double, int>(&DenoisingAutoencoder::train), "Performs backpropagation on a set of training data",
+           py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("train", py::overload_cast<Eigen::MatrixXd, Eigen::MatrixXd, double, int, double, double>(&DenoisingAutoencoder::train), "Performs backpropagation on a set of training data using the Adam algorithm",
+           py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
 }

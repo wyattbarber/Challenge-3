@@ -7,6 +7,7 @@ neuralnet.egg-info/top_level.txt
 src/Autoencoder.cpp
 src/CoupledAutoencoder.cpp
 src/DeepAutoencoder.cpp
+src/DenoisingAutoencoder.cpp
 src/Linear.cpp
 src/Network.cpp
 src/ReLU.cpp

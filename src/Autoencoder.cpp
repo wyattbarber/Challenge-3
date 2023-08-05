@@ -22,22 +22,22 @@ Autoencoder::Autoencoder(size_t input, size_t latent) : in_size(input), latent_s
 Eigen::VectorXd Autoencoder::encode(Eigen::VectorXd input)
 {
     in = input;
-    for (int i = 0; i < latent_size; ++i)
+    auto z = (W.transpose() * input) + blt;
+
+    for (int i = 0; i < z.size(); ++i)
     {
-        alt(i) = input.dot(W.col(i)) + blt(i);
-        if (alt(i) < 0)
-            alt(i) = 0.0;
+        alt(i) = 1.0 / (1.0 + std::exp(-z(i)));
     }
     return alt;
 }
 
 Eigen::VectorXd Autoencoder::decode(Eigen::VectorXd latent)
 {
-    for (int i = 0; i < in_size; ++i)
+    auto z = (W * latent) + brc;
+
+    for (int i = 0; i < z.size(); ++i)
     {
-        arc(i) = latent.dot(W.row(i)) + brc(i);
-        if (arc(i) < 0)
-            arc(i) = 0.0;
+        arc(i) = 1.0 / (1.0 + std::exp(-z(i)));
     }
     return arc;
 }
@@ -46,14 +46,7 @@ Eigen::VectorXd Autoencoder::errorReconstruct(Eigen::VectorXd error)
 {
     for (int i = 0; i < in_size; ++i)
     {
-        if (arc(i) > 0)
-        {
-            drc(i) = error(i);
-        }
-        else
-        {
-            drc(i) = 0.0;
-        }
+        drc(i) = error(i) * arc(i) * (1.0 - arc(i));
     }
     return W.transpose() * drc;
 }
@@ -62,14 +55,7 @@ Eigen::VectorXd Autoencoder::errorLatent(Eigen::VectorXd error)
 {
     for (int i = 0; i < latent_size; ++i)
     {
-        if (alt(i) > 0)
-        {
-            dlt(i) = error(i);
-        }
-        else
-        {
-            dlt(i) = 0.0;
-        }
+        dlt(i) = error(i) * alt(i) * (1.0 - alt(i));
     }
     return W * dlt;
 }
