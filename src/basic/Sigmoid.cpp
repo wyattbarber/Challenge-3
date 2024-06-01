@@ -1,6 +1,6 @@
-#include "include/Sigmoid.hpp"
+#include "Layer.hpp"
 
-Eigen::VectorXd Sigmoid::forward(Eigen::VectorXd input)
+Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::Sigmoid>::forward(Eigen::VectorXd input)
 {
     in = input;
     z = (weights.transpose() * input) + biases;
@@ -13,7 +13,7 @@ Eigen::VectorXd Sigmoid::forward(Eigen::VectorXd input)
     return a;
 }
 
-Eigen::VectorXd Sigmoid::error(Eigen::VectorXd err)
+Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::Sigmoid>::backward(Eigen::VectorXd err)
 {
     // Calculate this layers error gradient
     d = Eigen::VectorXd::Zero(d.size());

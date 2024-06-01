@@ -1,7 +1,6 @@
+#include "Layer.hpp"
 
-#include "include/Softmax.hpp"
-
-Eigen::VectorXd SoftMax::forward(Eigen::VectorXd input)
+Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::SoftMax>::forward(Eigen::VectorXd input)
 {
     in = input;
     z = (weights.transpose() * input) + biases;
@@ -16,7 +15,7 @@ Eigen::VectorXd SoftMax::forward(Eigen::VectorXd input)
     return a;
 }
 
-Eigen::VectorXd SoftMax::error(Eigen::VectorXd err)
+Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::SoftMax>::backward(Eigen::VectorXd err)
 {
     // Calculate this layers error gradient
     for (int i = 0; i < d.size(); ++i)

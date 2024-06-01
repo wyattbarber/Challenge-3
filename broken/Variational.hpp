@@ -2,17 +2,15 @@
 #define _DEEPVARIATIONAL_HPP
 
 #include "Autoencoder.hpp"
-#include "ReLU.hpp"
-#include "Sigmoid.hpp"
-#include "Linear.hpp"
+#include "include/Abstract/Layer.hpp"
 
 class VariationalAutoencoder
 {
 protected:
     std::vector<Autoencoder> layers;
-    Linear mean; 
-    ReLU deviation;
-    ReLU sampler;
+    neuralnet::Layer<neuralnet::ActivationFunc::Linear> mean; 
+    neuralnet::Layer<neuralnet::ActivationFunc::ReLU> deviation;
+    neuralnet::Layer<neuralnet::ActivationFunc::ReLU> sampler;
 
     std::default_random_engine generator;
     std::normal_distribution<double> ndist;

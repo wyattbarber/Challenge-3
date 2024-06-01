@@ -36,12 +36,12 @@ Eigen::VectorXd VariationalAutoencoder::errorReconstruct(Eigen::VectorXd error)
     std::vector<Eigen::VectorXd> errors = {error};
     for (int j = 0; j < layers.size(); ++j)
         errors.push_back(layers[j].errorReconstruct(errors.back()));
-    return sampler.error(errors.back());
+    return sampler.backward(errors.back());
 }
 
 Eigen::VectorXd VariationalAutoencoder::errorLatent(Eigen::VectorXd error_mean, Eigen::VectorXd error_deviation)
 {
-    std::vector<Eigen::VectorXd> errors = {mean.error(error_mean) + deviation.error(error_deviation)};
+    std::vector<Eigen::VectorXd> errors = {mean.backward(error_mean) + deviation.backward(error_deviation)};
     for (int j = layers.size() - 1; j >= 0; --j)
         errors.push_back(layers[j].errorLatent(errors.back()));
     return errors.back();

@@ -1,24 +1,4 @@
-#include "include/Network.hpp"
-
-Network::Network(std::vector<int> dims, std::vector<activation::ActivationFunc> funcs)
-{
-    this->layers = std::vector<Layer *>(dims.size() - 1);
-    for (int i = 1; i < dims.size(); ++i)
-    {
-        switch (funcs.at(i - 1))
-        {
-        case activation::ReLU:
-            this->layers.at(i - 1) = new ReLU(dims[i - 1], dims[i]);
-            break;
-        case activation::Sigmoid:
-            this->layers.at(i - 1) = new Sigmoid(dims[i - 1], dims[i]);
-            break;
-        case activation::SoftMax:
-            this->layers.at(i - 1) = new SoftMax(dims[i - 1], dims[i]);
-            break;
-        }
-    }
-}
+#include "Sequence.hpp"
 
 /**
  * Performs one forward pass, generating output for the complete model.
@@ -26,7 +6,7 @@ Network::Network(std::vector<int> dims, std::vector<activation::ActivationFunc> 
  * @param input data to pass to the input layer
  * @return output of the final layer
  */
-Eigen::VectorXd Network::forward(Eigen::VectorXd input)
+Eigen::VectorXd neuralnet::Sequence::forward(Eigen::VectorXd input)
 {
     std::vector<Eigen::VectorXd> a;
     a.push_back(input);
@@ -35,6 +15,25 @@ Eigen::VectorXd Network::forward(Eigen::VectorXd input)
         a.push_back(layers[l]->forward(a.back()));
     }
     return a.back();
+}
+
+/**
+ * Performs one backward pass through each layer
+ *
+ * @param err Output error of the model
+ * @return Error gradient of the input to the model
+ */
+Eigen::VectorXd neuralnet::Sequence::backward(Eigen::VectorXd err)
+{
+    std::vector<Eigen::VectorXd> errors;
+    errors.push_back(err);
+
+    for (int l = layers.size() - 1; l >= 0; --l)
+    {
+        errors.push_back(layers[l]->backward(errors.back()));
+    }
+
+    return errors.back();
 }
 
 /**
@@ -47,7 +46,7 @@ Eigen::VectorXd Network::forward(Eigen::VectorXd input)
  *
  * @return list containing the error of each test
  */
-std::vector<double> Network::train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate, int passes)
+std::vector<double> neuralnet::Sequence::train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate, int passes)
 {
     std::vector<double> avg_err;
 
@@ -65,15 +64,12 @@ std::vector<double> Network::train(std::vector<Eigen::VectorXd> inputs, std::vec
         {
             // Test forward pass and calculate error for this input set
             Eigen::VectorXd error = this->forward(inputs[i]) - outputs[i];
-
-            std::vector<Eigen::VectorXd> errors;
-            errors.push_back(error);
             e += error.norm();
 
-            for (int l = layers.size() - 1; l >= 0; --l)
+            backward(error);
+            for (auto l = layers.begin(); l != layers.end(); ++l)
             {
-                errors.push_back(layers[l]->error(errors.back()));
-                layers[l]->update(rate);
+                (*l)->update(rate);
             }
         }
         avg_err.push_back(e / out_norm);
@@ -91,7 +87,7 @@ std::vector<double> Network::train(std::vector<Eigen::VectorXd> inputs, std::vec
  *
  * @return list containing the error of each epoch
  */
-std::vector<double> Network::train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate, int passes, double b1, double b2)
+std::vector<double> neuralnet::Sequence::train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate, int passes, double b1, double b2)
 {
     std::vector<double> avg_err;
 
@@ -109,15 +105,12 @@ std::vector<double> Network::train(std::vector<Eigen::VectorXd> inputs, std::vec
         {
             // Test forward pass and calculate error for this input set
             Eigen::VectorXd error = this->forward(inputs[i]) - outputs[i];
-
-            std::vector<Eigen::VectorXd> errors;
-            errors.push_back(error);
             e += error.norm();
 
-            for (int l = layers.size() - 1; l >= 0; --l)
+            backward(error);
+            for (auto l = layers.begin(); l != layers.end(); ++l)
             {
-                errors.push_back(layers[l]->error(errors.back()));
-                layers[l]->update(rate, b1, b2, (iter * outputs.size()) + i + 1);
+                (*l)->update(rate, b1, b2, (iter * outputs.size()) + i + 1);
             }
         }
         avg_err.push_back(e / out_norm);

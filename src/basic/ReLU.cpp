@@ -1,6 +1,7 @@
-#include "include/ReLU.hpp"
+#include "Layer.hpp"
 
-Eigen::VectorXd ReLU::forward(Eigen::VectorXd input)
+template<>
+Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::ReLU>::forward(Eigen::VectorXd input)
 {
     in = input;
     z = (weights.transpose() * input) + biases;
@@ -18,7 +19,8 @@ Eigen::VectorXd ReLU::forward(Eigen::VectorXd input)
     return a;
 }
 
-Eigen::VectorXd ReLU::error(Eigen::VectorXd err)
+template<>
+Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::ReLU>::backward(Eigen::VectorXd err)
 {
     // Calculate this layers error gradient
     d = Eigen::VectorXd::Zero(d.size());
