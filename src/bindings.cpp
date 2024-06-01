@@ -10,8 +10,24 @@ using namespace neuralnet;
 PYBIND11_MODULE(neuralnet, m){
     m.doc() ="Various neural network implementations";
 
+    py::class_<Model>(m, "Model");
 
-    py::class_<Sequence>(m, "Sequence")
+    py::class_<Layer<ActivationFunc::Linear>, Model>(m, "Linear")
+        .def(py::init<size_t, size_t>());   
+
+    py::class_<Layer<ActivationFunc::ReLU>, Model>(m, "ReLU")
+        .def(py::init<size_t, size_t>());   
+
+    py::class_<Layer<ActivationFunc::Sigmoid>, Model>(m, "Sigmoid")
+        .def(py::init<size_t, size_t>());   
+
+    py::class_<Layer<ActivationFunc::TanH>, Model>(m, "TanH")
+        .def(py::init<size_t, size_t>());   
+
+    py::class_<Layer<ActivationFunc::SoftMax>, Model>(m, "SoftMax")
+        .def(py::init<size_t, size_t>());        
+
+    py::class_<Sequence, Model>(m, "Sequence")
         .def(py::init<std::vector<Model*>>())
         .def("train",  py::overload_cast<std::vector<Eigen::VectorXd>, std::vector<Eigen::VectorXd>, double, int>(&Sequence::train), "Performs backpropagation on a set of training data",
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())

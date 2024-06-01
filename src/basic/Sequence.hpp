@@ -11,7 +11,7 @@ namespace neuralnet
 {
     /** Container for Layer instances, handling forward and backward propagation through them.
      */
-    class Sequence : Model
+    class Sequence : public Model
     {
     protected:
         std::vector<Model*> layers;
