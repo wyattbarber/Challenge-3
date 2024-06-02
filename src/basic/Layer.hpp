@@ -100,12 +100,9 @@ namespace neuralnet
         void set_z(Eigen::VectorXd& input)
         {
             in = {input};
-            py::print("Data size ", input.size(), ", layer size ", weights.rows(), " x ", weights.cols());
             z = biases;
-            py::print("Z set with bias values");
             for(size_t i = 0; i < weights.cols(); ++i)
             {
-                py::print(i, "th weighted signal, dot ", in.size(), " with ", weights.col(i).size(), " items");
                 double x = in.dot(weights.col(i));
                 z(i) += x;
             }

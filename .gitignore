@@ -6,3 +6,4 @@ CMakeCache.txt
 UNKNOWN.egg-info/**
 *.png
 /neuralnet.egg-info
+/.vscode

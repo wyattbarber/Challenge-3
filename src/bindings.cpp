@@ -21,6 +21,14 @@ constexpr void bind_model(py::module_& m, const char* pyname)
         .def("forward", &ModelType::forward, "Performs a forward pass through the model.", py::return_value_policy::reference); 
 }
 
+template<class TrainerType>
+constexpr void bind_trainer(py::module_& m, const char* pyname)
+{
+    py::class_<TrainerType>(m, pyname)
+        .def(py::init<Model&, std::vector<Eigen::VectorXd>, std::vector<Eigen::VectorXd>>())
+        .def("train", &TrainerType::train, "Trains a model", py::return_value_policy::reference); 
+}
+
 PYBIND11_MODULE(neuralnet, m)
 {
     m.doc() = "Various neural network implementations";
@@ -33,4 +41,6 @@ PYBIND11_MODULE(neuralnet, m)
     bind_model<Layer<ActivationFunc::TanH>, size_t, size_t>(m, "TanH");
     bind_model<Layer<ActivationFunc::SoftMax>, size_t, size_t>(m, "SoftMax");
     bind_model<Sequence, py::args>(m, "Sequence");
+
+    bind_trainer<training::Trainer>(m, "Trainer");
 }
