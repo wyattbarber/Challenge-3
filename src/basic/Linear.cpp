@@ -4,8 +4,7 @@
 template<>
 Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::Linear>::forward(Eigen::VectorXd input)
 {
-    in = input;
-    z = (weights.transpose() * input) + biases;
+    set_z(input);
     a = z;
     return a;
 }

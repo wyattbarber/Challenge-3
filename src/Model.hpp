@@ -2,6 +2,8 @@
 #define _MODEL_HPP
 
 #include <Eigen/Dense>
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
 
 namespace neuralnet
 {
@@ -36,21 +38,26 @@ namespace neuralnet
         // /** Resets gradients accumulated over previous backward passes to 0.
         //  */
         // virtual void reset() = 0;
-        
+
         /**
          * Updates parameters of this layer based on the previously propagated error
          * @param rate learning rate
          */
         virtual void update(double rate) = 0;
+    };
 
-        /**
-         * Updates parameters of this layer based on the previously propagated error, using the Adam algorithm
-         * @param rate learning rate
-         * @param b1 first moment decay rate
-         * @param b2 second moment decay rate
-         * @param t current training step
-         */
-        virtual void update(double rate, double b1, double b2, int t) = 0;
+    /** "Trampoline" class to make pybind11 abstract inheritance work right.
+     *
+     * @tparam ModelBase derived class, to which virtual method calls will be directed to
+     */
+    template <class ModelBase>
+    class PyModel : public ModelBase
+    {
+    public:
+        using ModelBase::ModelBase; // Inherit constructors
+        Eigen::VectorXd forward(Eigen::VectorXd input) override { PYBIND11_OVERRIDE_PURE(Eigen::VectorXd, ModelBase, forward, input); }
+        Eigen::VectorXd backward(Eigen::VectorXd error) override { PYBIND11_OVERRIDE(Eigen::VectorXd, ModelBase, backward, error); }
+        void update(double rate) override { PYBIND11_OVERRIDE(void, ModelBase, update, rate); }
     };
 
 }

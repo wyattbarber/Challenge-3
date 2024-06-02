@@ -39,9 +39,10 @@ namespace neuralnet
          */
         Layer(int in_size, int out_size)
         {
-            // Apply he initialization
-            this->weights = Eigen::MatrixXd::Random(in_size, out_size).unaryExpr([in_size](double x)
-                                                                                 { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
+            // // Apply he initialization
+            // this->weights = Eigen::MatrixXd::Random(in_size, out_size).unaryExpr([in_size](double x)
+            //                                                                      { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
+            this->weights = Eigen::MatrixXd::Random(in_size, out_size);
 
             this->biases = Eigen::VectorXd::Zero(out_size);
             this->z = Eigen::VectorXd::Zero(out_size);
@@ -49,11 +50,11 @@ namespace neuralnet
             this->d = Eigen::VectorXd::Zero(out_size);
             this->in = Eigen::VectorXd::Zero(in_size);
 
-            // Parameters for Adam algorithm
-            this->m = Eigen::MatrixXd::Zero(in_size, out_size);
-            this->mb = Eigen::VectorXd::Zero(out_size);
-            this->v = Eigen::MatrixXd::Zero(in_size, out_size);
-            this->vb = Eigen::VectorXd::Zero(out_size);
+            // // Parameters for Adam algorithm
+            // this->m = Eigen::MatrixXd::Zero(in_size, out_size);
+            // this->mb = Eigen::VectorXd::Zero(out_size);
+            // this->v = Eigen::MatrixXd::Zero(in_size, out_size);
+            // this->vb = Eigen::VectorXd::Zero(out_size);
         }
 
         /**
@@ -62,14 +63,14 @@ namespace neuralnet
          * @param input input vector
          * @return output of this layer
          */
-        virtual Eigen::VectorXd forward(Eigen::VectorXd input);
+        Eigen::VectorXd forward(Eigen::VectorXd input) override;
 
         /**
          * Propagates error over this layer, and back over input layers
          * @param error error gradient of following layer
          * @return error of the input layer to this one
          */
-        virtual Eigen::VectorXd backward(Eigen::VectorXd error);
+        Eigen::VectorXd backward(Eigen::VectorXd error) override;
 
         /**
          * Updates parameters of this layer based on the previously propagated error
@@ -84,39 +85,6 @@ namespace neuralnet
             biases -= rate * d;
         };
 
-        /**
-         * Updates parameters of this layer based on the previously propagated error, using the Adam algorithm
-         * @param rate learning rate
-         * @param b1 first moment decay rate
-         * @param b2 second moment decay rate
-         * @param t current training step
-         */
-        void update(double rate, double b1, double b2, int t)
-        {
-            Eigen::VectorXd mhat, vhat;
-
-            for (int n = 0; n < d.size(); ++n)
-            {
-                Eigen::VectorXd grad = d(n) * in;
-                m.col(n) = (b1 * m.col(n)) + ((1.0 - b1) * grad);
-                v.col(n) = (b2 * v.col(n)) + ((1.0 - b2) * (grad.cwiseProduct(grad)));
-                mhat = m / (1.0 - std::pow(b1, static_cast<double>(t)));
-                vhat = v / (1.0 - std::pow(b2, static_cast<double>(t)));
-
-                for (int i = 0; i < mhat.size(); ++i)
-                {
-                    weights.col(n)(i) -= rate * mhat(i) / std::sqrt(vhat(i) + 0.000001);
-                }
-            }
-            mb = (b1 * mb) + ((1.0 - b1) * d);
-            vb = (b2 * vb) + ((1.0 - b2) * (d.cwiseProduct(d)));
-            mhat = mb / (1.0 - std::pow(b1, static_cast<double>(t)));
-            vhat = vb / (1.0 - std::pow(b2, static_cast<double>(t)));
-            for (int i = 0; i < mhat.size(); ++i)
-            {
-                biases(i) -= rate * mhat(i) / std::sqrt(vhat(i) + 0.000001);
-            }
-        };
 
     protected:
         Eigen::MatrixXd weights;
@@ -126,8 +94,24 @@ namespace neuralnet
         Eigen::VectorXd d;
         Eigen::VectorXd in;
 
-        Eigen::MatrixXd m, v;
-        Eigen::VectorXd mb, vb;
+        // Eigen::MatrixXd m, v;
+        // Eigen::VectorXd mb, vb;
+
+        void set_z(Eigen::VectorXd& input)
+        {
+            in = {input};
+            py::print("Data size ", input.size(), ", layer size ", weights.rows(), " x ", weights.cols());
+            z = biases;
+            py::print("Z set with bias values");
+            for(size_t i = 0; i < weights.cols(); ++i)
+            {
+                py::print(i, "th weighted signal, dot ", in.size(), " with ", weights.col(i).size(), " items");
+                py::print(weights.col(i).format(Eigen::IOFormat(4, 0, ", ", "\n", "", "")));
+                double x = in.dot(weights.col(i));
+                py::print(x);
+                z(i) += x;
+            }
+        }
     };
 
 };

@@ -2,8 +2,7 @@
 
 Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::TanH>::forward(Eigen::VectorXd input)
 {
-    in = input;
-    z = (weights.transpose() * input) + biases;
+    set_z(input);
     a = z;
     a.unaryExpr([](double x){
         double ex = std::exp(x);

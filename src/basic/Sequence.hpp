@@ -5,42 +5,45 @@
 #include <random>
 #include <vector>
 #include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
 namespace py = pybind11;
 
 namespace neuralnet
 {
     /** Container for Layer instances, handling forward and backward propagation through them.
+     * 
+     * 
      */
     class Sequence : public Model
     {
     protected:
-        std::vector<Model*> layers;
+        const std::vector<Model*> layers;
 
     public:
-        Sequence(std::vector<neuralnet::Model *> layers) : layers(layers){}
+        /** Compose a model from a sequence of smaller models
+         * 
+         * @param Models sequence of models to compose into this one
+        */
+        template<class... Ts>
+        Sequence(Ts&... Models): layers{(&Models)...}{}
 
+        /**
+         * Performs one forward pass, generating output for the complete model.
+         *
+         * @param input data to pass to the input layer
+         * @return output of the final layer
+         */
         Eigen::VectorXd forward(Eigen::VectorXd input);
         
+        /**
+         * Performs one backward pass through each layer
+         *
+         * @param err Output error of the model
+         * @return Error gradient of the input to the model
+         */
         Eigen::VectorXd backward(Eigen::VectorXd error);
 
-        std::vector<double> train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate, int passes);
-
-        std::vector<double> train(std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs, double rate, int passes, double b1, double b2);
-
-        /**
-         * Updates parameters of this layer based on the previously propagated error
-         * @param rate learning rate
-         */
-        void update(double rate){};
-
-        /**
-         * Updates parameters of this layer based on the previously propagated error, using the Adam algorithm
-         * @param rate learning rate
-         * @param b1 first moment decay rate
-         * @param b2 second moment decay rate
-         * @param t current training step
-         */
-        void update(double rate, double b1, double b2, int t){};
+        void update(double rate);
     };
 };
 

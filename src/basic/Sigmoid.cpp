@@ -2,8 +2,7 @@
 
 Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::Sigmoid>::forward(Eigen::VectorXd input)
 {
-    in = input;
-    z = (weights.transpose() * input) + biases;
+    set_z(input);
 
     for (int i = 0; i < z.size(); ++i)
     {
