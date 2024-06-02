@@ -3,7 +3,6 @@
 template<>
 Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::ReLU>::forward(Eigen::VectorXd input)
 {
-    py::print(weights.col(0).format(Eigen::IOFormat(4, 0, ", ", "\n", "", "")));
     py::print("ReLU forward pass");
     set_z(input);
     py::print("Applying ReLU function");

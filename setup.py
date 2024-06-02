@@ -8,8 +8,8 @@ ext_modules = [
         "neuralnet",
         sorted(glob(os.path.join("src","**","*.cpp"), recursive=True)),  # Sort source files for reproducibility
         cxx_std=17,
-        extra_compile_args=['/openmp', '-IC:\\msys64\\mingw64\\include\\eigen3']
-    ),
+        extra_compile_args=['-g', '-DDEBUG', '/openmp', '-IC:\\msys64\\mingw64\\include\\eigen3']
+    )
 ]
 
 setup(

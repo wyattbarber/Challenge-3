@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
+#include <utility>
 
 namespace neuralnet
 {
@@ -60,6 +61,16 @@ namespace neuralnet
         void update(double rate) override { PYBIND11_OVERRIDE(void, ModelBase, update, rate); }
     };
 
+    /** Factory to create new model instances to pass to python
+     *
+     * @tparam ModelType concrete model type to create
+     * @tparam CArgs concrete model constructor argument types
+     */
+    template <class ModelType, typename... CTypes>
+    ModelType* makeModel(CTypes... CArgs)
+    {
+        return new ModelType(CArgs...);
+    }
 }
 
 #endif

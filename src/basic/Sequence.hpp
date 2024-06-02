@@ -17,15 +17,20 @@ namespace neuralnet
     class Sequence : public Model
     {
     protected:
-        const std::vector<Model*> layers;
+        std::vector<Model*> layers;
 
     public:
         /** Compose a model from a sequence of smaller models
          * 
-         * @param Models sequence of models to compose into this one
         */
-        template<class... Ts>
-        Sequence(Ts&... Models): layers{(&Models)...}{}
+        Sequence(py::args args)
+        {
+            for(auto arg = args.begin(); arg != args.end(); ++arg)
+            {
+                void* a = arg->cast<void *>();
+                layers.push_back((Model*)a);
+            }
+        }
 
         /**
          * Performs one forward pass, generating output for the complete model.

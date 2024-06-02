@@ -106,9 +106,7 @@ namespace neuralnet
             for(size_t i = 0; i < weights.cols(); ++i)
             {
                 py::print(i, "th weighted signal, dot ", in.size(), " with ", weights.col(i).size(), " items");
-                py::print(weights.col(i).format(Eigen::IOFormat(4, 0, ", ", "\n", "", "")));
                 double x = in.dot(weights.col(i));
-                py::print(x);
                 z(i) += x;
             }
         }

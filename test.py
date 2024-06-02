@@ -23,9 +23,20 @@ import pickle
 print("Loading pickled data")
 TRAIN_IN, TRAIN_OUT = pickle.load(open('data/mnist_preprocessed.pickle', 'rb'))
 
-print("Training")
-errors = nn.test_results(TRAIN_IN, TRAIN_OUT, 10, 0.00001)
+print("Building Model")
+model = nn.Sequence.new(
+    nn.ReLU.new(len(TRAIN_IN[0]), 500),
+    nn.ReLU.new(500, 300),
+    nn.ReLU.new(300, 300),
+    nn.ReLU.new(300, 100),
+    nn.ReLU.new(100, 50),
+    nn.SoftMax.new(50, 10)
+)
+print(model.forward(TRAIN_IN[0]))
 
-plt.title("Training Error")
-plt.plot(range(len(errors)), errors)
-plt.show()
+print("Training")
+
+
+# plt.title("Training Error")
+# plt.plot(range(len(errors)), errors)
+# plt.show()

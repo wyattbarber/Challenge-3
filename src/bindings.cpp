@@ -1,91 +1,36 @@
-#include "neuralnet.hpp"
+#define PYBIND11_DETAILED_ERROR_MESSAGES
+
+#include "basic/Layer.hpp"
+#include "basic/Sequence.hpp"
+#include "training/Trainer.hpp"
+
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include <pybind11/iostream.h>
 
 namespace py = pybind11;
 using namespace neuralnet;
 
-PYBIND11_MODULE(neuralnet, m){
-    m.doc() ="Various neural network implementations";
+template<class ModelType, typename... CTypes>
+constexpr void bind_model(py::module_& m, const char* pyname)
+{
+    py::class_<ModelType, Model>(m, pyname)
+        .def("new", &makeModel<ModelType, CTypes...>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
+        .def("forward", &ModelType::forward, "Performs a forward pass through the model.", py::return_value_policy::reference); 
+}
+
+PYBIND11_MODULE(neuralnet, m)
+{
+    m.doc() = "Various neural network implementations";
 
     py::class_<Model>(m, "Model");
 
-    py::class_<Layer<ActivationFunc::Linear>, Model>(m, "Linear")
-        .def(py::init<size_t, size_t>());   
-
-    py::class_<Layer<ActivationFunc::ReLU>, Model>(m, "ReLU")
-        .def(py::init<size_t, size_t>());   
-
-    py::class_<Layer<ActivationFunc::Sigmoid>, Model>(m, "Sigmoid")
-        .def(py::init<size_t, size_t>());   
-
-    py::class_<Layer<ActivationFunc::TanH>, Model>(m, "TanH")
-        .def(py::init<size_t, size_t>());   
-
-    py::class_<Layer<ActivationFunc::SoftMax>, Model>(m, "SoftMax")
-        .def(py::init<size_t, size_t>());        
-
-    py::class_<Sequence, Model>(m, "Sequence")
-        .def(py::init<std::vector<Model*>>())
-        .def("train",  py::overload_cast<std::vector<Eigen::VectorXd>, std::vector<Eigen::VectorXd>, double, int>(&Sequence::train), "Performs backpropagation on a set of training data",
-            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-        .def("train",  py::overload_cast<std::vector<Eigen::VectorXd>, std::vector<Eigen::VectorXd>, double, int, double, double>(&Sequence::train), "Performs backpropagation on a set of training data",
-            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-        .def("forward", &Sequence::forward, "Performs a single forward pass through the model",
-            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
-
-    
-
-    // py::class_<Autoencoder>(m, "Autoencoder")
-    //     .def(py::init<size_t, size_t>())
-    //     .def("train", py::overload_cast<Eigen::MatrixXd, double, int>(&Autoencoder::train), "Performs backpropagation on a set of training data",
-    //        py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("train", py::overload_cast<Eigen::MatrixXd, double, int, double, double>(&Autoencoder::train), "Performs backpropagation on a set of training data using the Adam algorithm",
-    //        py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("encode", &Autoencoder::encode, "Transforms a datapoint to latent space",
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("decode", &Autoencoder::decode, "Generates an approximation from a latent representation",
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
-    
-    // py::class_<DeepAutoencoder>(m, "DeepAutoencoder")
-    //     .def(py::init<std::vector<size_t>>())
-    //     .def("train", py::overload_cast<Eigen::MatrixXd, double, int>(&DeepAutoencoder::train), "Performs backpropagation on a set of training data",
-    //        py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("train", py::overload_cast<Eigen::MatrixXd, double, int, double, double>(&DeepAutoencoder::train), "Performs backpropagation on a set of training data using the Adam algorithm",
-    //        py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("encode", &DeepAutoencoder::encode, "Transforms a datapoint to latent space",
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("decode", &DeepAutoencoder::decode, "Generates an approximation from a latent representation",
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
-
-    // py::class_<CoupledAutoencoder>(m, "CoupledAutoencoder")
-    //     .def(py::init<std::vector<size_t>, std::vector<size_t>, size_t>())
-    //     .def("train", py::overload_cast<Eigen::MatrixXd, Eigen::MatrixXd, double, int, double>(&CoupledAutoencoder::train), "Performs backpropagation on a set of training data",
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("train", py::overload_cast<Eigen::MatrixXd, Eigen::MatrixXd, double, int, double, double, double>(&CoupledAutoencoder::train), "Performs backpropagation on a set of training data using the Adam algorithm",
-    //        py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("encode", &CoupledAutoencoder::encode, "Transforms a datapoint to latent space",
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("decode", &CoupledAutoencoder::decode, "Generates an approximation from a latent representation",
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
-
-    // py::class_<VariationalAutoencoder>(m, "VariationalAutoencoder")
-    //     .def(py::init<std::vector<size_t>>())
-    //     .def("train", py::overload_cast<Eigen::MatrixXd, double, int, int>(&VariationalAutoencoder::train), "Performs backpropagation on a set of training data",
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("train", py::overload_cast<Eigen::MatrixXd, double, int, int, double, double>(&VariationalAutoencoder::train), "Performs backpropagation on a set of training data using the Adam algorithm",
-    //        py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("encode", &VariationalAutoencoder::encode, "Transforms a datapoint to latent space",
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("decode", &VariationalAutoencoder::decode, "Generates an approximation from a latent representation",
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
-    
-    // py::class_<DenoisingAutoencoder, DeepAutoencoder>(m, "DenoisingAutoencoder")
-    //     .def(py::init<std::vector<size_t>>())
-    //     .def("train", py::overload_cast<Eigen::MatrixXd, Eigen::MatrixXd, double, int>(&DenoisingAutoencoder::train), "Performs backpropagation on a set of training data",
-    //        py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
-    //     .def("train", py::overload_cast<Eigen::MatrixXd, Eigen::MatrixXd, double, int, double, double>(&DenoisingAutoencoder::train), "Performs backpropagation on a set of training data using the Adam algorithm",
-    //        py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
+    bind_model<Layer<ActivationFunc::Linear>, size_t, size_t>(m, "Linear");
+    bind_model<Layer<ActivationFunc::ReLU>, size_t, size_t>(m, "ReLU");
+    bind_model<Layer<ActivationFunc::Sigmoid>, size_t, size_t>(m, "Sigmoid");
+    bind_model<Layer<ActivationFunc::TanH>, size_t, size_t>(m, "TanH");
+    bind_model<Layer<ActivationFunc::SoftMax>, size_t, size_t>(m, "SoftMax");
+    bind_model<Sequence, py::args>(m, "Sequence");
 }
