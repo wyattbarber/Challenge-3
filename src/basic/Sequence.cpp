@@ -36,3 +36,12 @@ void neuralnet::Sequence::update(double rate)
         (*l)->update(rate);
     }
 }
+
+
+void neuralnet::Sequence::apply_optimizer(optimization::Optimizer& opt)
+{
+    for(auto l = layers.begin(); l != layers.end(); ++l)
+    {
+        (*l)->apply_optimizer(opt);
+    } 
+}

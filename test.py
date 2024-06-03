@@ -24,21 +24,42 @@ import pickle
 
 print("Loading pickled data")
 TRAIN_IN, TRAIN_OUT = pickle.load(open('data/mnist_preprocessed.pickle', 'rb'))
+N = 5
 
-print("Building Model")
+
+# print("Building Model")
+# model = nn.Sequence.new(
+#     nn.ReLU.new(len(TRAIN_IN[0]), 500),
+#     nn.ReLU.new(500, 300),
+#     nn.ReLU.new(300, 300),
+#     nn.ReLU.new(300, 100),
+#     nn.ReLU.new(100, 50),
+#     nn.SoftMax.new(50, 10)
+# )
+
+# print("Training")
+# trainer = nn.Trainer(model, TRAIN_IN, TRAIN_OUT)
+# errors = trainer.train(N, 0.0001)
+
+print("Building Adam Optimized Model")
 model = nn.Sequence.new(
     nn.ReLU.new(len(TRAIN_IN[0]), 500),
     nn.ReLU.new(500, 300),
     nn.ReLU.new(300, 300),
     nn.ReLU.new(300, 100),
     nn.ReLU.new(100, 50),
-    nn.SoftMax.new(50, 10)
+    nn.SoftMax.new(50, 10),
 )
+optimizer = nn.AdamOptimizer.new(0.9, 0.9)
+model.apply_optimizer(optimizer)
 
-print("Training")
+print("Training Optimized Model")
 trainer = nn.Trainer(model, TRAIN_IN, TRAIN_OUT)
-errors = trainer.train(3, 0.001)
+errors_adam = trainer.train(N, 0.0001)
 
 plt.title("Training Error")
-plt.plot(range(len(errors)), errors)
+plt.plot(
+    # range(len(errors)), [round(e, 4) for e in errors], 'r',
+    range(len(errors_adam)), [round(e, 4) for e in errors_adam], 'b'
+    )
 plt.show()

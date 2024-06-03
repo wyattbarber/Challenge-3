@@ -29,6 +29,7 @@ std::vector<double> training::Trainer::train(unsigned N, double rate)
             // Update model
             model.update(rate);
         }
+        py::print("Epoch", iter, "average loss:", e / out_norm);
         avg_err.push_back(e / out_norm);
     }
     return avg_err;

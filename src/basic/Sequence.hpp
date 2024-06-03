@@ -49,6 +49,8 @@ namespace neuralnet
         Eigen::VectorXd backward(Eigen::VectorXd error);
 
         void update(double rate);
+
+        void apply_optimizer(optimization::Optimizer& opt);
     };
 };
 

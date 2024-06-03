@@ -2,15 +2,17 @@
 #define _LAYER_HPP
 
 #include "../Model.hpp"
+#include "../Optimizer.hpp"
 #include <random>
+#include <memory>
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 
 namespace neuralnet
 {
     /** Supported activation functions for simple layers
-     * 
-    */
+     *
+     */
     enum class ActivationFunc
     {
         ReLU,
@@ -21,28 +23,27 @@ namespace neuralnet
     };
 
     /** Basic layer of a neural network
-     * 
+     *
      * @tparam F Enumerated activation function to use in this layer
-    */
-    template<ActivationFunc F>
+     */
+    template <ActivationFunc F>
     class Layer : public Model
     {
 
     public:
         /** Constructs a randomly initialized layer.
-         *  
-         * Weights are initialized using He initialization, and 
+         *
+         * Weights are initialized using He initialization, and
          * biases are initialized to 0.
-         * 
+         *
          * @param in_size size of the input vector to this layer
          * @param out_size size of the output vector from this layer
          */
         Layer(int in_size, int out_size)
         {
             // // Apply he initialization
-            // this->weights = Eigen::MatrixXd::Random(in_size, out_size).unaryExpr([in_size](double x)
-            //                                                                      { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
-            this->weights = Eigen::MatrixXd::Random(in_size, out_size);
+            this->weights = Eigen::MatrixXd::Random(in_size, out_size).unaryExpr([in_size](double x)
+                                                                                 { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
 
             this->biases = Eigen::VectorXd::Zero(out_size);
             this->z = Eigen::VectorXd::Zero(out_size);
@@ -50,11 +51,7 @@ namespace neuralnet
             this->d = Eigen::VectorXd::Zero(out_size);
             this->in = Eigen::VectorXd::Zero(in_size);
 
-            // // Parameters for Adam algorithm
-            // this->m = Eigen::MatrixXd::Zero(in_size, out_size);
-            // this->mb = Eigen::VectorXd::Zero(out_size);
-            // this->v = Eigen::MatrixXd::Zero(in_size, out_size);
-            // this->vb = Eigen::VectorXd::Zero(out_size);
+            this->is_optimized = false;
         }
 
         /**
@@ -76,14 +73,14 @@ namespace neuralnet
          * Updates parameters of this layer based on the previously propagated error
          * @param rate learning rate
          */
-        void update(double rate)
+        void update(double rate);
+
+        void apply_optimizer(optimization::Optimizer& opt)
         {
-            for (int n = 0; n < d.size(); ++n)
-            {
-                weights.col(n) -= rate * d(n) * in;
-            }
-            biases -= rate * d;
-        };
+            this->opt = opt.copy();
+            this->opt->init(this->weights.rows(), this->weights.cols());
+            is_optimized = true;
+        }
 
 
     protected:
@@ -93,22 +90,44 @@ namespace neuralnet
         Eigen::VectorXd a;
         Eigen::VectorXd d;
         Eigen::VectorXd in;
+        Eigen::MatrixXd grad_weight;
 
-        // Eigen::MatrixXd m, v;
-        // Eigen::VectorXd mb, vb;
+        optimization::Optimizer* opt;
+        bool is_optimized;
 
-        void set_z(Eigen::VectorXd& input)
-        {
-            in = {input};
-            z = biases;
-            for(size_t i = 0; i < weights.cols(); ++i)
-            {
-                double x = in.dot(weights.col(i));
-                z(i) += x;
-            }
-        }
+        void set_z(Eigen::VectorXd &input);
     };
 
 };
+
+template <neuralnet::ActivationFunc F>
+void neuralnet::Layer<F>::update(double rate)
+{
+    Eigen::MatrixXd weight_grad = in * d.transpose();
+    py::print(weight_grad.allFinite());
+    py::print(d.size());
+    if(is_optimized)
+    {
+        opt->augment_gradients(weight_grad, d);
+    }
+    py::print("Updating weights");
+    py::print(weight_grad.allFinite());
+    weight_grad *= rate;
+    weights = weights - weight_grad;
+    biases -= rate * d;
+}
+
+template <neuralnet::ActivationFunc F>
+void neuralnet::Layer<F>::set_z(Eigen::VectorXd &input)
+{
+    in = {input};
+    z = biases;
+    z += weights.transpose() * input;
+    // for (size_t i = 0; i < weights.cols(); ++i)
+    // {
+    //     double x = in.dot(weights.col(i));
+    //     z(i) += x;
+    // }
+}
 
 #endif

@@ -5,6 +5,7 @@
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 #include <utility>
+#include "Optimizer.hpp"
 
 namespace neuralnet
 {
@@ -45,6 +46,12 @@ namespace neuralnet
          * @param rate learning rate
          */
         virtual void update(double rate) = 0;
+
+        /** Define an optimization method for the model
+         *
+         * @param opt Optimizer instance to use
+         */
+        virtual void apply_optimizer(optimization::Optimizer& opt) = 0;
     };
 
     /** "Trampoline" class to make pybind11 abstract inheritance work right.
@@ -67,7 +74,7 @@ namespace neuralnet
      * @tparam CArgs concrete model constructor argument types
      */
     template <class ModelType, typename... CTypes>
-    ModelType* makeModel(CTypes... CArgs)
+    ModelType *makeModel(CTypes... CArgs)
     {
         return new ModelType(CArgs...);
     }
