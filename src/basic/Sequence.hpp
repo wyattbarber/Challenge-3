@@ -38,7 +38,7 @@ namespace neuralnet
          * @param input data to pass to the input layer
          * @return output of the final layer
          */
-        Eigen::VectorXd forward(Eigen::VectorXd input);
+        std::shared_ptr<Eigen::VectorXd> forward(Eigen::VectorXd& input);
         
         /**
          * Performs one backward pass through each layer
@@ -46,7 +46,7 @@ namespace neuralnet
          * @param err Output error of the model
          * @return Error gradient of the input to the model
          */
-        Eigen::VectorXd backward(Eigen::VectorXd error);
+        std::shared_ptr<Eigen::VectorXd> backward(Eigen::VectorXd& error);
 
         void update(double rate);
 

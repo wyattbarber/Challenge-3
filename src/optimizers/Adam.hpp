@@ -12,23 +12,22 @@ namespace optimization
         {
             this->b1 = b1;
             this->b2 = b2;
-            this->t = 1;
+            this->b1powt = b1;
+            this->b2powt = b2;
+            this->minusb1 = 1.0 - b1;
+            this->minusb2 = 1.0 - b2;
         }
 
         Optimizer *copy();
 
         void init(size_t in, size_t out);
 
-        /** Applies optimization algorithm in-place to gradients
-         *
-         *
-         */
         void augment_gradients(Eigen::MatrixXd& weight_gradients, Eigen::VectorXd& bias_gradients);
 
+        void reset();
 
     protected:
-        double b1, b2;
-        unsigned t;
+        double b1, b2, minusb1, minusb2, b1powt, b2powt;
         Eigen::MatrixXd m, v;
         Eigen::VectorXd mb, vb;
     };

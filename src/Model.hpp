@@ -5,6 +5,7 @@
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 #include <utility>
+#include <memory>
 #include "Optimizer.hpp"
 
 namespace neuralnet
@@ -22,27 +23,32 @@ namespace neuralnet
          * @param input input vector
          * @return output of this layer
          */
-        virtual Eigen::VectorXd forward(Eigen::VectorXd input) = 0;
+        virtual std::shared_ptr<Eigen::VectorXd> forward(Eigen::VectorXd& input) = 0;
 
         /**
          * Propagates error over this layer, and back over input layers
          *
-         * Gradients for this update should be calculated and stored, but
-         * parameters not updated. Gradients calculated over multiple calls
-         * to this method should be accumulated, to be changed by an update method.
-         *
+         * Error gradients for this pass (or the information needed to
+         * calculate them later) should be calculated and stored in this
+         * method, but the model parameters should not be updated. 
+         * 
+         * Gradients calculated over subsequent calls to this method
+         * should be accumulated.
          *
          * @param error error gradient of layer following this one
          * @return error of the layer preceding this one
          */
-        virtual Eigen::VectorXd backward(Eigen::VectorXd error) = 0;
-
-        // /** Resets gradients accumulated over previous backward passes to 0.
-        //  */
-        // virtual void reset() = 0;
+        virtual std::shared_ptr<Eigen::VectorXd> backward(Eigen::VectorXd& error) = 0;
 
         /**
-         * Updates parameters of this layer based on the previously propagated error
+         * Updates parameters of this layer
+         * 
+         * Error gradients accumulated over previous calls to backwards are
+         * used to update this models weights and biases.
+         * 
+         * If an optimizer has been defined, it is called here
+         * to augment the gradients before applying the update.
+         * 
          * @param rate learning rate
          */
         virtual void update(double rate) = 0;

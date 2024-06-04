@@ -60,14 +60,14 @@ namespace neuralnet
          * @param input input vector
          * @return output of this layer
          */
-        Eigen::VectorXd forward(Eigen::VectorXd input) override;
+        std::shared_ptr<Eigen::VectorXd> forward(Eigen::VectorXd& input) override;
 
         /**
          * Propagates error over this layer, and back over input layers
          * @param error error gradient of following layer
          * @return error of the input layer to this one
          */
-        Eigen::VectorXd backward(Eigen::VectorXd error) override;
+        std::shared_ptr<Eigen::VectorXd> backward(Eigen::VectorXd& error) override;
 
         /**
          * Updates parameters of this layer based on the previously propagated error
@@ -104,16 +104,11 @@ template <neuralnet::ActivationFunc F>
 void neuralnet::Layer<F>::update(double rate)
 {
     Eigen::MatrixXd weight_grad = in * d.transpose();
-    py::print(weight_grad.allFinite());
-    py::print(d.size());
     if(is_optimized)
     {
         opt->augment_gradients(weight_grad, d);
     }
-    py::print("Updating weights");
-    py::print(weight_grad.allFinite());
-    weight_grad *= rate;
-    weights = weights - weight_grad;
+    weights -= rate * weight_grad;
     biases -= rate * d;
 }
 
@@ -123,11 +118,6 @@ void neuralnet::Layer<F>::set_z(Eigen::VectorXd &input)
     in = {input};
     z = biases;
     z += weights.transpose() * input;
-    // for (size_t i = 0; i < weights.cols(); ++i)
-    // {
-    //     double x = in.dot(weights.col(i));
-    //     z(i) += x;
-    // }
 }
 
 #endif

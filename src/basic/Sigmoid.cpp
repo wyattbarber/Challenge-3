@@ -1,6 +1,6 @@
 #include "Layer.hpp"
 
-Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::Sigmoid>::forward(Eigen::VectorXd input)
+std::shared_ptr<Eigen::VectorXd> neuralnet::Layer<neuralnet::ActivationFunc::Sigmoid>::forward(Eigen::VectorXd& input)
 {
     set_z(input);
 
@@ -9,10 +9,10 @@ Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::Sigmoid>::forward(Ei
         a(i) = 1.0 / (1.0 + std::exp(-z(i)));
     }
 
-    return a;
+    return std::make_shared<Eigen::VectorXd>(a);
 }
 
-Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::Sigmoid>::backward(Eigen::VectorXd err)
+std::shared_ptr<Eigen::VectorXd> neuralnet::Layer<neuralnet::ActivationFunc::Sigmoid>::backward(Eigen::VectorXd& err)
 {
     // Calculate this layers error gradient
     d = Eigen::VectorXd::Zero(d.size());
@@ -20,5 +20,5 @@ Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::Sigmoid>::backward(E
     {
         d(i) = err(i) * a(i) * (1.0 - a(i));
     }
-    return weights * d;
+    return std::make_shared<Eigen::VectorXd>(weights * d);
 }

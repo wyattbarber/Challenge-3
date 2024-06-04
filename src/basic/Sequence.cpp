@@ -1,30 +1,25 @@
 #include "Sequence.hpp"
 
 
-Eigen::VectorXd neuralnet::Sequence::forward(Eigen::VectorXd input)
+std::shared_ptr<Eigen::VectorXd> neuralnet::Sequence::forward(Eigen::VectorXd& input)
 {
-    std::vector<Eigen::VectorXd> a;
-    a.push_back(input);
-    for (int l = 0; l < layers.size(); ++l)
+    std::shared_ptr<Eigen::VectorXd> h = std::make_shared<Eigen::VectorXd>(input);
+    for (auto l : layers)
     {
-        Eigen::VectorXd h = layers[l]->forward(a.back());
-        a.push_back(h);
+        h = l->forward(*h);
     }
-    return a.back();
+    return h;
 }
 
 
-Eigen::VectorXd neuralnet::Sequence::backward(Eigen::VectorXd err)
+std::shared_ptr<Eigen::VectorXd> neuralnet::Sequence::backward(Eigen::VectorXd& err)
 {
-    std::vector<Eigen::VectorXd> errors;
-    errors.push_back(err);
-
+    std::shared_ptr<Eigen::VectorXd> e = std::make_shared<Eigen::VectorXd>(err);
     for (int l = layers.size() - 1; l >= 0; --l)
     {
-        errors.push_back(layers[l]->backward(errors.back()));
+        e = layers[l]->backward(*e);
     }
-
-    return errors.back();
+    return e;
 }
 
 

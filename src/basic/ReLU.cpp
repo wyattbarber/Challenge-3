@@ -1,16 +1,16 @@
 #include "Layer.hpp"
 
 template<>
-Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::ReLU>::forward(Eigen::VectorXd input)
+std::shared_ptr<Eigen::VectorXd> neuralnet::Layer<neuralnet::ActivationFunc::ReLU>::forward(Eigen::VectorXd& input)
 {
     set_z(input);
     a = z;
     a.unaryExpr([](double x){ return (x > 0) ? x : 0.0; });
-    return a;
+    return std::make_shared<Eigen::VectorXd>(a);
 }
 
 template<>
-Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::ReLU>::backward(Eigen::VectorXd err)
+std::shared_ptr<Eigen::VectorXd> neuralnet::Layer<neuralnet::ActivationFunc::ReLU>::backward(Eigen::VectorXd& err)
 {
     // Calculate this layers error gradient
     d = Eigen::VectorXd::Zero(d.size());
@@ -21,5 +21,5 @@ Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::ReLU>::backward(Eige
             d(i) = err(i);
         }
     }
-    return weights * d;
+    return std::make_shared<Eigen::VectorXd>(weights * d);
 }

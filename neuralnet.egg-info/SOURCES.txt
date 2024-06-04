@@ -11,5 +11,7 @@ src/basic/Sequence.cpp
 src/basic/Sigmoid.cpp
 src/basic/Softmax.cpp
 src/basic/Tanh.cpp
+src/optimizers/Adam.cpp
+src/training/Trainer.cpp
 test/test_kcae.py
 test/test_neuralnetwork.py

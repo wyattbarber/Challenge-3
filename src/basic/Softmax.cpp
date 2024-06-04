@@ -1,6 +1,8 @@
 #include "Layer.hpp"
 
-Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::SoftMax>::forward(Eigen::VectorXd input)
+
+static const double epsilon = 1e-9; /// Smallest value to allow in denominators, for stability
+std::shared_ptr<Eigen::VectorXd> neuralnet::Layer<neuralnet::ActivationFunc::SoftMax>::forward(Eigen::VectorXd& input)
 {
     set_z(input);
     
@@ -8,13 +10,12 @@ Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::SoftMax>::forward(Ei
     {
         a(i) = std::min(std::exp(z(i)), 1e300);
     }
-
-    a /= (a.array().sum() + 0.0000001);
-
-    return a;
+    a /= abs(a.array().sum()) < epsilon ? (epsilon * (std::signbit(a.array().sum()) ? -1.0 : 1.0)) : a.array().sum();
+    return std::make_shared<Eigen::VectorXd>(a);
 }
 
-Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::SoftMax>::backward(Eigen::VectorXd err)
+
+std::shared_ptr<Eigen::VectorXd> neuralnet::Layer<neuralnet::ActivationFunc::SoftMax>::backward(Eigen::VectorXd& err)
 {
     // Calculate this layers error gradient
     for (int i = 0; i < d.size(); ++i)
@@ -23,5 +24,5 @@ Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::SoftMax>::backward(E
         kd(i) = 1.0;
         d(i) = err.dot(a(i) * (kd - a));
     }
-    return weights * d;
+    return std::make_shared<Eigen::VectorXd>(weights * d);
 }

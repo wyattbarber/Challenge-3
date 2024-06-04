@@ -1,24 +1,23 @@
 #include "Layer.hpp"
 
-Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::TanH>::forward(Eigen::VectorXd input)
+std::shared_ptr<Eigen::VectorXd> neuralnet::Layer<neuralnet::ActivationFunc::TanH>::forward(Eigen::VectorXd& input)
 {
     set_z(input);
-    a = z;
-    a.unaryExpr([](double x){
-        double ex = std::exp(x);
-        double nex = std::exp(-x);
-        return (ex - nex) / (ex + nex);
-    });
-    return a;
+    for (int i = 0; i < z.size(); ++i)
+    {
+        double ex = std::exp(z(i));
+        double nex = std::exp(-z(i));
+        a(i) = (ex - nex) / (ex + nex);
+    }
+    return std::make_shared<Eigen::VectorXd>(a);
 }
 
-Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::TanH>::backward(Eigen::VectorXd err)
+std::shared_ptr<Eigen::VectorXd> neuralnet::Layer<neuralnet::ActivationFunc::TanH>::backward(Eigen::VectorXd& err)
 {
     // Calculate this layers error gradient
-    d = Eigen::VectorXd::Zero(d.size());
     for (int i = 0; i < d.size(); ++i)
     {
         d(i) = err(i) * (1.0 - std::pow(a(i), 2.0));
     }
-    return weights * d;
+    return std::make_shared<Eigen::VectorXd>(weights * d);
 }

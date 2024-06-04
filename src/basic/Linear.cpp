@@ -2,15 +2,16 @@
 
 
 template<>
-Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::Linear>::forward(Eigen::VectorXd input)
+std::shared_ptr<Eigen::VectorXd> neuralnet::Layer<neuralnet::ActivationFunc::Linear>::forward(Eigen::VectorXd& input)
 {
     set_z(input);
     a = z;
-    return a;
+    return  std::make_shared<Eigen::VectorXd>(a);
 }
 
 template<>
-Eigen::VectorXd neuralnet::Layer<neuralnet::ActivationFunc::Linear>::backward(Eigen::VectorXd err)
+std::shared_ptr<Eigen::VectorXd> neuralnet::Layer<neuralnet::ActivationFunc::Linear>::backward(Eigen::VectorXd& err)
 {
-    return weights * d;
+    d = err;
+    return std::make_shared<Eigen::VectorXd>(weights * d);
 }

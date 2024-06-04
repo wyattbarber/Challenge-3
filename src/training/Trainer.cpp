@@ -21,7 +21,7 @@ std::vector<double> training::Trainer::train(unsigned N, double rate)
         {
             // Test forward pass and calculate error for this input set
             Eigen::VectorXd in = inputs[i];
-            Eigen::VectorXd out = model.forward(in);
+            Eigen::VectorXd out = *(model.forward(in));
             Eigen::VectorXd error = out - outputs[i];
             e += error.norm();
             // Run backward pass
