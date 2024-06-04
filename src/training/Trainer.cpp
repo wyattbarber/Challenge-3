@@ -2,7 +2,9 @@
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 
-std::vector<double> training::Trainer::train(unsigned N, double rate)
+
+template<int I, int O, typename T>
+std::vector<double> training::Trainer<I, O, T>::train(unsigned N, double rate)
 {
     std::vector<double> avg_err;
 
@@ -20,9 +22,9 @@ std::vector<double> training::Trainer::train(unsigned N, double rate)
         for (int i = 0; i < inputs.size(); ++i)
         {
             // Test forward pass and calculate error for this input set
-            Eigen::VectorXd in = inputs[i];
-            Eigen::VectorXd out = *(model.forward(in));
-            Eigen::VectorXd error = out - outputs[i];
+            Eigen::Vector<T, I> in = inputs[i];
+            Eigen::Vector<T, O> out = *(model.forward(in));
+            Eigen::Vector<T, O> error = out - outputs[i];
             e += error.norm();
             // Run backward pass
             model.backward(error);

@@ -14,7 +14,8 @@ namespace neuralnet
      * 
      * 
      */
-    class Sequence : public Model
+    template <int I, int O, typename T>
+    class Sequence : public Model<I, O, T>
     {
     protected:
         std::vector<Model*> layers;
@@ -31,6 +32,7 @@ namespace neuralnet
                 layers.push_back((Model*)a);
             }
         }
+        Sequence(std::vector<Model*> args) : layers(args){}
 
         /**
          * Performs one forward pass, generating output for the complete model.
@@ -38,7 +40,7 @@ namespace neuralnet
          * @param input data to pass to the input layer
          * @return output of the final layer
          */
-        std::shared_ptr<Eigen::VectorXd> forward(Eigen::VectorXd& input);
+        std::shared_ptr<Eigen::Vector<T, O>> forward(Eigen::Vector<T, I>& input);
         
         /**
          * Performs one backward pass through each layer
@@ -46,7 +48,7 @@ namespace neuralnet
          * @param err Output error of the model
          * @return Error gradient of the input to the model
          */
-        std::shared_ptr<Eigen::VectorXd> backward(Eigen::VectorXd& error);
+        std::shared_ptr<Eigen::Vector<T, I>> backward(Eigen::Vector<T, O>& error);
 
         void update(double rate);
 

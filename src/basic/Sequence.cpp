@@ -1,7 +1,7 @@
 #include "Sequence.hpp"
 
-
-std::shared_ptr<Eigen::VectorXd> neuralnet::Sequence::forward(Eigen::VectorXd& input)
+template <int I, int O, typename T>
+std::shared_ptr<Eigen::Vector<T, O>> neuralnet::Sequence<I, O, T>::forward(Eigen::Vector<T, I>& input)
 {
     std::shared_ptr<Eigen::VectorXd> h = std::make_shared<Eigen::VectorXd>(input);
     for (auto l : layers)
@@ -12,7 +12,8 @@ std::shared_ptr<Eigen::VectorXd> neuralnet::Sequence::forward(Eigen::VectorXd& i
 }
 
 
-std::shared_ptr<Eigen::VectorXd> neuralnet::Sequence::backward(Eigen::VectorXd& err)
+template <int I, int O, typename T>
+std::shared_ptr<Eigen::Vector<T, I>> neuralnet::Sequence<I, O, T>::backward(Eigen::Vector<T, O>& err)
 {
     std::shared_ptr<Eigen::VectorXd> e = std::make_shared<Eigen::VectorXd>(err);
     for (int l = layers.size() - 1; l >= 0; --l)
@@ -23,8 +24,8 @@ std::shared_ptr<Eigen::VectorXd> neuralnet::Sequence::backward(Eigen::VectorXd& 
 }
 
 
-
-void neuralnet::Sequence::update(double rate)
+template <int I, int O, typename T>
+void neuralnet::Sequence<I, O, T>::update(double rate)
 {
     for(auto l = layers.begin(); l != layers.end(); ++l)
     {
@@ -33,7 +34,8 @@ void neuralnet::Sequence::update(double rate)
 }
 
 
-void neuralnet::Sequence::apply_optimizer(optimization::Optimizer& opt)
+template <int I, int O, typename T>
+void neuralnet::Sequence<I, O, T>::apply_optimizer(optimization::Optimizer& opt)
 {
     for(auto l = layers.begin(); l != layers.end(); ++l)
     {

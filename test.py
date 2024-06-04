@@ -43,6 +43,12 @@ trainer = nn.Trainer(model, TRAIN_IN, TRAIN_OUT)
 errors = trainer.train(N, 0.0001)
 print(f"Training complete in {time.time() - ts} seconds")
 
+print("Training Statically Defined Model")
+ts = time.time()
+trainer = nn.Trainer(nn.StaticModel, TRAIN_IN, TRAIN_OUT)
+errors = trainer.train(N, 0.0001)
+print(f"Training complete in {time.time() - ts} seconds")
+
 print("Building Adam Optimized Model")
 model = nn.Sequence.new(
     nn.ReLU.new(len(TRAIN_IN[0]), 500),

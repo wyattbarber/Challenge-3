@@ -11,6 +11,7 @@ namespace training
     /** Handles training of a model on a dataset
      *
      */
+    template<int I, int O, typename T>
     class Trainer
     {
     public:
@@ -20,7 +21,7 @@ namespace training
          * @param inputs Input dataset for training
          * @param outputs Output dataset for training
          */
-        Trainer(Model& model, std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs) : model(model)
+        Trainer(Model<I, O, T>& model, std::vector<Eigen::Vector<T, I>> inputs, std::vector<Eigen::Vector<T, O>> outputs) : model(model)
         {
             this->inputs = inputs;
             this->outputs = outputs;
@@ -35,8 +36,9 @@ namespace training
         std::vector<double> train(unsigned N, double rate);
 
     protected:
-        Model &model;
-        std::vector<Eigen::VectorXd> inputs, outputs;
+        Model<I, O, T> &model;
+        std::vector<Eigen::Vector<T, I>> inputs; 
+        std::vector<Eigen::Vector<T, O>> outputs;
     };
 
 }

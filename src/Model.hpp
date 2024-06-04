@@ -14,6 +14,7 @@ namespace neuralnet
      *
      * All specific types of layer should inherit from this base class.
      */
+    template<int I, int O, typename T>
     class Model
     {
     public:
@@ -23,7 +24,7 @@ namespace neuralnet
          * @param input input vector
          * @return output of this layer
          */
-        virtual std::shared_ptr<Eigen::VectorXd> forward(Eigen::VectorXd& input) = 0;
+        virtual std::shared_ptr<Eigen::Vector<T, O>> forward(Eigen::Vector<T, I>& input) = 0;
 
         /**
          * Propagates error over this layer, and back over input layers
@@ -38,7 +39,7 @@ namespace neuralnet
          * @param error error gradient of layer following this one
          * @return error of the layer preceding this one
          */
-        virtual std::shared_ptr<Eigen::VectorXd> backward(Eigen::VectorXd& error) = 0;
+        virtual std::shared_ptr<Eigen::Vector<T, I>> backward(Eigen::Vector<T, O>& error) = 0;
 
         /**
          * Updates parameters of this layer
@@ -58,20 +59,6 @@ namespace neuralnet
          * @param opt Optimizer instance to use
          */
         virtual void apply_optimizer(optimization::Optimizer& opt) = 0;
-    };
-
-    /** "Trampoline" class to make pybind11 abstract inheritance work right.
-     *
-     * @tparam ModelBase derived class, to which virtual method calls will be directed to
-     */
-    template <class ModelBase>
-    class PyModel : public ModelBase
-    {
-    public:
-        using ModelBase::ModelBase; // Inherit constructors
-        Eigen::VectorXd forward(Eigen::VectorXd input) override { PYBIND11_OVERRIDE_PURE(Eigen::VectorXd, ModelBase, forward, input); }
-        Eigen::VectorXd backward(Eigen::VectorXd error) override { PYBIND11_OVERRIDE(Eigen::VectorXd, ModelBase, backward, error); }
-        void update(double rate) override { PYBIND11_OVERRIDE(void, ModelBase, update, rate); }
     };
 
     /** Factory to create new model instances to pass to python
