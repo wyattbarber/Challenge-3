@@ -3,6 +3,7 @@
 
 #include "../Model.hpp"
 #include "../Optimizer.hpp"
+#include "Activation.hpp"
 #include <random>
 #include <memory>
 #include <pybind11/pybind11.h>
@@ -10,18 +11,6 @@ namespace py = pybind11;
 
 namespace neuralnet
 {
-    /** Supported activation functions for simple layers
-     *
-     */
-    enum class ActivationFunc
-    {
-        ReLU,
-        Sigmoid,
-        SoftMax,
-        TanH,
-        Linear
-    };
-
     /** Basic layer of a neural network
      *
      * @tparam F Enumerated activation function to use in this layer
@@ -72,11 +61,53 @@ namespace neuralnet
 
         optimization::Optimizer *opt;
         bool is_optimized;
-
-        void set_z(Eigen::Vector<T, I> &input);
     };
 
 }
 
+
+template <int I, int O, typename T, neuralnet::ActivationFunc F>
+void neuralnet::Layer<I, O, T, F>::update(double rate)
+{
+    Eigen::Matrix<T, I, O> weight_grad = in * d.transpose();
+    if (is_optimized)
+    {
+        opt->augment_gradients(weight_grad, d);
+    }
+    weights -= rate * weight_grad;
+    biases -= rate * d;
+}
+
+template <int I, int O, typename T, neuralnet::ActivationFunc F>
+void neuralnet::Layer<I, O, T, F>::apply_optimizer(optimization::Optimizer &opt)
+{
+    this->opt = opt.copy();
+    if ((I != Eigen::Dynamic) && (O != Eigen::Dynamic))
+        this->opt->init(I, O);
+    else
+        this->opt->init(weights.rows(), weights.cols());
+    is_optimized = true;
+}
+
+template <int I, int O, typename T, neuralnet::ActivationFunc F>
+std::shared_ptr<Eigen::Vector<T, O>> neuralnet::Layer<I, O, T, F>::forward(Eigen::Vector<T, I> &input)
+{
+    // Save input for this pass and calculate weighted signals
+    in = {input};
+    z = biases;
+    z += weights.transpose() * input;
+    // Calculate and save activation function output
+    a = neuralnet::activation<F>(z);
+    return std::make_shared<Eigen::Vector<T, O>>(a);
+}
+
+template <int I, int O, typename T, neuralnet::ActivationFunc F>
+std::shared_ptr<Eigen::Vector<T, I>> neuralnet::Layer<I, O, T, F>::backward(Eigen::Vector<T, O> &err)
+{
+    // Calculate this layers error gradient
+    d = neuralnet::d_activation<F>(z, a, err);
+    // Calculate and return error gradient input to next layer
+    return std::make_shared<Eigen::Vector<T, I>>(weights * d);
+}
 
 #endif

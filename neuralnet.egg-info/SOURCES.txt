@@ -5,13 +5,6 @@ neuralnet.egg-info/SOURCES.txt
 neuralnet.egg-info/dependency_links.txt
 neuralnet.egg-info/top_level.txt
 src/bindings.cpp
-src/basic/Linear.cpp
-src/basic/ReLU.cpp
-src/basic/Sequence.cpp
-src/basic/Sigmoid.cpp
-src/basic/Softmax.cpp
-src/basic/Tanh.cpp
 src/optimizers/Adam.cpp
-src/training/Trainer.cpp
 test/test_kcae.py
 test/test_neuralnetwork.py

@@ -1,6 +1,6 @@
 #define PYBIND11_DETAILED_ERROR_MESSAGES
 
-#include "basic/Layer_impl.hpp"
+#include "basic/Layer.hpp"
 #include "basic/Sequence.hpp"
 #include "training/Trainer.hpp"
 #include "optimizers/Adam.hpp"
