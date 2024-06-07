@@ -43,9 +43,9 @@ namespace neuralnet
             this->is_optimized = false;
         }
 
-        std::shared_ptr<Eigen::Vector<T, O>> forward(Eigen::Vector<T, I> &input);
+        Eigen::Vector<T, O> forward(Eigen::Vector<T, I> &input);
 
-        std::shared_ptr<Eigen::Vector<T, I>> backward(Eigen::Vector<T, O> &error);
+        Eigen::Vector<T, I> backward(Eigen::Vector<T, O> &error);
 
         void update(double rate);
 
@@ -61,6 +61,7 @@ namespace neuralnet
 
         optimization::Optimizer *opt;
         bool is_optimized;
+        Activation<O, T, F> activation;
     };
 
 }
@@ -72,7 +73,7 @@ void neuralnet::Layer<I, O, T, F>::update(double rate)
     Eigen::Matrix<T, I, O> weight_grad = in * d.transpose();
     if (is_optimized)
     {
-        opt->augment_gradients(weight_grad, d);
+        opt->augment_gradients(static_cast<Eigen::MatrixXd&>(weight_grad), static_cast<Eigen::VectorXd&>(d));
     }
     weights -= rate * weight_grad;
     biases -= rate * d;
@@ -90,24 +91,24 @@ void neuralnet::Layer<I, O, T, F>::apply_optimizer(optimization::Optimizer &opt)
 }
 
 template <int I, int O, typename T, neuralnet::ActivationFunc F>
-std::shared_ptr<Eigen::Vector<T, O>> neuralnet::Layer<I, O, T, F>::forward(Eigen::Vector<T, I> &input)
+Eigen::Vector<T, O> neuralnet::Layer<I, O, T, F>::forward(Eigen::Vector<T, I> &input)
 {
     // Save input for this pass and calculate weighted signals
     in = {input};
     z = biases;
     z += weights.transpose() * input;
     // Calculate and save activation function output
-    a = neuralnet::activation<F>(z);
-    return std::make_shared<Eigen::Vector<T, O>>(a);
+    a = activation.f(z);
+    return a;
 }
 
 template <int I, int O, typename T, neuralnet::ActivationFunc F>
-std::shared_ptr<Eigen::Vector<T, I>> neuralnet::Layer<I, O, T, F>::backward(Eigen::Vector<T, O> &err)
+Eigen::Vector<T, I> neuralnet::Layer<I, O, T, F>::backward(Eigen::Vector<T, O> &err)
 {
     // Calculate this layers error gradient
-    d = neuralnet::d_activation<F>(z, a, err);
+    d = activation.df(z, a, err);
     // Calculate and return error gradient input to next layer
-    return std::make_shared<Eigen::Vector<T, I>>(weights * d);
+    return weights * d;
 }
 
 #endif

@@ -18,7 +18,7 @@ namespace neuralnet
     class Sequence : public Model<I, O, T>
     {
     protected:
-        std::vector<Model*> layers;
+        std::vector<ModelBase*> layers;
 
     public:
         /** Compose a model from a sequence of smaller models
@@ -29,10 +29,9 @@ namespace neuralnet
             for(auto arg = args.begin(); arg != args.end(); ++arg)
             {
                 void* a = arg->cast<void *>();
-                layers.push_back((Model*)a);
+                layers.push_back((ModelBase*)a);
             }
         }
-        Sequence(std::vector<Model*> args) : layers(args){}
 
         /**
          * Performs one forward pass, generating output for the complete model.
@@ -40,7 +39,7 @@ namespace neuralnet
          * @param input data to pass to the input layer
          * @return output of the final layer
          */
-        std::shared_ptr<Eigen::Vector<T, O>> forward(Eigen::Vector<T, I>& input);
+        Eigen::Vector<T, O> forward(Eigen::Vector<T, I>& input);
         
         /**
          * Performs one backward pass through each layer
@@ -48,7 +47,7 @@ namespace neuralnet
          * @param err Output error of the model
          * @return Error gradient of the input to the model
          */
-        std::shared_ptr<Eigen::Vector<T, I>> backward(Eigen::Vector<T, O>& error);
+        Eigen::Vector<T, I> backward(Eigen::Vector<T, O>& error);
 
         void update(double rate);
 
@@ -57,24 +56,24 @@ namespace neuralnet
 };
 
 template <int I, int O, typename T>
-std::shared_ptr<Eigen::Vector<T, O>> neuralnet::Sequence<I, O, T>::forward(Eigen::Vector<T, I>& input)
+Eigen::Vector<T, O> neuralnet::Sequence<I, O, T>::forward(Eigen::Vector<T, I>& input)
 {
-    std::shared_ptr<Eigen::VectorXd> h = std::make_shared<Eigen::VectorXd>(input);
+    Eigen::VectorXd h = input;
     for (auto l : layers)
     {
-        h = l->forward(*h);
+        h = l->forward(h);
     }
     return h;
 }
 
 
 template <int I, int O, typename T>
-std::shared_ptr<Eigen::Vector<T, I>> neuralnet::Sequence<I, O, T>::backward(Eigen::Vector<T, O>& err)
+Eigen::Vector<T, I> neuralnet::Sequence<I, O, T>::backward(Eigen::Vector<T, O>& err)
 {
-    std::shared_ptr<Eigen::VectorXd> e = std::make_shared<Eigen::VectorXd>(err);
+    Eigen::VectorXd e = err;
     for (int l = layers.size() - 1; l >= 0; --l)
     {
-        e = layers[l]->backward(*e);
+        e = layers[l]->backward(e);
     }
     return e;
 }

@@ -65,7 +65,7 @@ std::vector<double> training::Trainer<I, O, T>::train(unsigned N, double rate)
         {
             // Test forward pass and calculate error for this input set
             Eigen::Vector<T, I> in = inputs[i];
-            Eigen::Vector<T, O> out = *(model.forward(in));
+            Eigen::Vector<T, O> out = model.forward(in);
             Eigen::Vector<T, O> error = out - outputs[i];
             e += error.norm();
             // Run backward pass

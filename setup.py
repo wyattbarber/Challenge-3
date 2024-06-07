@@ -7,7 +7,7 @@ ext_modules = [
     Pybind11Extension(
         "neuralnet",
         sorted(glob(os.path.join("src","**","*.cpp"), recursive=True)),  # Sort source files for reproducibility
-        cxx_std=17,
+        cxx_std=20,
         extra_compile_args=['-O2', '/openmp', '-IC:\\msys64\\mingw64\\include\\eigen3']
     )
 ]
