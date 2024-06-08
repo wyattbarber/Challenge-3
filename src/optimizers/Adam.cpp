@@ -31,31 +31,24 @@ void optimization::Adam::reset()
 }
 
 
-static const double epsilon = 1e-9; /// Smallest value to allow in denominators, for stability
 void optimization::Adam::augment_gradients(Eigen::MatrixXd& weight_gradients, Eigen::VectorXd& bias_gradients)
 {
     double decay1 = 1.0 - b1powt;
     double decay2 = 1.0 - b2powt;
 
     // Update weight moments
-    m *= b1;
-    m += minusb1 * weight_gradients;
-    v *= b2;
-    v += minusb2 * weight_gradients.cwiseAbs2();
+    m = (b1 * m) + (minusb1 * weight_gradients);
+    v = (b2 * v) + (minusb2 * weight_gradients.cwiseProduct(weight_gradients));
     Eigen::MatrixXd mhat = m / decay1;
     Eigen::MatrixXd vhat = (v / decay2).cwiseSqrt();
-    vhat.unaryExpr([](double x){return 1.0 / (abs(x) < epsilon ? (epsilon * (std::signbit(x) ? -1.0 : 1.0)) : x);});
-    weight_gradients = mhat.cwiseProduct(vhat);
+    weight_gradients = mhat.cwiseQuotient(vhat.unaryExpr([epsilon = epsilon](double x){return x + epsilon;}));
 
     // Update bias moments
-    mb *= b1;
-    mb += minusb1 * bias_gradients;
-    vb *= b2;
-    vb += minusb2 * bias_gradients.cwiseAbs2();
+    mb = (b1 * mb) + (minusb1 * bias_gradients);
+    vb = (b2 * vb) + (minusb2 * bias_gradients.cwiseProduct(bias_gradients));
     Eigen::VectorXd mhat_b = mb / decay1;
     Eigen::VectorXd vhat_b = (vb / decay2).cwiseSqrt();
-    vhat.unaryExpr([](double x){return 1.0 / (abs(x) < epsilon ? (epsilon * (std::signbit(x) ? -1.0 : 1.0)) : x);});
-    bias_gradients = mhat_b.cwiseProduct(vhat_b);
+    bias_gradients = mhat_b.cwiseQuotient(vhat_b.unaryExpr([epsilon = epsilon](double x){return x + epsilon;}));
 
     // Increment exponential decays
     b1powt *= b1;

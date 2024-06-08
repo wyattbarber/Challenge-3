@@ -8,7 +8,7 @@ namespace optimization
     class Adam : public Optimizer
     {
     public:
-        Adam(double b1, double b2)
+        Adam(double b1, double b2, double epsilon = 1e-9)
         {
             this->b1 = b1;
             this->b2 = b2;
@@ -16,6 +16,7 @@ namespace optimization
             this->b2powt = b2;
             this->minusb1 = 1.0 - b1;
             this->minusb2 = 1.0 - b2;
+            this->epsilon = epsilon;
         }
 
         Optimizer *copy();
@@ -28,6 +29,7 @@ namespace optimization
 
     protected:
         double b1, b2, minusb1, minusb2, b1powt, b2powt;
+        double epsilon;
         Eigen::MatrixXd m, v;
         Eigen::VectorXd mb, vb;
     };

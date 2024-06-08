@@ -2,7 +2,7 @@ import neuralnet as nn
 # Import other libraries
 import matplotlib.pyplot as plt
 import numpy as np
-np.random.seed(123)
+# np.random.seed(123)
 import pickle
 import time
 
