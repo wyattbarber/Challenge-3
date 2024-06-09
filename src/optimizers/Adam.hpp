@@ -1,38 +1,35 @@
 #ifndef _ADAM_HPP
 #define _ADAM_HPP
 
-#include "../Optimizer.hpp"
-
-namespace optimization
+template <int I, int O, typename T>
+void adam_update_params(double rate, double b1, double &b1powt, double b2, double &b2powt,
+                        Eigen::Matrix<T, I, O> &m, Eigen::Matrix<T, I, O> &v, Eigen::Vector<T, O> &mb, Eigen::Vector<T, O> &vb,
+                        Eigen::Matrix<T, I, O> &weights, Eigen::Vector<T, O> &biases, Eigen::Vector<T, I>& in, Eigen::Vector<T, O>& out, Eigen::Vector<T, O>& error_gradient)
 {
-    class Adam : public Optimizer
-    {
-    public:
-        Adam(double b1, double b2, double epsilon = 1e-9)
-        {
-            this->b1 = b1;
-            this->b2 = b2;
-            this->b1powt = b1;
-            this->b2powt = b2;
-            this->minusb1 = 1.0 - b1;
-            this->minusb2 = 1.0 - b2;
-            this->epsilon = epsilon;
-        }
+    const double epsilon = 1e-9;
+    double decay1 = 1.0 - b1powt;
+    double decay2 = 1.0 - b2powt;
 
-        Optimizer *copy();
+    // Update weight moments
+    Eigen::Matrix<T, I, O> weight_gradients = in * error_gradient.transpose();
+    m = (b1 * m) + ((1.0 - b1) * weight_gradients);
+    v = (b2 * v) + ((1.0 - b2) * weight_gradients.cwiseProduct(weight_gradients));
+    Eigen::Matrix<T, I, O> mhat = m / decay1;
+    Eigen::Matrix<T, I, O> vhat = (v / decay2).cwiseSqrt();
+    weights -= rate * mhat.cwiseQuotient(vhat.unaryExpr([epsilon = epsilon](double x)
+                                                        { return x + epsilon; }));
 
-        void init(size_t in, size_t out);
+    // Update bias moments
+    mb = (b1 * mb) + ((1.0 - b1) * error_gradient);
+    vb = (b2 * vb) + ((1.0 - b2) * error_gradient.cwiseProduct(error_gradient));
+    Eigen::Vector<T, O> mhat_b = mb / decay1;
+    Eigen::Vector<T, O> vhat_b = (vb / decay2).cwiseSqrt();
+    biases -= rate * mhat_b.cwiseQuotient(vhat_b.unaryExpr([epsilon = epsilon](double x)
+                                                           { return x + epsilon; }));
 
-        void augment_gradients(Eigen::MatrixXd& weight_gradients, Eigen::VectorXd& bias_gradients);
-
-        void reset();
-
-    protected:
-        double b1, b2, minusb1, minusb2, b1powt, b2powt;
-        double epsilon;
-        Eigen::MatrixXd m, v;
-        Eigen::VectorXd mb, vb;
-    };
+    // Increment exponential decays
+    b1powt *= b1;
+    b2powt *= b2;
 }
 
 #endif

@@ -5,6 +5,5 @@ neuralnet.egg-info/SOURCES.txt
 neuralnet.egg-info/dependency_links.txt
 neuralnet.egg-info/top_level.txt
 src/bindings.cpp
-src/optimizers/Adam.cpp
 test/test_kcae.py
 test/test_neuralnetwork.py

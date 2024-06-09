@@ -6,7 +6,6 @@
 namespace py = pybind11;
 #include <utility>
 #include <memory>
-#include "Optimizer.hpp"
 
 namespace neuralnet
 {
@@ -48,12 +47,6 @@ namespace neuralnet
          * @param rate learning rate
          */
         virtual void update(double rate) = 0;
-
-        /** Define an optimization method for the model
-         *
-         * @param opt Optimizer instance to use
-         */
-        virtual void apply_optimizer(optimization::Optimizer &opt) = 0;
     };
 
     /** Abstract class defining basic behavior for neural network components
@@ -99,12 +92,6 @@ namespace neuralnet
          * @param rate learning rate
          */
         virtual void update(double rate) = 0;
-
-        /** Define an optimization method for the model
-         *
-         * @param opt Optimizer instance to use
-         */
-        virtual void apply_optimizer(optimization::Optimizer &opt) = 0;
     };
 
     /** Factory to create new model instances to pass to python

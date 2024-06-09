@@ -2,12 +2,14 @@
 #define _LAYER_HPP
 
 #include "../Model.hpp"
-#include "../Optimizer.hpp"
+#include "../optimizers/Optimizer.hpp"
 #include "Activation.hpp"
 #include <random>
 #include <memory>
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
+
+using namespace optimization;
 
 namespace neuralnet
 {
@@ -15,7 +17,7 @@ namespace neuralnet
      *
      * @tparam F Enumerated activation function to use in this layer
      */
-    template <int I, int O, typename T, ActivationFunc F>
+    template <int I, int O, typename T, ActivationFunc F, OptimizerClass C>
     class Layer : public Model<I, O, T>
     {
 
@@ -28,7 +30,8 @@ namespace neuralnet
          * @param in_size size of the input vector to this layer
          * @param out_size size of the output vector from this layer
          */
-        Layer(int in_size = I, int out_size = O)
+        template<typename... Ts>
+        Layer(int in_size, int out_size, Ts... OptArgs)
         {
             // // Apply he initialization
             this->weights = Eigen::Matrix<T, I, O>::Random(in_size, out_size).unaryExpr([in_size](double x)
@@ -40,7 +43,27 @@ namespace neuralnet
             this->d = Eigen::Vector<T, O>::Zero(out_size);
             this->in = Eigen::Vector<T, I>::Zero(in_size);
 
-            this->is_optimized = false;
+            auto args = std::tuple<Ts...>(OptArgs...);
+            switch(C)
+            {
+                case OptimizerClass::Adam:
+                {
+                    m = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
+                    v = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
+                    mb = Eigen::Vector<T, O>::Zero(out_size);
+                    vb = Eigen::Vector<T, O>::Zero(out_size);
+
+                    b1 = std::get<0>(args);
+                    b1powt = b1;
+                    b2 = std::get<1>(args);
+                    b2powt = b2;
+                    break;
+                }
+                default: 
+                {
+                    break;
+                }
+            }
         }
 
         Eigen::Vector<T, O> forward(Eigen::Vector<T, I> &input);
@@ -48,8 +71,6 @@ namespace neuralnet
         Eigen::Vector<T, I> backward(Eigen::Vector<T, O> &error);
 
         void update(double rate);
-
-        void apply_optimizer(optimization::Optimizer &opt);
 
     protected:
         Eigen::Matrix<T, I, O> weights;
@@ -59,39 +80,38 @@ namespace neuralnet
         Eigen::Vector<T, O> d;
         Eigen::Vector<T, I> in;
 
-        optimization::Optimizer *opt;
-        bool is_optimized;
         Activation<O, T, F> activation;
+
+        // Data for adam optimization
+        Eigen::Matrix<T, I, O> m, v;
+        Eigen::Vector<T, O> mb, vb;
+        double b1, b2, b1powt, b2powt;
     };
 
 }
 
-
-template <int I, int O, typename T, neuralnet::ActivationFunc F>
-void neuralnet::Layer<I, O, T, F>::update(double rate)
+template <int I, int O, typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+void neuralnet::Layer<I, O, T, F, C>::update(double rate)
 {
-    Eigen::Matrix<T, I, O> weight_grad = in * d.transpose();
-    if (is_optimized)
+    switch(C)
     {
-        opt->augment_gradients(static_cast<Eigen::MatrixXd&>(weight_grad), static_cast<Eigen::VectorXd&>(d));
+        case OptimizerClass::Adam:
+        {
+            adam_update_params<I, O, T>(rate, b1, b1powt, b2, b2powt, m, v, mb, vb, weights, biases, in, a, d);
+            break;
+        }
+        default:
+        {
+            weights -= in * (d.transpose() * rate);
+            biases -= rate * d;
+            break;
+        }
+
     }
-    weights -= rate * weight_grad;
-    biases -= rate * d;
 }
 
-template <int I, int O, typename T, neuralnet::ActivationFunc F>
-void neuralnet::Layer<I, O, T, F>::apply_optimizer(optimization::Optimizer &opt)
-{
-    this->opt = opt.copy();
-    if ((I != Eigen::Dynamic) && (O != Eigen::Dynamic))
-        this->opt->init(I, O);
-    else
-        this->opt->init(weights.rows(), weights.cols());
-    is_optimized = true;
-}
-
-template <int I, int O, typename T, neuralnet::ActivationFunc F>
-Eigen::Vector<T, O> neuralnet::Layer<I, O, T, F>::forward(Eigen::Vector<T, I> &input)
+template <int I, int O, typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+Eigen::Vector<T, O> neuralnet::Layer<I, O, T, F, C>::forward(Eigen::Vector<T, I> &input)
 {
     // Save input for this pass and calculate weighted signals
     in = {input};
@@ -102,8 +122,8 @@ Eigen::Vector<T, O> neuralnet::Layer<I, O, T, F>::forward(Eigen::Vector<T, I> &i
     return a;
 }
 
-template <int I, int O, typename T, neuralnet::ActivationFunc F>
-Eigen::Vector<T, I> neuralnet::Layer<I, O, T, F>::backward(Eigen::Vector<T, O> &err)
+template <int I, int O, typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+Eigen::Vector<T, I> neuralnet::Layer<I, O, T, F, C>::backward(Eigen::Vector<T, O> &err)
 {
     // Calculate this layers error gradient
     d = activation.df(z, a, err);

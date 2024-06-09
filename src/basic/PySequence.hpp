@@ -15,7 +15,7 @@ namespace neuralnet
      * 
      */
     template <int I, int O, typename T>
-    class Sequence : public Model<I, O, T>
+    class PySequence : public Model<I, O, T>
     {
     protected:
         std::vector<ModelBase*> layers;
@@ -24,7 +24,7 @@ namespace neuralnet
         /** Compose a model from a sequence of smaller models
          * 
         */
-        Sequence(py::args args)
+        PySequence(py::args args)
         {
             for(auto arg = args.begin(); arg != args.end(); ++arg)
             {
@@ -50,13 +50,11 @@ namespace neuralnet
         Eigen::Vector<T, I> backward(Eigen::Vector<T, O>& error);
 
         void update(double rate);
-
-        void apply_optimizer(optimization::Optimizer& opt);
     };
 };
 
 template <int I, int O, typename T>
-Eigen::Vector<T, O> neuralnet::Sequence<I, O, T>::forward(Eigen::Vector<T, I>& input)
+Eigen::Vector<T, O> neuralnet::PySequence<I, O, T>::forward(Eigen::Vector<T, I>& input)
 {
     Eigen::VectorXd h = input;
     for (auto l : layers)
@@ -68,7 +66,7 @@ Eigen::Vector<T, O> neuralnet::Sequence<I, O, T>::forward(Eigen::Vector<T, I>& i
 
 
 template <int I, int O, typename T>
-Eigen::Vector<T, I> neuralnet::Sequence<I, O, T>::backward(Eigen::Vector<T, O>& err)
+Eigen::Vector<T, I> neuralnet::PySequence<I, O, T>::backward(Eigen::Vector<T, O>& err)
 {
     Eigen::VectorXd e = err;
     for (int l = layers.size() - 1; l >= 0; --l)
@@ -80,7 +78,7 @@ Eigen::Vector<T, I> neuralnet::Sequence<I, O, T>::backward(Eigen::Vector<T, O>& 
 
 
 template <int I, int O, typename T>
-void neuralnet::Sequence<I, O, T>::update(double rate)
+void neuralnet::PySequence<I, O, T>::update(double rate)
 {
     for(auto l = layers.begin(); l != layers.end(); ++l)
     {
@@ -88,15 +86,6 @@ void neuralnet::Sequence<I, O, T>::update(double rate)
     }
 }
 
-
-template <int I, int O, typename T>
-void neuralnet::Sequence<I, O, T>::apply_optimizer(optimization::Optimizer& opt)
-{
-    for(auto l = layers.begin(); l != layers.end(); ++l)
-    {
-        (*l)->apply_optimizer(opt);
-    } 
-}
 
 
 #endif
