@@ -1,5 +1,5 @@
-#ifndef _SEQUENCE_HPP
-#define _SEQUENCE_HPP
+#ifndef _PYSEQUENCE_HPP
+#define _PYSEQUENCE_HPP
 
 #include "../Model.hpp"
 #include <random>
@@ -14,11 +14,11 @@ namespace neuralnet
      * 
      * 
      */
-    template <int I, int O, typename T>
-    class PySequence : public Model<I, O, T>
+    template <typename T>
+    class PySequence : public Model<Eigen::Dynamic, Eigen::Dynamic, T>
     {
     protected:
-        std::vector<ModelBase*> layers;
+        std::vector<Model<Eigen::Dynamic, Eigen::Dynamic, T>*> layers;
 
     public:
         /** Compose a model from a sequence of smaller models
@@ -29,7 +29,7 @@ namespace neuralnet
             for(auto arg = args.begin(); arg != args.end(); ++arg)
             {
                 void* a = arg->cast<void *>();
-                layers.push_back((ModelBase*)a);
+                layers.push_back((Model<Eigen::Dynamic, Eigen::Dynamic, T>*)a);
             }
         }
 
@@ -39,7 +39,7 @@ namespace neuralnet
          * @param input data to pass to the input layer
          * @return output of the final layer
          */
-        Eigen::Vector<T, O> forward(Eigen::Vector<T, I>& input);
+        Eigen::Vector<T, Eigen::Dynamic> forward(Eigen::Vector<T, Eigen::Dynamic>& input);
         
         /**
          * Performs one backward pass through each layer
@@ -47,14 +47,14 @@ namespace neuralnet
          * @param err Output error of the model
          * @return Error gradient of the input to the model
          */
-        Eigen::Vector<T, I> backward(Eigen::Vector<T, O>& error);
+        Eigen::Vector<T, Eigen::Dynamic> backward(Eigen::Vector<T, Eigen::Dynamic>& error);
 
         void update(double rate);
     };
 };
 
-template <int I, int O, typename T>
-Eigen::Vector<T, O> neuralnet::PySequence<I, O, T>::forward(Eigen::Vector<T, I>& input)
+template <typename T>
+Eigen::Vector<T, Eigen::Dynamic> neuralnet::PySequence<T>::forward(Eigen::Vector<T, Eigen::Dynamic>& input)
 {
     Eigen::VectorXd h = input;
     for (auto l : layers)
@@ -65,8 +65,8 @@ Eigen::Vector<T, O> neuralnet::PySequence<I, O, T>::forward(Eigen::Vector<T, I>&
 }
 
 
-template <int I, int O, typename T>
-Eigen::Vector<T, I> neuralnet::PySequence<I, O, T>::backward(Eigen::Vector<T, O>& err)
+template <typename T>
+Eigen::Vector<T, Eigen::Dynamic> neuralnet::PySequence<T>::backward(Eigen::Vector<T, Eigen::Dynamic>& err)
 {
     Eigen::VectorXd e = err;
     for (int l = layers.size() - 1; l >= 0; --l)
@@ -77,8 +77,8 @@ Eigen::Vector<T, I> neuralnet::PySequence<I, O, T>::backward(Eigen::Vector<T, O>
 }
 
 
-template <int I, int O, typename T>
-void neuralnet::PySequence<I, O, T>::update(double rate)
+template <typename T>
+void neuralnet::PySequence<T>::update(double rate)
 {
     for(auto l = layers.begin(); l != layers.end(); ++l)
     {

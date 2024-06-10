@@ -30,10 +30,24 @@ namespace neuralnet
          * @param in_size size of the input vector to this layer
          * @param out_size size of the output vector from this layer
          */
-        template<typename... Ts>
-        Layer(int in_size, int out_size, Ts... OptArgs)
+        template <typename... Ts>
+        Layer(Ts... Args)
         {
-            // // Apply he initialization
+            auto args = std::tuple<Ts...>(Args...);
+
+            int in_size, out_size;
+            if constexpr ((I == Eigen::Dynamic) || (O == Eigen::Dynamic))
+            {
+                in_size = std::get<0>(args);
+                out_size = std::get<1>(args);
+            }
+            else
+            {
+                in_size = I;
+                out_size = O;
+            }
+
+            // Apply he initialization
             this->weights = Eigen::Matrix<T, I, O>::Random(in_size, out_size).unaryExpr([in_size](double x)
                                                                                         { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
 
@@ -43,26 +57,25 @@ namespace neuralnet
             this->d = Eigen::Vector<T, O>::Zero(out_size);
             this->in = Eigen::Vector<T, I>::Zero(in_size);
 
-            auto args = std::tuple<Ts...>(OptArgs...);
-            switch(C)
+            if constexpr (C == OptimizerClass::Adam)
             {
-                case OptimizerClass::Adam:
-                {
-                    m = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
-                    v = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
-                    mb = Eigen::Vector<T, O>::Zero(out_size);
-                    vb = Eigen::Vector<T, O>::Zero(out_size);
+                m = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
+                v = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
+                mb = Eigen::Vector<T, O>::Zero(out_size);
+                vb = Eigen::Vector<T, O>::Zero(out_size);
 
-                    b1 = std::get<0>(args);
-                    b1powt = b1;
-                    b2 = std::get<1>(args);
-                    b2powt = b2;
-                    break;
-                }
-                default: 
+                if constexpr ((I == Eigen::Dynamic) || (O == Eigen::Dynamic))
                 {
-                    break;
+                    b1 = std::get<2>(args);
+                    b2 = std::get<3>(args);
                 }
+                else
+                {
+                    b1 = std::get<0>(args);
+                    b2 = std::get<1>(args);
+                }
+                b1powt = b1;
+                b2powt = b2;
             }
         }
 
@@ -87,26 +100,21 @@ namespace neuralnet
         Eigen::Vector<T, O> mb, vb;
         double b1, b2, b1powt, b2powt;
     };
-
 }
 
 template <int I, int O, typename T, neuralnet::ActivationFunc F, OptimizerClass C>
 void neuralnet::Layer<I, O, T, F, C>::update(double rate)
 {
-    switch(C)
+    if constexpr (C == OptimizerClass::Adam)
     {
-        case OptimizerClass::Adam:
-        {
-            adam_update_params<I, O, T>(rate, b1, b1powt, b2, b2powt, m, v, mb, vb, weights, biases, in, a, d);
-            break;
-        }
-        default:
-        {
-            weights -= in * (d.transpose() * rate);
-            biases -= rate * d;
-            break;
-        }
-
+        py::print("Running adam update");
+        adam_update_params<I, O, T>(rate, b1, b1powt, b2, b2powt, m, v, mb, vb, weights, biases, in, a, d);
+    }
+    else
+    {
+        py::print("Running unoptimized update");
+        weights -= in * (d.transpose() * rate);
+        biases -= rate * d;
     }
 }
 

@@ -1,7 +1,8 @@
-#define PYBIND11_DETAILED_ERROR_MESSAGES
+#define EIGEN_STACK_ALLOCATION_LIMIT 100000000
 
 #include "basic/Layer.hpp"
 #include "basic/PySequence.hpp"
+#include "basic/Compound.hpp"
 // #include "basic/StaticPySequence.hpp"
 #include "training/Trainer.hpp"
 #include "optimizers/Optimizer.hpp"
@@ -17,48 +18,87 @@ namespace py = pybind11;
 using namespace neuralnet;
 using namespace optimization;
 
-// auto model(bool optimized)
-// {
-//     auto s = StaticPySequence<784, 10, double>(Layer<784, 500, double, ActivationFunc::ReLU, OptimizerClass::Adam>(),
-//                                              Layer<500, 300, double, ActivationFunc::ReLU, OptimizerClass::Adam>(),
-//                                              Layer<300, 300, double, ActivationFunc::ReLU, OptimizerClass::Adam>(),
-//                                              Layer<300, 100, double, ActivationFunc::ReLU, OptimizerClass::Adam>(),
-//                                              Layer<100, 50, double, ActivationFunc::ReLU, OptimizerClass::Adam>(),
-//                                              Layer<50, 10, double, ActivationFunc::SoftMax, OptimizerClass::Adam>());
-//     return s;
-// }
+class TestModel : public Model<784, 10, double>
+{
+public:
+    TestModel(double b1, double b2) : l1(b1, b2),
+                                      l2(b1, b2),
+                                      l3(b1, b2),
+                                      l4(b1, b2),
+                                      l5(b1, b2),
+                                      l6(b1, b2)
+    {
+    }
+
+    Eigen::Vector<double, 10> forward(Eigen::Vector<double, 784> &input)
+    {
+        py::print("Test model forward pass");
+        return sequential::forward(input, l1, l2, l3, l4, l5, l6);
+    }
+
+    Eigen::Vector<double, 784> backward(Eigen::Vector<double, 10> &error)
+    {
+        py::print("Test model backward pass");
+        return sequential::backward(error, l1, l2, l3, l4, l5, l6);
+    }
+
+    void update(double rate)
+    {
+        py::print("Test model update");
+        sequential::update(rate, l1, l2, l3, l4, l5, l6);
+    }
+
+protected:
+    Layer<784, 500, double, ActivationFunc::ReLU, OptimizerClass::Adam> l1;
+    Layer<500, 300, double, ActivationFunc::ReLU, OptimizerClass::Adam> l2;
+    Layer<300, 300, double, ActivationFunc::ReLU, OptimizerClass::Adam> l3;
+    Layer<300, 100, double, ActivationFunc::ReLU, OptimizerClass::Adam> l4;
+    Layer<100, 50, double, ActivationFunc::ReLU, OptimizerClass::Adam> l5;
+    Layer<50, 10, double, ActivationFunc::SoftMax, OptimizerClass::Adam> l6;
+};
+
+TestModel s(0.9, 0.999);
 
 PYBIND11_MODULE(neuralnet, m)
 {
     m.doc() = "Various neural network implementations";
 
-    py::class_<ModelBase> basemodel(m, "_ModelBase");
-    py::class_<Model<Eigen::Dynamic, Eigen::Dynamic, double>>(m, "Model", basemodel);
+    py::class_<Model<Eigen::Dynamic, Eigen::Dynamic, double>>(m, "Model");
 
     py::class_<Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::Linear, OptimizerClass::Adam>, Model<Eigen::Dynamic, Eigen::Dynamic, double>>(m, "Linear")
         .def("new", &makeModel<Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::Linear, OptimizerClass::Adam>, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
         .def("forward", &Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::Linear, OptimizerClass::Adam>::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-        
+
     py::class_<Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::ReLU, OptimizerClass::Adam>, Model<Eigen::Dynamic, Eigen::Dynamic, double>>(m, "ReLU")
         .def("new", &makeModel<Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::ReLU, OptimizerClass::Adam>, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
         .def("forward", &Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::ReLU, OptimizerClass::Adam>::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
     py::class_<Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::Sigmoid, OptimizerClass::Adam>, Model<Eigen::Dynamic, Eigen::Dynamic, double>>(m, "Sigmoid")
         .def("new", &makeModel<Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::Sigmoid, OptimizerClass::Adam>, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
         .def("forward", &Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::Sigmoid, OptimizerClass::Adam>::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-        
+
     py::class_<Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::TanH, OptimizerClass::Adam>, Model<Eigen::Dynamic, Eigen::Dynamic, double>>(m, "TanH")
         .def("new", &makeModel<Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::TanH, OptimizerClass::Adam>, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
         .def("forward", &Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::TanH, OptimizerClass::Adam>::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-        
+
     py::class_<Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::SoftMax, OptimizerClass::Adam>, Model<Eigen::Dynamic, Eigen::Dynamic, double>>(m, "SoftMax")
         .def("new", &makeModel<Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::SoftMax, OptimizerClass::Adam>, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
         .def("forward", &Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::SoftMax, OptimizerClass::Adam>::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-        
-    py::class_<PySequence<Eigen::Dynamic, Eigen::Dynamic, double>, Model<Eigen::Dynamic, Eigen::Dynamic, double>>(m, "Sequence")
-        .def("new", &makeModel<PySequence<Eigen::Dynamic, Eigen::Dynamic, double>, py::args>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
-        .def("forward", &PySequence<Eigen::Dynamic, Eigen::Dynamic, double>::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-        
+
+    py::class_<PySequence<double>, Model<Eigen::Dynamic, Eigen::Dynamic, double>>(m, "Sequence")
+        .def("new", &makeModel<PySequence<double>, py::args>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
+        .def("forward", &PySequence<double>::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
+
     py::class_<training::Trainer<Eigen::Dynamic, Eigen::Dynamic, double>>(m, "Trainer")
         .def(py::init<Model<Eigen::Dynamic, Eigen::Dynamic, double> &, std::vector<Eigen::VectorXd>, std::vector<Eigen::VectorXd>>())
         .def("train", &training::Trainer<Eigen::Dynamic, Eigen::Dynamic, double>::train, "Trains a model", py::return_value_policy::reference);
+
+    py::class_<Model<784, 10, double>>(m, "_TestBase");
+
+    py::class_<TestModel, Model<784, 10, double>>(m, "TestModel")
+        .def("new", &makeModel<TestModel, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
+        .def("forward", &TestModel::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
+
+    py::class_<training::Trainer<784, 10, double>>(m, "StaticTrainer")
+        .def(py::init<Model<784, 10, double> &, std::vector<Eigen::Vector<double, 784>>, std::vector<Eigen::Vector<double, 10>>>())
+        .def("train", &training::Trainer<784, 10, double>::train, "Trains a model", py::return_value_policy::reference);
 }
