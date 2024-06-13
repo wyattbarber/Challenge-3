@@ -17,6 +17,8 @@ namespace neuralnet
     class Model
     {
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        
         /**
          * Runs one forward pass through the model.
          *

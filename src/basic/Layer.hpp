@@ -59,23 +59,29 @@ namespace neuralnet
 
             if constexpr (C == OptimizerClass::Adam)
             {
-                m = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
-                v = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
-                mb = Eigen::Vector<T, O>::Zero(out_size);
-                vb = Eigen::Vector<T, O>::Zero(out_size);
+                adam_weights.m = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
+                adam_weights.v = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
+                adam_biases.m = Eigen::Vector<T, O>::Zero(out_size);
+                adam_biases.v = Eigen::Vector<T, O>::Zero(out_size);
 
                 if constexpr ((I == Eigen::Dynamic) || (O == Eigen::Dynamic))
                 {
-                    b1 = std::get<2>(args);
-                    b2 = std::get<3>(args);
+                    adam_weights.b1 = std::get<2>(args);
+                    adam_weights.b2 = std::get<3>(args);
+                    adam_biases.b1 = std::get<2>(args);
+                    adam_biases.b2 = std::get<3>(args);
                 }
                 else
                 {
-                    b1 = std::get<0>(args);
-                    b2 = std::get<1>(args);
+                    adam_weights.b1 = std::get<0>(args);
+                    adam_weights.b2 = std::get<1>(args);
+                    adam_biases.b1 = std::get<0>(args);
+                    adam_biases.b2 = std::get<1>(args);
                 }
-                b1powt = b1;
-                b2powt = b2;
+                adam_weights.b1powt = adam_weights.b1;
+                adam_weights.b2powt = adam_weights.b2;
+                adam_biases.b1powt = adam_biases.b1;
+                adam_biases.b2powt = adam_biases.b2;
             }
         }
 
@@ -96,9 +102,8 @@ namespace neuralnet
         Activation<O, T, F> activation;
 
         // Data for adam optimization
-        Eigen::Matrix<T, I, O> m, v;
-        Eigen::Vector<T, O> mb, vb;
-        double b1, b2, b1powt, b2powt;
+        adam::AdamData<Eigen::Matrix<T, I, O>> adam_weights;
+        adam::AdamData<Eigen::Vector<T, O>> adam_biases;
     };
 }
 
@@ -107,12 +112,13 @@ void neuralnet::Layer<I, O, T, F, C>::update(double rate)
 {
     if constexpr (C == OptimizerClass::Adam)
     {
-        py::print("Running adam update");
-        adam_update_params<I, O, T>(rate, b1, b1powt, b2, b2powt, m, v, mb, vb, weights, biases, in, a, d);
+        auto tmp = in * d.transpose();
+        adam::adam_update_params(rate, adam_weights, weights, tmp);
+        adam::adam_update_params(rate, adam_biases, biases, d);
+
     }
     else
     {
-        py::print("Running unoptimized update");
         weights -= in * (d.transpose() * rate);
         biases -= rate * d;
     }

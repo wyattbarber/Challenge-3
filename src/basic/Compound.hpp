@@ -1,5 +1,5 @@
-#ifndef _SEQUENCE_HPP
-#define _SEQUENCE_HPP
+#ifndef _COMPOUND_HPP
+#define _COMPOUND_HPP
 
 #include "../Model.hpp"
 #include <random>
@@ -44,11 +44,9 @@ namespace neuralnet
         template <class M, class... Ms>
         void update(double rate, M &layer, Ms &...Layers)
         {
-            py::print("Test model update inner");
             layer.update(rate);
             if constexpr (sizeof...(Layers) > 0)
             {
-                py::print("Updating", sizeof...(Layers), "layers");
                 update(rate, Layers...);
             }
         }

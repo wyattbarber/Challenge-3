@@ -1,8 +1,9 @@
-#define EIGEN_STACK_ALLOCATION_LIMIT 100000000
+#define EIGEN_STACK_ALLOCATION_LIMIT (128000 * 2)
 
 #include "basic/Layer.hpp"
 #include "basic/PySequence.hpp"
 #include "basic/Compound.hpp"
+#include "basic/Converter.hpp"
 // #include "basic/StaticPySequence.hpp"
 #include "training/Trainer.hpp"
 #include "optimizers/Optimizer.hpp"
@@ -21,9 +22,9 @@ using namespace optimization;
 class TestModel : public Model<784, 10, double>
 {
 public:
-    TestModel(double b1, double b2) : l1(b1, b2),
-                                      l2(b1, b2),
-                                      l3(b1, b2),
+    TestModel(double b1, double b2) : l1(784, 500, b1, b2),
+                                      l2(500, 300, b1, b2),
+                                      l3(300, 300, b1, b2),
                                       l4(b1, b2),
                                       l5(b1, b2),
                                       l6(b1, b2)
@@ -32,26 +33,25 @@ public:
 
     Eigen::Vector<double, 10> forward(Eigen::Vector<double, 784> &input)
     {
-        py::print("Test model forward pass");
-        return sequential::forward(input, l1, l2, l3, l4, l5, l6);
+        return sequential::forward(input, c1, l1, l2, l3, c2, l4, l5, l6);
     }
 
     Eigen::Vector<double, 784> backward(Eigen::Vector<double, 10> &error)
     {
-        py::print("Test model backward pass");
-        return sequential::backward(error, l1, l2, l3, l4, l5, l6);
+        return sequential::backward(error, c1, l1, l2, l3, c2, l4, l5, l6);
     }
 
     void update(double rate)
     {
-        py::print("Test model update");
         sequential::update(rate, l1, l2, l3, l4, l5, l6);
     }
 
 protected:
-    Layer<784, 500, double, ActivationFunc::ReLU, OptimizerClass::Adam> l1;
-    Layer<500, 300, double, ActivationFunc::ReLU, OptimizerClass::Adam> l2;
-    Layer<300, 300, double, ActivationFunc::ReLU, OptimizerClass::Adam> l3;
+    conversions::Static2Dynamic<784, double> c1;
+    Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::ReLU, OptimizerClass::Adam> l1;
+    Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::ReLU, OptimizerClass::Adam> l2;
+    Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::ReLU, OptimizerClass::Adam> l3;
+    conversions::Dynamic2Static<300, double> c2;
     Layer<300, 100, double, ActivationFunc::ReLU, OptimizerClass::Adam> l4;
     Layer<100, 50, double, ActivationFunc::ReLU, OptimizerClass::Adam> l5;
     Layer<50, 10, double, ActivationFunc::SoftMax, OptimizerClass::Adam> l6;
