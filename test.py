@@ -1,60 +1,35 @@
-import neuralnet as nn
-# Import other libraries
-import matplotlib.pyplot as plt
-import numpy as np
-# np.random.seed(123)
-import pickle
+import os
+import subprocess
 import time
+import sys
+import glob
 
-# # Load training data
-# print("Loading dataset")
-# images = np.genfromtxt('data/mnist_train.csv', delimiter=',', skip_header=1)[:,:10000]
-# targets = np.genfromtxt('data/mnist_train_targets.csv', delimiter=',', skip_header=1, dtype=int)
-# TRAIN_IN = []
-# TRAIN_OUT = []
+N = 4
 
-# print("Preprocessing dataset")
-# for i in range(images.shape[1]):
-#     TRAIN_IN.append(images[:,i] / 255)
-#     target = [0] * 10
-#     target[targets[i]] = 1
-#     TRAIN_OUT.append(target)
+def main():
+    processes = set()
 
-# print("Saving pickled dataset")
-# pickle.dump((TRAIN_IN, TRAIN_OUT), open('data/mnist_preprocessed.pickle', 'wb'))
+    notebooks = glob.glob(os.path.join("test", "**", "*.ipynb"), recursive=True)
+    for file in notebooks:
+        print(f"Starting {file}...")
+        processes.add(subprocess.Popen(["jupyter", "nbconvert", "--execute", "--to", "html", file]))
+        if len(processes) >= N:
+            time.sleep(1.0)
+            processes.difference_update([
+                p for p in processes if p.poll() is not None
+            ])
 
-print("Loading pickled data")
-TRAIN_IN, TRAIN_OUT = pickle.load(open('data/mnist_preprocessed.pickle', 'rb'))
-N = 2
-AdamArgs = (0.9, 0.999)
-
-print("Building Model")
-model = nn.Sequence.new(
-    nn.ReLU.new(len(TRAIN_IN[0]), 500, *AdamArgs),
-    nn.ReLU.new(500, 300, *AdamArgs),
-    nn.ReLU.new(300, 300, *AdamArgs),
-    nn.ReLU.new(300, 100, *AdamArgs),
-    nn.ReLU.new(100, 50, *AdamArgs),
-    nn.SoftMax.new(50, 10, *AdamArgs)
-)
-
-print("Training")
-ts = time.time()
-trainer = nn.Trainer(model, TRAIN_IN, TRAIN_OUT)
-errors = trainer.train(N, 0.0001)
-print(f"Training complete in {time.time() - ts} seconds")
-
-print("Training Statically Defined Model")
-ts = time.time()
-trainer = nn.StaticTrainer(nn.TestModel.new(*AdamArgs), TRAIN_IN, TRAIN_OUT)
-errors_static = trainer.train(N, 0.0001)
-print(f"Training complete in {time.time() - ts} seconds")
+    scripts = glob.glob(os.path.join("test", "**", "*.py"), recursive=True)
+    for file in scripts:
+        print(f"Starting {file}...")
+        log = os.path.splitext(file)[0] + ".txt"
+        processes.add(subprocess.Popen(["py", file, ">", log]))
+        if len(processes) >= N:
+            time.sleep(1.0)
+            processes.difference_update([
+                p for p in processes if p.poll() is not None
+            ])
 
 
-
-plt.title("Training Error")
-plt.plot(
-    range(len(errors)), [round(e, 4) for e in errors], 'b',
-    range(len(errors_static)), [round(e, 4) for e in errors_static], 'r',
-    )
-plt.show()
+if __name__ == "__main__":
+    main()

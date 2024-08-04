@@ -48,7 +48,7 @@ public:
 
 protected:
     conversions::Static2Dynamic<784, double> c1;
-    Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::ReLU, OptimizerClass::Adam> l1;
+    Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::TanH, OptimizerClass::Adam> l1;
     Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::ReLU, OptimizerClass::Adam> l2;
     Layer<Eigen::Dynamic, Eigen::Dynamic, double, ActivationFunc::ReLU, OptimizerClass::Adam> l3;
     conversions::Dynamic2Static<300, double> c2;
@@ -57,7 +57,6 @@ protected:
     Layer<50, 10, double, ActivationFunc::SoftMax, OptimizerClass::Adam> l6;
 };
 
-TestModel s(0.9, 0.999);
 
 PYBIND11_MODULE(neuralnet, m)
 {
