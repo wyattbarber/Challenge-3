@@ -7,3 +7,5 @@ UNKNOWN.egg-info/**
 *.png
 /neuralnet.egg-info
 /.vscode
+*.html
+neuralnet.egg-info/SOURCES.txt
