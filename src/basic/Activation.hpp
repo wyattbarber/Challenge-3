@@ -26,8 +26,8 @@ namespace neuralnet
     class Activation
     {
     public:
-        Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
+        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
     };
 
     // Specialization definitions
@@ -35,40 +35,40 @@ namespace neuralnet
     class Activation<N, T, ActivationFunc::Linear>
     {
     public:
-        Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
+        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
     };
 
     template <int N, typename T>
     class Activation<N, T, ActivationFunc::ReLU>
     {
     public:
-        Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
+        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
     };
 
     template <int N, typename T>
     class Activation<N, T, ActivationFunc::Sigmoid>
     {
     public:
-        Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
+        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
     };
 
     template <int N, typename T>
     class Activation<N, T, ActivationFunc::TanH>
     {
     public:
-        Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
+        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
     };
 
     template <int N, typename T>
     class Activation<N, T, ActivationFunc::SoftMax>
     {
     public:
-        Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
+        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
     };
 };
 

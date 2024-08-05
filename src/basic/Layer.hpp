@@ -85,8 +85,6 @@ namespace neuralnet
         DataType d;
         DataType in;
 
-        Activation<Eigen::Dynamic, T, F> activation;
-
         // Data for adam optimization
         adam::AdamData<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> adam_weights;
         adam::AdamData<DataType> adam_biases;
@@ -118,7 +116,7 @@ neuralnet::Layer<T, F, C>::DataType neuralnet::Layer<T, F, C>::forward(neuralnet
     z = biases;
     z += weights.transpose() * input;
     // Calculate and save activation function output
-    a = activation.f(z);
+    a =  Activation<Eigen::Dynamic, T, F>::f(z);
     return a;
 }
 
@@ -126,7 +124,7 @@ template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
 neuralnet::Layer<T, F, C>::DataType neuralnet::Layer<T, F, C>::backward(neuralnet::Layer<T, F, C>::DataType &err)
 {
     // Calculate this layers error gradient
-    d = activation.df(z, a, err);
+    d = Activation<Eigen::Dynamic, T, F>::df(z, a, err);
     // Calculate and return error gradient input to next layer
     return weights * d;
 }
