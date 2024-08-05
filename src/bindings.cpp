@@ -3,6 +3,7 @@
 #include "basic/Layer.hpp"
 #include "basic/PySequence.hpp"
 #include "basic/Compound.hpp"
+#include "autoencoder/AutoEncoder.hpp"
 #include "training/Trainer.hpp"
 #include "optimizers/Optimizer.hpp"
 #include <tuple>
@@ -10,12 +11,15 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 #include <pybind11/numpy.h>
 #include <pybind11/iostream.h>
 
 namespace py = pybind11;
 using namespace neuralnet;
 using namespace optimization;
+
+PYBIND11_MAKE_OPAQUE(std::vector<Eigen::VectorXd>);
 
 class TestModel : public Model<TestModel>
 {
@@ -90,12 +94,18 @@ PYBIND11_MODULE(neuralnet, m)
         .def("forward", &SoftMax_CLASS::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
     #undef SoftMax_CLASS
 
+    #define AutoEncoder_CLASS DynamicBinder<double, AutoEncoder<double, ActivationFunc::ReLU, OptimizerClass::Adam>>
+    py::class_<AutoEncoder_CLASS, DynamicModel<double>>(m, "AutoEncoder")
+        .def("new", &makeModel<AutoEncoder_CLASS, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
+        .def("forward", &AutoEncoder_CLASS::forward, "Performs a forward pass through the entire model.", py::return_value_policy::reference);
+    #undef AutoEncoder_CLASS
+
     py::class_<DynamicBinder<double, PySequence<double>>, DynamicModel<double>>(m, "Sequence")
         .def("new", &makeModel<DynamicBinder<double, PySequence<double>>, py::args>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
         .def("forward", &DynamicBinder<double, PySequence<double>>::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
 
     py::class_<training::Trainer<DynamicBinder<double, PySequence<double>>>>(m, "Trainer")
-        .def(py::init<DynamicBinder<double, PySequence<double>>&, std::vector<Eigen::VectorXd>, std::vector<Eigen::VectorXd>>())
+        .def(py::init<DynamicBinder<double, PySequence<double>>&, std::vector<Eigen::VectorXd>&, std::vector<Eigen::VectorXd>&>())
         .def("train", &training::Trainer<DynamicBinder<double, PySequence<double>>>::train, "Trains a model", py::return_value_policy::reference);
 
 
@@ -104,6 +114,6 @@ PYBIND11_MODULE(neuralnet, m)
         .def("forward", &TestModel::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
 
     py::class_<training::Trainer<TestModel>>(m, "StaticTrainer")
-        .def(py::init<TestModel&, std::vector<Eigen::VectorXd>, std::vector<Eigen::VectorXd>>())
+        .def(py::init<TestModel&, std::vector<Eigen::VectorXd>&, std::vector<Eigen::VectorXd>&>())
         .def("train", &training::Trainer<TestModel>::train, "Trains a model", py::return_value_policy::reference);
 }

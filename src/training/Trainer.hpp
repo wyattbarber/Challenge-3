@@ -21,7 +21,7 @@ namespace training
          * @param inputs Input dataset for training
          * @param outputs Output dataset for training
          */
-        Trainer(ModelType& model, std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs) : model(model), inputs(inputs), outputs(outputs)
+        Trainer(ModelType& model, std::vector<Eigen::VectorXd>& inputs, std::vector<Eigen::VectorXd>& outputs) : model(model), inputs(inputs), outputs(outputs)
         {
         }
 
@@ -35,8 +35,8 @@ namespace training
 
     protected:
         ModelType &model;
-        std::vector<Eigen::VectorXd> inputs; 
-        std::vector<Eigen::VectorXd> outputs;
+        std::vector<Eigen::VectorXd>& inputs; 
+        std::vector<Eigen::VectorXd>& outputs;
     };
 
 }

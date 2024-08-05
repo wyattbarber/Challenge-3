@@ -37,9 +37,8 @@ namespace neuralnet
         {
             auto args = std::tuple<Ts...>(Args...);
 
-            int in_size, out_size;
-            in_size = std::get<0>(args);
-            out_size = std::get<1>(args);
+            int in_size = std::get<0>(args);
+            int out_size = std::get<1>(args);
 
             // Apply he initialization
             this->weights = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, out_size).unaryExpr([in_size](double x)
