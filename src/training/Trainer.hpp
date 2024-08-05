@@ -11,7 +11,7 @@ namespace training
     /** Handles training of a model on a dataset
      *
      */
-    template<int I, int O, typename T>
+    template<class ModelType>
     class Trainer
     {
     public:
@@ -21,10 +21,8 @@ namespace training
          * @param inputs Input dataset for training
          * @param outputs Output dataset for training
          */
-        Trainer(Model<I, O, T>& model, std::vector<Eigen::Vector<T, I>> inputs, std::vector<Eigen::Vector<T, O>> outputs) : model(model)
+        Trainer(ModelType& model, std::vector<Eigen::VectorXd> inputs, std::vector<Eigen::VectorXd> outputs) : model(model), inputs(inputs), outputs(outputs)
         {
-            this->inputs = inputs;
-            this->outputs = outputs;
         }
 
         /** Trains the model over a number of epochs
@@ -36,17 +34,17 @@ namespace training
         std::vector<double> train(unsigned N, double rate);
 
     protected:
-        Model<I, O, T> &model;
-        std::vector<Eigen::Vector<T, I>> inputs; 
-        std::vector<Eigen::Vector<T, O>> outputs;
+        ModelType &model;
+        std::vector<Eigen::VectorXd> inputs; 
+        std::vector<Eigen::VectorXd> outputs;
     };
 
 }
 
 
 
-template<int I, int O, typename T>
-std::vector<double> training::Trainer<I, O, T>::train(unsigned N, double rate)
+template<class ModelType>
+std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
 {
     std::vector<double> avg_err;
 
@@ -64,9 +62,9 @@ std::vector<double> training::Trainer<I, O, T>::train(unsigned N, double rate)
         for (int i = 0; i < inputs.size(); ++i)
         {
             // Test forward pass and calculate error for this input set
-            Eigen::Vector<T, I> in = inputs[i];
-            Eigen::Vector<T, O> out = model.forward(in);
-            Eigen::Vector<T, O> error = out - outputs[i];
+            Eigen::VectorXd in = inputs[i];
+            Eigen::VectorXd out = model.forward(in);
+            Eigen::VectorXd error = out - outputs[i];
             e += error.norm();
             // Run backward pass
             model.backward(error);

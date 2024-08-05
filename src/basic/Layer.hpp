@@ -17,11 +17,13 @@ namespace neuralnet
      *
      * @tparam F Enumerated activation function to use in this layer
      */
-    template <int I, int O, typename T, ActivationFunc F, OptimizerClass C>
-    class Layer : public Model<I, O, T>
+    template <typename T, ActivationFunc F, OptimizerClass C>
+    class Layer : public Model<Layer<T, F, C>>
     {
 
     public:
+        typedef Eigen::Vector<T, Eigen::Dynamic> DataType;
+
         /** Constructs a randomly initialized layer.
          *
          * Weights are initialized using He initialization, and
@@ -36,79 +38,63 @@ namespace neuralnet
             auto args = std::tuple<Ts...>(Args...);
 
             int in_size, out_size;
-            if constexpr ((I == Eigen::Dynamic) || (O == Eigen::Dynamic))
-            {
-                in_size = std::get<0>(args);
-                out_size = std::get<1>(args);
-            }
-            else
-            {
-                in_size = I;
-                out_size = O;
-            }
+            in_size = std::get<0>(args);
+            out_size = std::get<1>(args);
 
             // Apply he initialization
-            this->weights = Eigen::Matrix<T, I, O>::Random(in_size, out_size).unaryExpr([in_size](double x)
+            this->weights = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, out_size).unaryExpr([in_size](double x)
                                                                                         { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
 
-            this->biases = Eigen::Vector<T, O>::Zero(out_size);
-            this->z = Eigen::Vector<T, O>::Zero(out_size);
-            this->a = Eigen::Vector<T, O>::Zero(out_size);
-            this->d = Eigen::Vector<T, O>::Zero(out_size);
-            this->in = Eigen::Vector<T, I>::Zero(in_size);
+            this->biases = DataType::Zero(out_size);
+            this->z = DataType::Zero(out_size);
+            this->a = DataType::Zero(out_size);
+            this->d = DataType::Zero(out_size);
+            this->in = DataType::Zero(in_size);
 
             if constexpr (C == OptimizerClass::Adam)
             {
-                adam_weights.m = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
-                adam_weights.v = Eigen::Matrix<T, I, O>::Zero(in_size, out_size);
-                adam_biases.m = Eigen::Vector<T, O>::Zero(out_size);
-                adam_biases.v = Eigen::Vector<T, O>::Zero(out_size);
+                adam_weights.m = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, out_size);
+                adam_weights.v = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, out_size);
+                adam_biases.m = DataType::Zero(out_size);
+                adam_biases.v = DataType::Zero(out_size);
 
-                if constexpr ((I == Eigen::Dynamic) || (O == Eigen::Dynamic))
-                {
-                    adam_weights.b1 = std::get<2>(args);
-                    adam_weights.b2 = std::get<3>(args);
-                    adam_biases.b1 = std::get<2>(args);
-                    adam_biases.b2 = std::get<3>(args);
-                }
-                else
-                {
-                    adam_weights.b1 = std::get<0>(args);
-                    adam_weights.b2 = std::get<1>(args);
-                    adam_biases.b1 = std::get<0>(args);
-                    adam_biases.b2 = std::get<1>(args);
-                }
+                adam_weights.b1 = std::get<2>(args);
+                adam_weights.b2 = std::get<3>(args);
+                adam_biases.b1 = std::get<2>(args);
+                adam_biases.b2 = std::get<3>(args);
+
                 adam_weights.b1powt = adam_weights.b1;
                 adam_weights.b2powt = adam_weights.b2;
                 adam_biases.b1powt = adam_biases.b1;
                 adam_biases.b2powt = adam_biases.b2;
             }
         }
+        
 
-        Eigen::Vector<T, O> forward(Eigen::Vector<T, I> &input);
-
-        Eigen::Vector<T, I> backward(Eigen::Vector<T, O> &error);
+        DataType forward(DataType &input);
+        
+        DataType backward(DataType &error);
 
         void update(double rate);
 
     protected:
-        Eigen::Matrix<T, I, O> weights;
-        Eigen::Vector<T, O> biases;
-        Eigen::Vector<T, O> z;
-        Eigen::Vector<T, O> a;
-        Eigen::Vector<T, O> d;
-        Eigen::Vector<T, I> in;
+        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> weights;
+        DataType biases;
+        DataType z;
+        DataType a;
+        DataType d;
+        DataType in;
 
-        Activation<O, T, F> activation;
+        Activation<Eigen::Dynamic, T, F> activation;
 
         // Data for adam optimization
-        adam::AdamData<Eigen::Matrix<T, I, O>> adam_weights;
-        adam::AdamData<Eigen::Vector<T, O>> adam_biases;
+        adam::AdamData<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> adam_weights;
+        adam::AdamData<DataType> adam_biases;
     };
 }
 
-template <int I, int O, typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-void neuralnet::Layer<I, O, T, F, C>::update(double rate)
+template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+void neuralnet::Layer<T, F, C>::update(double rate)
 {
     if constexpr (C == OptimizerClass::Adam)
     {
@@ -124,8 +110,8 @@ void neuralnet::Layer<I, O, T, F, C>::update(double rate)
     }
 }
 
-template <int I, int O, typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-Eigen::Vector<T, O> neuralnet::Layer<I, O, T, F, C>::forward(Eigen::Vector<T, I> &input)
+template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+neuralnet::Layer<T, F, C>::DataType neuralnet::Layer<T, F, C>::forward(neuralnet::Layer<T, F, C>::DataType &input)
 {
     // Save input for this pass and calculate weighted signals
     in = {input};
@@ -136,8 +122,8 @@ Eigen::Vector<T, O> neuralnet::Layer<I, O, T, F, C>::forward(Eigen::Vector<T, I>
     return a;
 }
 
-template <int I, int O, typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-Eigen::Vector<T, I> neuralnet::Layer<I, O, T, F, C>::backward(Eigen::Vector<T, O> &err)
+template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+neuralnet::Layer<T, F, C>::DataType neuralnet::Layer<T, F, C>::backward(neuralnet::Layer<T, F, C>::DataType &err)
 {
     // Calculate this layers error gradient
     d = activation.df(z, a, err);

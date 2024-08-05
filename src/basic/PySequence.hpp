@@ -15,12 +15,14 @@ namespace neuralnet
      * 
      */
     template <typename T>
-    class PySequence : public Model<Eigen::Dynamic, Eigen::Dynamic, T>
+    class PySequence : public Model<PySequence<T>>
     {
     protected:
-        std::vector<Model<Eigen::Dynamic, Eigen::Dynamic, T>*> layers;
+        std::vector<DynamicModel<T>*> layers;
 
     public:
+        typedef Eigen::Vector<T, Eigen::Dynamic> DataType;
+
         /** Compose a model from a sequence of smaller models
          * 
         */
@@ -29,7 +31,7 @@ namespace neuralnet
             for(auto arg = args.begin(); arg != args.end(); ++arg)
             {
                 void* a = arg->cast<void *>();
-                layers.push_back((Model<Eigen::Dynamic, Eigen::Dynamic, T>*)a);
+                layers.push_back((DynamicModel<T>*)a);
             }
         }
 
@@ -39,7 +41,7 @@ namespace neuralnet
          * @param input data to pass to the input layer
          * @return output of the final layer
          */
-        Eigen::Vector<T, Eigen::Dynamic> forward(Eigen::Vector<T, Eigen::Dynamic>& input);
+        DataType forward(DataType& input);
         
         /**
          * Performs one backward pass through each layer
@@ -47,16 +49,16 @@ namespace neuralnet
          * @param err Output error of the model
          * @return Error gradient of the input to the model
          */
-        Eigen::Vector<T, Eigen::Dynamic> backward(Eigen::Vector<T, Eigen::Dynamic>& error);
+        DataType backward(DataType& error);
 
         void update(double rate);
     };
 };
 
 template <typename T>
-Eigen::Vector<T, Eigen::Dynamic> neuralnet::PySequence<T>::forward(Eigen::Vector<T, Eigen::Dynamic>& input)
+neuralnet::PySequence<T>::DataType neuralnet::PySequence<T>::forward(neuralnet::PySequence<T>::DataType& input)
 {
-    Eigen::VectorXd h = input;
+    DataType h = input;
     for (auto l : layers)
     {
         h = l->forward(h);
@@ -66,9 +68,9 @@ Eigen::Vector<T, Eigen::Dynamic> neuralnet::PySequence<T>::forward(Eigen::Vector
 
 
 template <typename T>
-Eigen::Vector<T, Eigen::Dynamic> neuralnet::PySequence<T>::backward(Eigen::Vector<T, Eigen::Dynamic>& err)
+neuralnet::PySequence<T>::DataType neuralnet::PySequence<T>::backward(neuralnet::PySequence<T>::DataType& err)
 {
-    Eigen::VectorXd e = err;
+    DataType e = err;
     for (int l = layers.size() - 1; l >= 0; --l)
     {
         e = layers[l]->backward(e);

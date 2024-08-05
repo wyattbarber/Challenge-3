@@ -13,7 +13,7 @@ namespace neuralnet
      *
      * All specific types of layer should inherit from this base class.
      */
-    template <int I, int O, typename T>
+    template <class ModelType>
     class Model
     {
     public:
@@ -25,7 +25,7 @@ namespace neuralnet
          * @param input input vector
          * @return output of this layer
          */
-        virtual Eigen::Vector<T, O> forward(Eigen::Vector<T, I> &input) = 0;
+        auto forward(Eigen::VectorXd &input){return static_cast<ModelType*>(this)->forward(input);}
 
         /**
          * Propagates error over this layer, and back over input layers
@@ -40,7 +40,7 @@ namespace neuralnet
          * @param error error gradient of layer following this one
          * @return error of the layer preceding this one
          */
-        virtual Eigen::Vector<T, I> backward(Eigen::Vector<T, O> &error) = 0;
+        auto backward(Eigen::VectorXd &error){return static_cast<ModelType*>(this)->backward(error);}
 
         /**
          * Updates parameters of this layer
@@ -53,7 +53,55 @@ namespace neuralnet
          *
          * @param rate learning rate
          */
+        void update(double rate){static_cast<ModelType*>(this)->update(rate);}    
+    
+    };
+
+    /**
+     * 
+     */
+    template<typename T>
+    class DynamicModel
+    {
+        public:
+
+        virtual Eigen::Vector<T, Eigen::Dynamic> forward(Eigen::Vector<T, Eigen::Dynamic> &input) = 0;
+
+        virtual Eigen::Vector<T, Eigen::Dynamic> backward(Eigen::Vector<T, Eigen::Dynamic> &error) = 0;
+
         virtual void update(double rate) = 0;
+    };
+
+    /**
+     * 
+     */
+    template<typename T, class ModelType>
+    class DynamicBinder : public DynamicModel<T>
+    {
+        public:
+        template<typename... Ts>
+        DynamicBinder(Ts... Args) : model(Args...){}
+
+
+        Eigen::Vector<T, Eigen::Dynamic> forward(Eigen::Vector<T, Eigen::Dynamic> &input)
+        {
+            return model.forward(input);
+        }
+
+
+        Eigen::Vector<T, Eigen::Dynamic> backward(Eigen::Vector<T, Eigen::Dynamic> &error)
+        {
+            return model.backward(error);
+        }
+
+
+        void update(double rate)
+        {
+            model.update(rate);
+        }
+
+        protected:
+        ModelType model;   
     };
 
     /** Factory to create new model instances to pass to python
@@ -65,7 +113,7 @@ namespace neuralnet
     ModelType *makeModel(CTypes... CArgs)
     {
         return new ModelType(CArgs...);
-    }
+    };
 }
 
 #endif
