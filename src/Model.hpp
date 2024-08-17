@@ -18,7 +18,7 @@ namespace neuralnet
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        
+                
         /**
          * Runs one forward pass through the model.
          *
@@ -65,11 +65,14 @@ namespace neuralnet
     {
         public:
 
-        virtual Eigen::Vector<T, Eigen::Dynamic> forward(Eigen::Vector<T, Eigen::Dynamic> &input) = 0;
+        typedef Eigen::Vector<T, Eigen::Dynamic> InputType; 
+        typedef Eigen::Vector<T, Eigen::Dynamic> OutputType; 
 
-        virtual Eigen::Vector<T, Eigen::Dynamic> backward(Eigen::Vector<T, Eigen::Dynamic> &error) = 0;
+        virtual OutputType forward(InputType &input) = 0;
 
-        virtual void update(double rate) = 0;
+        virtual InputType backward(OutputType &error) = 0;
+
+        virtual void update(double rate){};
     };
 
     /**
@@ -79,17 +82,20 @@ namespace neuralnet
     class DynamicBinder : public DynamicModel<T>
     {
         public:
+        typedef Eigen::Vector<T, Eigen::Dynamic> InputType; 
+        typedef Eigen::Vector<T, Eigen::Dynamic> OutputType; 
+        
         template<typename... Ts>
         DynamicBinder(Ts... Args) : model(Args...){}
 
 
-        Eigen::Vector<T, Eigen::Dynamic> forward(Eigen::Vector<T, Eigen::Dynamic> &input)
+        OutputType forward(InputType &input)
         {
             return model.forward(input);
         }
 
 
-        Eigen::Vector<T, Eigen::Dynamic> backward(Eigen::Vector<T, Eigen::Dynamic> &error)
+        InputType backward(OutputType &error)
         {
             return model.backward(error);
         }
@@ -101,7 +107,7 @@ namespace neuralnet
         }
 
         protected:
-        ModelType model;   
+        ModelType model;
     };
 
     /** Factory to create new model instances to pass to python
@@ -110,9 +116,9 @@ namespace neuralnet
      * @tparam CArgs concrete model constructor argument types
      */
     template <class ModelType, typename... CTypes>
-    ModelType *makeModel(CTypes... CArgs)
+    auto makeModel(CTypes... CArgs)
     {
-        return new ModelType(CArgs...);
+        return std::shared_ptr<ModelType>(new ModelType(CArgs...));
     };
 }
 

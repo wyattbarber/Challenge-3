@@ -22,7 +22,8 @@ namespace neuralnet
     {
 
     public:
-        typedef Eigen::Vector<T, Eigen::Dynamic> DataType;
+        typedef Eigen::Vector<T, Eigen::Dynamic> InputType;
+        typedef Eigen::Vector<T, Eigen::Dynamic> OutputType;
 
         /** Constructs a randomly initialized layer.
          *
@@ -44,18 +45,18 @@ namespace neuralnet
             this->weights = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, out_size).unaryExpr([in_size](double x)
                                                                                         { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
 
-            this->biases = DataType::Zero(out_size);
-            this->z = DataType::Zero(out_size);
-            this->a = DataType::Zero(out_size);
-            this->d = DataType::Zero(out_size);
-            this->in = DataType::Zero(in_size);
+            this->biases = OutputType::Zero(out_size);
+            this->z = OutputType::Zero(out_size);
+            this->a = OutputType::Zero(out_size);
+            this->d = OutputType::Zero(out_size);
+            this->in = InputType::Zero(in_size);
 
             if constexpr (C == OptimizerClass::Adam)
             {
                 adam_weights.m = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, out_size);
                 adam_weights.v = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, out_size);
-                adam_biases.m = DataType::Zero(out_size);
-                adam_biases.v = DataType::Zero(out_size);
+                adam_biases.m = OutputType::Zero(out_size);
+                adam_biases.v = OutputType::Zero(out_size);
 
                 adam_weights.b1 = std::get<2>(args);
                 adam_weights.b2 = std::get<3>(args);
@@ -70,23 +71,23 @@ namespace neuralnet
         }
         
 
-        DataType forward(DataType &input);
+        OutputType forward(InputType &input);
         
-        DataType backward(DataType &error);
+        InputType backward(OutputType &error);
 
         void update(double rate);
 
     protected:
         Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> weights;
-        DataType biases;
-        DataType z;
-        DataType a;
-        DataType d;
-        DataType in;
+        OutputType biases;
+        OutputType z;
+        OutputType a;
+        OutputType d;
+        InputType in;
 
         // Data for adam optimization
         adam::AdamData<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> adam_weights;
-        adam::AdamData<DataType> adam_biases;
+        adam::AdamData<OutputType> adam_biases;
     };
 }
 
@@ -108,7 +109,7 @@ void neuralnet::Layer<T, F, C>::update(double rate)
 }
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::Layer<T, F, C>::DataType neuralnet::Layer<T, F, C>::forward(neuralnet::Layer<T, F, C>::DataType &input)
+neuralnet::Layer<T, F, C>::OutputType neuralnet::Layer<T, F, C>::forward(neuralnet::Layer<T, F, C>::InputType &input)
 {
     // Save input for this pass and calculate weighted signals
     in = {input};
@@ -120,7 +121,7 @@ neuralnet::Layer<T, F, C>::DataType neuralnet::Layer<T, F, C>::forward(neuralnet
 }
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::Layer<T, F, C>::DataType neuralnet::Layer<T, F, C>::backward(neuralnet::Layer<T, F, C>::DataType &err)
+neuralnet::Layer<T, F, C>::InputType neuralnet::Layer<T, F, C>::backward(neuralnet::Layer<T, F, C>::OutputType &err)
 {
     // Calculate this layers error gradient
     d = Activation<Eigen::Dynamic, T, F>::df(z, a, err);

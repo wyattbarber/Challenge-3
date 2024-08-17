@@ -9,7 +9,9 @@ namespace neuralnet {
     class AutoEncoder : public Model<AutoEncoder<T, F, C>>
     {
     public:
-        typedef Eigen::Vector<T, Eigen::Dynamic> DataType;
+        typedef Eigen::Vector<T, Eigen::Dynamic> InputType;
+        typedef InputType OutputType;
+        typedef Eigen::Vector<T, Eigen::Dynamic> LatentType;
 
         template <typename... Ts>
         AutoEncoder(Ts... Args)
@@ -23,26 +25,26 @@ namespace neuralnet {
             this->W = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, latent_size).unaryExpr([in_size = in_size](double x)
                                                                                         { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
 
-            this->blt = DataType::Zero(latent_size);
-            this->alt = DataType::Zero(latent_size);
-            this->dlt = DataType::Zero(latent_size);
-            this->zlt  = DataType::Zero(in_size);
+            this->blt = LatentType::Zero(latent_size);
+            this->alt = LatentType::Zero(latent_size);
+            this->dlt = LatentType::Zero(latent_size);
+            this->zlt  = InputType::Zero(in_size);
 
-            this->brc = DataType::Zero(in_size);
-            this->arc = DataType::Zero(in_size);
-            this->drc = DataType::Zero(in_size);
-            this->zrc = DataType::Zero(latent_size);
+            this->brc = InputType::Zero(in_size);
+            this->arc = InputType::Zero(in_size);
+            this->drc = InputType::Zero(in_size);
+            this->zrc = LatentType::Zero(latent_size);
 
-            this->in = DataType::Zero(in_size);
+            this->in = InputType::Zero(in_size);
 
             if constexpr (C == OptimizerClass::Adam)
             {
                 adam_w.m = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, latent_size);
                 adam_w.v = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, latent_size);
-                adam_brc.m = DataType::Zero(in_size);
-                adam_brc.v = DataType::Zero(in_size);                
-                adam_blt.m = DataType::Zero(latent_size);
-                adam_blt.v = DataType::Zero(latent_size);
+                adam_brc.m = InputType::Zero(in_size);
+                adam_brc.v = InputType::Zero(in_size);                
+                adam_blt.m = LatentType::Zero(latent_size);
+                adam_blt.v = LatentType::Zero(latent_size);
 
                 adam_w.b1 = std::get<2>(args);
                 adam_w.b2 = std::get<3>(args);
@@ -60,13 +62,13 @@ namespace neuralnet {
             }
         }
 
-        DataType forward(DataType& input);
+        OutputType forward(InputType& input);
 
-        DataType backward(DataType& error);
+        InputType backward(OutputType& error);
 
-        DataType encode(DataType& input);
+        LatentType encode(InputType& input);
 
-        DataType decode(DataType& latent);
+        OutputType decode(LatentType& latent);
 
         void update(double rate);
     
@@ -82,16 +84,17 @@ namespace neuralnet {
 
         // Adam optimization data
         adam::AdamData<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> adam_w;
-        adam::AdamData<DataType> adam_blt, adam_brc;
+        adam::AdamData<LatentType> adam_blt;
+        adam::AdamData<OutputType> adam_brc;
     
-        DataType errorReconstruct(DataType& error);
+        LatentType errorReconstruct(OutputType& error);
 
-        DataType errorLatent(DataType& error);
+        InputType errorLatent(LatentType& error);
     };
 }
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::forward(neuralnet::AutoEncoder<T, F, C>::DataType &input)
+neuralnet::AutoEncoder<T, F, C>::OutputType neuralnet::AutoEncoder<T, F, C>::forward(neuralnet::AutoEncoder<T, F, C>::InputType &input)
 {
     auto x = encode(input);
     return decode(x);
@@ -99,7 +102,7 @@ neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::forwa
 
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::backward(neuralnet::AutoEncoder<T, F, C>::DataType &error)
+neuralnet::AutoEncoder<T, F, C>::InputType neuralnet::AutoEncoder<T, F, C>::backward(neuralnet::AutoEncoder<T, F, C>::OutputType &error)
 {
     auto x = errorReconstruct(error);
     return errorLatent(x);
@@ -107,7 +110,7 @@ neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::backw
 
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::encode(neuralnet::AutoEncoder<T, F, C>::DataType &input)
+neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::encode(neuralnet::AutoEncoder<T, F, C>::InputType &input)
 {
     // Save input for this pass and calculate weighted signals
     in = {input};
@@ -120,7 +123,7 @@ neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::encod
 
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::decode(neuralnet::AutoEncoder<T, F, C>::DataType &input)
+neuralnet::AutoEncoder<T, F, C>::OutputType neuralnet::AutoEncoder<T, F, C>::decode(neuralnet::AutoEncoder<T, F, C>::LatentType &input)
 {
     // Calculate and save activation function output
     zrc = brc;
@@ -131,7 +134,7 @@ neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::decod
 
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::errorReconstruct(neuralnet::AutoEncoder<T, F, C>::DataType &err)
+neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::errorReconstruct(neuralnet::AutoEncoder<T, F, C>::OutputType &err)
 {
     // Calculate this layers error gradient
     drc = Activation<Eigen::Dynamic, T, F>::df(zrc, arc, err);
@@ -141,7 +144,7 @@ neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::error
 
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::AutoEncoder<T, F, C>::DataType neuralnet::AutoEncoder<T, F, C>::errorLatent(neuralnet::AutoEncoder<T, F, C>::DataType &err)
+neuralnet::AutoEncoder<T, F, C>::InputType neuralnet::AutoEncoder<T, F, C>::errorLatent(neuralnet::AutoEncoder<T, F, C>::LatentType &err)
 {
     // Calculate this layers error gradient
     dlt = Activation<Eigen::Dynamic, T, F>::df(zlt, alt, err);

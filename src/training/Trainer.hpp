@@ -15,14 +15,19 @@ namespace training
     class Trainer
     {
     public:
+        typedef ModelType::InputType InputType;
+        typedef ModelType::OutputType OutputType;
+        
         /** Set up a trainer
          *
          * @param model Model to train
          * @param inputs Input dataset for training
          * @param outputs Output dataset for training
          */
-        Trainer(ModelType& model, std::vector<Eigen::VectorXd>& inputs, std::vector<Eigen::VectorXd>& outputs) : model(model), inputs(inputs), outputs(outputs)
+        Trainer(std::shared_ptr<ModelType> model, std::vector<InputType> inputs, std::vector<OutputType> outputs) : model(model)
         {
+            this->inputs = inputs;
+            this->outputs = outputs;
         }
 
         /** Trains the model over a number of epochs
@@ -34,13 +39,11 @@ namespace training
         std::vector<double> train(unsigned N, double rate);
 
     protected:
-        ModelType &model;
-        std::vector<Eigen::VectorXd>& inputs; 
-        std::vector<Eigen::VectorXd>& outputs;
-    };
-
+        std::shared_ptr<ModelType> model;
+        std::vector<InputType> inputs; 
+        std::vector<OutputType> outputs;
+    };  
 }
-
 
 
 template<class ModelType>
@@ -62,14 +65,14 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
         for (int i = 0; i < inputs.size(); ++i)
         {
             // Test forward pass and calculate error for this input set
-            Eigen::VectorXd in = inputs[i];
-            Eigen::VectorXd out = model.forward(in);
-            Eigen::VectorXd error = out - outputs[i];
+            InputType in = inputs[i];
+            OutputType out = model->forward(in);
+            OutputType error = out - outputs[i];
             e += error.norm();
             // Run backward pass
-            model.backward(error);
+            model->backward(error);
             // Update model
-            model.update(rate);
+            model->update(rate);
         }
         py::print("Epoch", iter, "average loss:", e / out_norm);
         avg_err.push_back(e / out_norm);

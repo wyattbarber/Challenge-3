@@ -19,11 +19,22 @@ namespace py = pybind11;
 using namespace neuralnet;
 using namespace optimization;
 
-PYBIND11_MAKE_OPAQUE(std::vector<Eigen::VectorXd>);
+// PYBIND11_MAKE_OPAQUE(std::vector<Eigen::VectorXd>);
 
 class TestModel : public Model<TestModel>
 {
+protected:
+    Layer<double, ActivationFunc::TanH, OptimizerClass::Adam> l1;
+    Layer<double, ActivationFunc::ReLU, OptimizerClass::Adam> l2;
+    Layer<double, ActivationFunc::ReLU, OptimizerClass::Adam> l3;
+    Layer<double, ActivationFunc::ReLU, OptimizerClass::Adam> l4;
+    Layer<double, ActivationFunc::ReLU, OptimizerClass::Adam> l5;
+    Layer<double, ActivationFunc::SoftMax, OptimizerClass::Adam> l6;
+
 public:
+    typedef decltype(l1)::InputType InputType; 
+    typedef decltype(l6)::OutputType OutputType; 
+
     TestModel(double b1, double b2) : l1(784, 500, b1, b2),
                                       l2(500, 300, b1, b2),
                                       l3(300, 100, b1, b2),
@@ -47,73 +58,49 @@ public:
     {
         sequential::update(rate, l1, l2, l3, l4, l5, l6);
     }
-
-protected:
-    Layer<double, ActivationFunc::TanH, OptimizerClass::Adam> l1;
-    Layer<double, ActivationFunc::ReLU, OptimizerClass::Adam> l2;
-    Layer<double, ActivationFunc::ReLU, OptimizerClass::Adam> l3;
-    Layer<double, ActivationFunc::ReLU, OptimizerClass::Adam> l4;
-    Layer<double, ActivationFunc::ReLU, OptimizerClass::Adam> l5;
-    Layer<double, ActivationFunc::SoftMax, OptimizerClass::Adam> l6;
 };
 
+
+template<class T, typename... Ts>
+void make_model(py::module m, const char* name)
+{
+    py::class_<T, DynamicModel<double>, std::shared_ptr<T>>(m, name)
+    .def(py::init<Ts...>())
+    .def("forward", &T::forward, "Performs a forward pass through the model.");
+}
 
 PYBIND11_MODULE(neuralnet, m)
 {
     m.doc() = "Various neural network implementations";
 
-    py::class_<DynamicModel<double>>(m, "Model");
+    py::class_<DynamicModel<double>, std::shared_ptr<DynamicModel<double>>>(m, "Model");
 
-    #define Linear_CLASS DynamicBinder<double, Layer<double, ActivationFunc::Linear, OptimizerClass::Adam>>
-    py::class_<Linear_CLASS, DynamicModel<double>>(m, "Linear")
-        .def("new", &makeModel<Linear_CLASS, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
-        .def("forward", &Linear_CLASS::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-    #undef Linear_CLASS
+    make_model<DynamicBinder<double, Layer<double, ActivationFunc::Linear, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "Linear");
+    make_model<DynamicBinder<double, Layer<double, ActivationFunc::ReLU, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "ReLU");
+    make_model<DynamicBinder<double, Layer<double, ActivationFunc::Sigmoid, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "Sigmoid");
+    make_model<DynamicBinder<double, Layer<double, ActivationFunc::TanH, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "TanH");
+    make_model<DynamicBinder<double, Layer<double, ActivationFunc::SoftMax, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "SoftMax");
 
-    #define ReLU_CLASS DynamicBinder<double, Layer<double, ActivationFunc::ReLU, OptimizerClass::Adam>>
-    py::class_<ReLU_CLASS, DynamicModel<double>>(m, "ReLU")
-        .def("new", &makeModel<ReLU_CLASS, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
-        .def("forward", &ReLU_CLASS::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-    #undef ReLU_CLASS
+    make_model<DynamicBinder<double, AutoEncoder<double, ActivationFunc::Linear, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "AutoEncoder");
 
-    #define Sigmoid_CLASS DynamicBinder<double, Layer<double, ActivationFunc::Sigmoid, OptimizerClass::Adam>>
-    py::class_<Sigmoid_CLASS, DynamicModel<double>>(m, "Sigmoid")
-        .def("new", &makeModel<Sigmoid_CLASS, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
-        .def("forward", &Sigmoid_CLASS::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-    #undef Sigmoid_CLASS
+    make_model<DynamicBinder<double, PySequence<double>>, std::vector<DynamicModel<double>*>>(m, "Sequence");
 
-    #define TanH_CLASS DynamicBinder<double, Layer<double, ActivationFunc::TanH, OptimizerClass::Adam>>
-    py::class_<TanH_CLASS, DynamicModel<double>>(m, "TanH")
-        .def("new", &makeModel<TanH_CLASS, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
-        .def("forward", &TanH_CLASS::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-    #undef TanH_CLASS
+    py::class_<training::Trainer<DynamicModel<double>>>(m, "Trainer")
+        .def(py::init<
+            std::shared_ptr<DynamicModel<double>>,
+            std::vector<DynamicModel<double>::InputType>,
+            std::vector<DynamicModel<double>::OutputType>
+        >())
+        .def("train", &training::Trainer<DynamicModel<double>>::train, "Trains a model", py::return_value_policy::automatic);
 
-    #define SoftMax_CLASS DynamicBinder<double, Layer<double, ActivationFunc::SoftMax, OptimizerClass::Adam>>
-    py::class_<SoftMax_CLASS, DynamicModel<double>>(m, "SoftMax")
-        .def("new", &makeModel<SoftMax_CLASS, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
-        .def("forward", &SoftMax_CLASS::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-    #undef SoftMax_CLASS
+    make_model<DynamicBinder<double, TestModel>, double, double>(m, "TestModel");
 
-    #define AutoEncoder_CLASS DynamicBinder<double, AutoEncoder<double, ActivationFunc::ReLU, OptimizerClass::Adam>>
-    py::class_<AutoEncoder_CLASS, DynamicModel<double>>(m, "AutoEncoder")
-        .def("new", &makeModel<AutoEncoder_CLASS, size_t, size_t, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
-        .def("forward", &AutoEncoder_CLASS::forward, "Performs a forward pass through the entire model.", py::return_value_policy::reference);
-    #undef AutoEncoder_CLASS
-
-    py::class_<DynamicBinder<double, PySequence<double>>, DynamicModel<double>>(m, "Sequence")
-        .def("new", &makeModel<DynamicBinder<double, PySequence<double>>, py::args>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
-        .def("forward", &DynamicBinder<double, PySequence<double>>::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-
-    py::class_<training::Trainer<DynamicBinder<double, PySequence<double>>>>(m, "Trainer")
-        .def(py::init<DynamicBinder<double, PySequence<double>>&, std::vector<Eigen::VectorXd>&, std::vector<Eigen::VectorXd>&>())
-        .def("train", &training::Trainer<DynamicBinder<double, PySequence<double>>>::train, "Trains a model", py::return_value_policy::reference);
-
-
-    py::class_<TestModel>(m, "TestModel")
-        .def("new", &makeModel<TestModel, double, double>, "Get a pointer to a new instance of this class.", py::return_value_policy::reference)
-        .def("forward", &TestModel::forward, "Performs a forward pass through the model.", py::return_value_policy::reference);
-
-    py::class_<training::Trainer<TestModel>>(m, "StaticTrainer")
-        .def(py::init<TestModel&, std::vector<Eigen::VectorXd>&, std::vector<Eigen::VectorXd>&>())
-        .def("train", &training::Trainer<TestModel>::train, "Trains a model", py::return_value_policy::reference);
+    m.def("fixed_trainer", [](std::vector<TestModel::InputType> inputs, std::vector<TestModel::OutputType> outputs, size_t N, double a){
+        py::print("Creating model");        
+        auto model = std::make_shared<TestModel>(0.9, 0.999);
+        py::print("Creating trainer");
+        auto trainer = training::Trainer<TestModel>(model, inputs, outputs);
+        py::print("Starting training");
+        return trainer.train(N, a);
+    });
 }

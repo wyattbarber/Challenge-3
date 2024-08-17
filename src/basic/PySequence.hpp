@@ -21,18 +21,14 @@ namespace neuralnet
         std::vector<DynamicModel<T>*> layers;
 
     public:
-        typedef Eigen::Vector<T, Eigen::Dynamic> DataType;
+        typedef Eigen::Vector<T, Eigen::Dynamic> InputType;
+        typedef Eigen::Vector<T, Eigen::Dynamic> OutputType;
 
         /** Compose a model from a sequence of smaller models
          * 
         */
-        PySequence(py::args args)
+        PySequence(std::vector<DynamicModel<T>*> layers) : layers{layers}
         {
-            for(auto arg = args.begin(); arg != args.end(); ++arg)
-            {
-                void* a = arg->cast<void *>();
-                layers.push_back((DynamicModel<T>*)a);
-            }
         }
 
         /**
@@ -41,7 +37,7 @@ namespace neuralnet
          * @param input data to pass to the input layer
          * @return output of the final layer
          */
-        DataType forward(DataType& input);
+        OutputType forward(InputType& input);
         
         /**
          * Performs one backward pass through each layer
@@ -49,16 +45,16 @@ namespace neuralnet
          * @param err Output error of the model
          * @return Error gradient of the input to the model
          */
-        DataType backward(DataType& error);
+        InputType backward(OutputType& error);
 
         void update(double rate);
     };
 };
 
 template <typename T>
-neuralnet::PySequence<T>::DataType neuralnet::PySequence<T>::forward(neuralnet::PySequence<T>::DataType& input)
+neuralnet::PySequence<T>::OutputType neuralnet::PySequence<T>::forward(neuralnet::PySequence<T>::InputType& input)
 {
-    DataType h = input;
+    InputType h = input;
     for (auto l : layers)
     {
         h = l->forward(h);
@@ -68,9 +64,9 @@ neuralnet::PySequence<T>::DataType neuralnet::PySequence<T>::forward(neuralnet::
 
 
 template <typename T>
-neuralnet::PySequence<T>::DataType neuralnet::PySequence<T>::backward(neuralnet::PySequence<T>::DataType& err)
+neuralnet::PySequence<T>::InputType neuralnet::PySequence<T>::backward(neuralnet::PySequence<T>::OutputType& err)
 {
-    DataType e = err;
+    OutputType e = err;
     for (int l = layers.size() - 1; l >= 0; --l)
     {
         e = layers[l]->backward(e);
@@ -82,12 +78,10 @@ neuralnet::PySequence<T>::DataType neuralnet::PySequence<T>::backward(neuralnet:
 template <typename T>
 void neuralnet::PySequence<T>::update(double rate)
 {
-    for(auto l = layers.begin(); l != layers.end(); ++l)
+    for(auto l : layers)
     {
-        (*l)->update(rate);
+        l->update(rate);
     }
 }
-
-
 
 #endif
