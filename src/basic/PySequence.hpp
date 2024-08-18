@@ -18,7 +18,7 @@ namespace neuralnet
     class PySequence : public Model<PySequence<T>>
     {
     protected:
-        std::vector<DynamicModel<T>*> layers;
+        std::vector<std::shared_ptr<DynamicModel<T>>> layers;
 
     public:
         typedef Eigen::Vector<T, Eigen::Dynamic> InputType;
@@ -27,7 +27,7 @@ namespace neuralnet
         /** Compose a model from a sequence of smaller models
          * 
         */
-        PySequence(std::vector<DynamicModel<T>*> layers) : layers{layers}
+        PySequence(std::vector<std::shared_ptr<DynamicModel<T>>> layers) : layers{layers}
         {
         }
 

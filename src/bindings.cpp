@@ -1,5 +1,3 @@
-#define EIGEN_STACK_ALLOCATION_LIMIT (128000 * 2)
-
 #include "basic/Layer.hpp"
 #include "basic/PySequence.hpp"
 #include "basic/Compound.hpp"
@@ -69,6 +67,7 @@ void make_model(py::module m, const char* name)
     .def("forward", &T::forward, "Performs a forward pass through the model.");
 }
 
+
 PYBIND11_MODULE(neuralnet, m)
 {
     m.doc() = "Various neural network implementations";
@@ -81,25 +80,42 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<DynamicBinder<double, Layer<double, ActivationFunc::TanH, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "TanH");
     make_model<DynamicBinder<double, Layer<double, ActivationFunc::SoftMax, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "SoftMax");
 
-    make_model<DynamicBinder<double, AutoEncoder<double, ActivationFunc::Linear, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "AutoEncoder");
+    make_model<DynamicBinder<double, AutoEncoder<double, ActivationFunc::ReLU, OptimizerClass::None>>, size_t, size_t, double, double>(m, "AutoEncoder");
 
-    make_model<DynamicBinder<double, PySequence<double>>, std::vector<DynamicModel<double>*>>(m, "Sequence");
+    make_model<DynamicBinder<double, PySequence<double>>, std::vector<std::shared_ptr<DynamicModel<double>>>>(m, "Sequence");
 
-    py::class_<training::Trainer<DynamicModel<double>>>(m, "Trainer")
+    py::class_<training::Trainer<DynamicBinder<double, PySequence<double>>>>(m, "Trainer")
         .def(py::init<
-            std::shared_ptr<DynamicModel<double>>,
-            std::vector<DynamicModel<double>::InputType>,
-            std::vector<DynamicModel<double>::OutputType>
+            DynamicBinder<double, PySequence<double>>&,
+            std::vector<DynamicModel<double>::InputType>&,
+            std::vector<DynamicModel<double>::OutputType>&
         >())
-        .def("train", &training::Trainer<DynamicModel<double>>::train, "Trains a model", py::return_value_policy::automatic);
+        .def("train", &training::Trainer<DynamicBinder<double, PySequence<double>>>::train, "Trains a model", py::return_value_policy::automatic);
 
     make_model<DynamicBinder<double, TestModel>, double, double>(m, "TestModel");
 
-    m.def("fixed_trainer", [](std::vector<TestModel::InputType> inputs, std::vector<TestModel::OutputType> outputs, size_t N, double a){
+    m.def("train", [](DynamicBinder<double, PySequence<double>>& model, std::vector<TestModel::InputType>& inputs, std::vector<TestModel::OutputType>& outputs, size_t N, double a){
+        training::Trainer<DynamicBinder<double, PySequence<double>>> trainer(model, inputs, outputs);
+        return trainer.train(N, a);
+    });
+
+    m.def("fixed_trainer", [](std::vector<TestModel::InputType>& inputs, std::vector<TestModel::OutputType>& outputs, size_t N, double a){
         py::print("Creating model");        
-        auto model = std::make_shared<TestModel>(0.9, 0.999);
+        auto model = TestModel(0.9, 0.999);
         py::print("Creating trainer");
         auto trainer = training::Trainer<TestModel>(model, inputs, outputs);
+        py::print("Starting training");
+        return trainer.train(N, a);
+    });
+
+    m.def("fixed_encoder", [](std::vector<TestModel::InputType>& inputs, size_t N, double a){
+        py::print("Creating model");        
+        auto model = AutoEncoder<double, ActivationFunc::ReLU, OptimizerClass::None>(784, 50, 0.9, 0.999);
+        // auto model = std::make_shared<DynamicBinder<double, AutoEncoder<double, ActivationFunc::ReLU, OptimizerClass::None>>>(784, 10, 0.9, 0.999);
+        // py::print("Creating sequence");
+        // auto seq = PySequence<double>({model});
+        py::print("Creating trainer");
+        auto trainer = training::Trainer<AutoEncoder<double, ActivationFunc::ReLU, OptimizerClass::None>>(model, inputs, inputs);
         py::print("Starting training");
         return trainer.train(N, a);
     });

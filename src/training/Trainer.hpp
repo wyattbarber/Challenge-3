@@ -24,10 +24,11 @@ namespace training
          * @param inputs Input dataset for training
          * @param outputs Output dataset for training
          */
-        Trainer(std::shared_ptr<ModelType> model, std::vector<InputType> inputs, std::vector<OutputType> outputs) : model(model)
+        Trainer(ModelType& model, std::vector<InputType>& inputs, std::vector<OutputType>& outputs) : 
+            model(model),
+            inputs(inputs),
+            outputs(outputs)
         {
-            this->inputs = inputs;
-            this->outputs = outputs;
         }
 
         /** Trains the model over a number of epochs
@@ -39,9 +40,9 @@ namespace training
         std::vector<double> train(unsigned N, double rate);
 
     protected:
-        std::shared_ptr<ModelType> model;
-        std::vector<InputType> inputs; 
-        std::vector<OutputType> outputs;
+        ModelType& model;
+        std::vector<InputType>& inputs; 
+        std::vector<OutputType>& outputs;
     };  
 }
 
@@ -66,13 +67,13 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
         {
             // Test forward pass and calculate error for this input set
             InputType in = inputs[i];
-            OutputType out = model->forward(in);
+            OutputType out = model.forward(in);
             OutputType error = out - outputs[i];
             e += error.norm();
             // Run backward pass
-            model->backward(error);
+            model.backward(error);
             // Update model
-            model->update(rate);
+            model.update(rate);
         }
         py::print("Epoch", iter, "average loss:", e / out_norm);
         avg_err.push_back(e / out_norm);

@@ -16,6 +16,8 @@ namespace neuralnet {
         template <typename... Ts>
         AutoEncoder(Ts... Args)
         {
+            py::print("Creating autoencoder instance");
+            
             auto args = std::tuple<Ts...>(Args...);
 
             this->in_size = std::get<0>(args);
