@@ -4,9 +4,6 @@
 #include "../Model.hpp"
 #include <random>
 #include <vector>
-#include <pybind11/pybind11.h>
-#include <pybind11/pytypes.h>
-namespace py = pybind11;
 
 namespace neuralnet
 {

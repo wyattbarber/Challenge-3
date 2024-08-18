@@ -2,6 +2,10 @@
 #define _AUTOENCODER_HPP
 
 #include "../Model.hpp"
+#include "../basic/Activation.hpp"
+#include "../optimizers/Optimizer.hpp"
+
+using namespace optimization;
 
 namespace neuralnet {
 
@@ -15,9 +19,7 @@ namespace neuralnet {
 
         template <typename... Ts>
         AutoEncoder(Ts... Args)
-        {
-            py::print("Creating autoencoder instance");
-            
+        {            
             auto args = std::tuple<Ts...>(Args...);
 
             this->in_size = std::get<0>(args);
@@ -79,7 +81,7 @@ namespace neuralnet {
 
         Eigen::MatrixXd W;
         Eigen::VectorXd blt, brc;
-        Eigen::VectorXd in;
+        Eigen::VectorXd in, latent;
         Eigen::VectorXd zlt, zrc;
         Eigen::VectorXd alt, arc;
         Eigen::VectorXd drc, dlt;
@@ -160,14 +162,14 @@ void neuralnet::AutoEncoder<T, F, C>::update(double rate)
 {
     if constexpr (C == OptimizerClass::Adam)
     {
-        auto tmp = in * (dlt.transpose() + drc);
+        auto tmp = in * ((in * dlt.transpose()) + (drc * alt.transpose()));
         adam::adam_update_params(rate / 2.0, adam_w, W, tmp);
         adam::adam_update_params(rate, adam_blt, blt, dlt);
         adam::adam_update_params(rate, adam_brc, brc, drc);
     }
     else
     {
-        W -= in * (dlt.transpose() + drc) * (rate / 2.0);
+        W -= ((in * dlt.transpose()) + (drc * alt.transpose())) * (rate / 2.0);
         blt -= rate * dlt;
         brc -= rate * drc;
     }

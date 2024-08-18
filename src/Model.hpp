@@ -2,8 +2,6 @@
 #define _MODEL_HPP
 
 #include <Eigen/Dense>
-#include <pybind11/pybind11.h>
-namespace py = pybind11;
 #include <utility>
 #include <memory>
 
