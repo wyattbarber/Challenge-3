@@ -69,8 +69,7 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
         for (int i = 0; i < inputs.size(); ++i)
         {
             // Test forward pass and calculate error for this input set
-            InputType in = inputs[i];
-            OutputType out = model.forward(in);
+            OutputType out = model.forward(inputs[i]);
             OutputType error = out - outputs[i];
             e += error.norm();
             // Run backward pass

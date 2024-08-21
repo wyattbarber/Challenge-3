@@ -67,11 +67,12 @@ namespace neuralnet
                 adam_biases.b2powt = adam_biases.b2;
             }
         }
-        
 
-        OutputType forward(InputType &input);
+        template<typename X>      
+        OutputType forward(X&& input);
         
-        InputType backward(OutputType &error);
+        template<typename X>
+        InputType backward(X&& error);
 
         void update(double rate);
 
@@ -97,7 +98,6 @@ void neuralnet::Layer<T, F, C>::update(double rate)
         auto tmp = in * d.transpose();
         adam::adam_update_params(rate, adam_weights, weights, tmp);
         adam::adam_update_params(rate, adam_biases, biases, d);
-
     }
     else
     {
@@ -107,19 +107,21 @@ void neuralnet::Layer<T, F, C>::update(double rate)
 }
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::Layer<T, F, C>::OutputType neuralnet::Layer<T, F, C>::forward(neuralnet::Layer<T, F, C>::InputType &input)
+template<typename X>
+neuralnet::Layer<T, F, C>::OutputType neuralnet::Layer<T, F, C>::forward(X&& input)
 {
     // Save input for this pass and calculate weighted signals
     in = {input};
     z = biases;
-    z += weights.transpose() * input;
+    z += (weights.transpose() * input);
     // Calculate and save activation function output
     a =  Activation<Eigen::Dynamic, T, F>::f(z);
     return a;
 }
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::Layer<T, F, C>::InputType neuralnet::Layer<T, F, C>::backward(neuralnet::Layer<T, F, C>::OutputType &err)
+template<typename X>
+neuralnet::Layer<T, F, C>::InputType neuralnet::Layer<T, F, C>::backward(X&& err)
 {
     // Calculate this layers error gradient
     d = Activation<Eigen::Dynamic, T, F>::df(z, a, err);

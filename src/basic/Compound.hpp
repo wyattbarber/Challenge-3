@@ -10,30 +10,28 @@ namespace neuralnet
     namespace sequential
     {
         template <typename V, class M, class... Ms>
-        auto forward(V &input, M &layer, Ms &...Layers)
+        auto forward(V&& input, M &layer, Ms &...Layers)
         {
             if constexpr (sizeof...(Layers) > 0)
             {
-                auto x = layer.forward(input);
-                return forward(x, Layers...);
+                return forward(layer.forward(std::forward<V>(input)), Layers...);
             }
             else
             {
-                return layer.forward(input);
+                return layer.forward(std::forward<V>(input));
             }
         }
 
         template <typename V, class M, class... Ms>
-        auto backward(V &error, M &layer, Ms &...Layers)
+        auto backward(V&& error, M &layer, Ms &...Layers)
         {
             if constexpr (sizeof...(Layers) > 0)
             {
-                auto x = backward(error, Layers...);
-                return layer.backward(x);
+                return layer.backward(backward(std::forward<V>(error), Layers...));
             }
             else
             {
-                return layer.backward(error);
+                return layer.backward(std::forward<V>(error));
             }
         }
 

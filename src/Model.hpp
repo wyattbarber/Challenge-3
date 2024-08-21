@@ -23,7 +23,8 @@ namespace neuralnet
          * @param input input vector
          * @return output of this layer
          */
-        auto forward(Eigen::VectorXd &input){return static_cast<ModelType*>(this)->forward(input);}
+        template<typename X>
+        auto forward(X&& input){return static_cast<ModelType*>(this)->forward(std::forward<X>(input));}
 
         /**
          * Propagates error over this layer, and back over input layers
@@ -38,7 +39,8 @@ namespace neuralnet
          * @param error error gradient of layer following this one
          * @return error of the layer preceding this one
          */
-        auto backward(Eigen::VectorXd &error){return static_cast<ModelType*>(this)->backward(error);}
+        template<typename X>
+        auto backward(X&& error){return static_cast<ModelType*>(this)->backward(std::forward<X>(error));}
 
         /**
          * Updates parameters of this layer
@@ -66,9 +68,11 @@ namespace neuralnet
         typedef Eigen::Vector<T, Eigen::Dynamic> InputType; 
         typedef Eigen::Vector<T, Eigen::Dynamic> OutputType; 
 
-        virtual OutputType forward(InputType &input) = 0;
+        virtual OutputType forward(InputType& input) = 0;        
+        virtual OutputType forward(InputType&& input) = 0;
 
-        virtual InputType backward(OutputType &error) = 0;
+        virtual InputType backward(OutputType& error) = 0;
+        virtual InputType backward(OutputType&& error) = 0;
 
         virtual void update(double rate){};
     };
@@ -86,37 +90,16 @@ namespace neuralnet
         template<typename... Ts>
         DynamicBinder(Ts... Args) : model(Args...){}
 
+        OutputType forward(InputType& input){ return model.forward(input); }
+        OutputType forward(InputType&& input){ return model.forward(input); }
 
-        OutputType forward(InputType &input)
-        {
-            return model.forward(input);
-        }
+        InputType backward(OutputType& error){ return model.backward(error); }
+        InputType backward(OutputType&& error){ return model.backward(error); }
 
-
-        InputType backward(OutputType &error)
-        {
-            return model.backward(error);
-        }
-
-
-        void update(double rate)
-        {
-            model.update(rate);
-        }
+        void update(double rate){ model.update(rate); }
 
         protected:
         ModelType model;
-    };
-
-    /** Factory to create new model instances to pass to python
-     *
-     * @tparam ModelType concrete model type to create
-     * @tparam CArgs concrete model constructor argument types
-     */
-    template <class ModelType, typename... CTypes>
-    auto makeModel(CTypes... CArgs)
-    {
-        return std::shared_ptr<ModelType>(new ModelType(CArgs...));
     };
 }
 

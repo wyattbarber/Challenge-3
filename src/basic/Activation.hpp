@@ -26,8 +26,8 @@ namespace neuralnet
     class Activation
     {
     public:
-        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        template <typename X> static Eigen::Vector<T, N> f(X&& input);
+        template <typename X, typename Y, typename Z> static Eigen::Vector<T, N> df(X&& z, Y&& activation, Z&& error);
     };
 
     // Specialization definitions
@@ -35,40 +35,40 @@ namespace neuralnet
     class Activation<N, T, ActivationFunc::Linear>
     {
     public:
-        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        template <typename X> static Eigen::Vector<T, N> f(X&& input);
+        template <typename X, typename Y, typename Z> static Eigen::Vector<T, N> df(X&& z, Y&& activation, Z&& error);
     };
 
     template <int N, typename T>
     class Activation<N, T, ActivationFunc::ReLU>
     {
     public:
-        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        template <typename X> static Eigen::Vector<T, N> f(X&& input);
+        template <typename X, typename Y, typename Z> static Eigen::Vector<T, N> df(X&& z, Y&& activation, Z&& error);
     };
 
     template <int N, typename T>
     class Activation<N, T, ActivationFunc::Sigmoid>
     {
     public:
-        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        template <typename X> static Eigen::Vector<T, N> f(X&& input);
+        template <typename X, typename Y, typename Z> static Eigen::Vector<T, N> df(X&& z, Y&& activation, Z&& error);
     };
 
     template <int N, typename T>
     class Activation<N, T, ActivationFunc::TanH>
     {
     public:
-        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        template <typename X> static Eigen::Vector<T, N> f(X&& input);
+        template <typename X, typename Y, typename Z> static Eigen::Vector<T, N> df(X&& z, Y&& activation, Z&& error);
     };
 
     template <int N, typename T>
     class Activation<N, T, ActivationFunc::SoftMax>
     {
     public:
-        static Eigen::Vector<T, N> f(Eigen::Vector<T, N> &input);
-        static Eigen::Vector<T, N> df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error);
+        template <typename X> static Eigen::Vector<T, N> f(X&& input);
+        template <typename X, typename Y, typename Z> static Eigen::Vector<T, N> df(X&& z, Y&& activation, Z&& error);
     };
 };
 
@@ -76,13 +76,15 @@ namespace neuralnet
 Linear activation function
 */
 template <int N, typename T>
-Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Linear>::f(Eigen::Vector<T, N> &input)
+template <typename X> 
+Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Linear>::f(X&& input)
 {
     return input;
 }
 
 template <int N, typename T>
-Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Linear>::df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error)
+template <typename X, typename Y, typename Z> 
+Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Linear>::df(X&& z, Y&& activation, Z&& error)
 {
     return error;
 }
@@ -91,7 +93,8 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Linea
 ReLU activation function
 */
 template <int N, typename T>
-Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::ReLU>::f(Eigen::Vector<T, N> &input)
+template <typename X> 
+Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::ReLU>::f(X&& input)
 {
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(input.size());
     for (size_t i = 0; i < input.size(); ++i)
@@ -100,7 +103,8 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::ReLU>
 }
 
 template <int N, typename T>
-Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::ReLU>::df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error)
+template <typename X, typename Y, typename Z> 
+Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::ReLU>::df(X&& z, Y&& activation, Z&& error)
 {
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(activation.size());
     for (int i = 0; i < activation.size(); ++i)
@@ -114,7 +118,8 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::ReLU>
 Sigmoid activation function
 */
 template <int N, typename T>
-Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Sigmoid>::f(Eigen::Vector<T, N> &input)
+template <typename X> 
+Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Sigmoid>::f(X&& input)
 {
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(input.size());
     for (int i = 0; i < input.size(); ++i)
@@ -126,7 +131,8 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Sigmo
 }
 
 template <int N, typename T>
-Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Sigmoid>::df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error)
+template <typename X, typename Y, typename Z>  
+Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Sigmoid>::df(X&& z, Y&& activation, Z&& error)
 {
     // Calculate this layers error gradient
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(activation.size());
@@ -141,7 +147,8 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Sigmo
 TanH activation function
 */
 template <int N, typename T>
-Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::TanH>::f(Eigen::Vector<T, N> &input)
+template <typename X> 
+Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::TanH>::f(X&& input)
 {
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(input.size());
     for (int i = 0; i < input.size(); ++i)
@@ -154,7 +161,8 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::TanH>
 }
 
 template <int N, typename T>
-Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::TanH>::df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error)
+template <typename X, typename Y, typename Z> 
+Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::TanH>::df(X&& z, Y&& activation, Z&& error)
 {
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(activation);
     for (int i = 0; i < activation.size(); ++i)
@@ -169,7 +177,8 @@ Softmax activation function
 */
 static const double epsilon = 1e-9; /// Smallest value to allow in denominators, for stability
 template <int N, typename T>
-Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::SoftMax>::f(Eigen::Vector<T, N> &input)
+template <typename X> 
+Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::SoftMax>::f(X&& input)
 {
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(input.size());
     for (int i = 0; i < input.size(); ++i)
@@ -182,7 +191,8 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::SoftM
 }
 
 template <int N, typename T>
-Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::SoftMax>::df(Eigen::Vector<T, N> &z, Eigen::Vector<T, N> &activation, Eigen::Vector<T, N> &error)
+template <typename X, typename Y, typename Z> 
+Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::SoftMax>::df(X&& z, Y&& activation, Z&& error)
 {
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(activation.size());
     Eigen::Vector<T, N> kd = Eigen::Vector<T, N>::Zero(activation.size());
@@ -194,4 +204,5 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::SoftM
     }
     return out;
 }
+
 #endif

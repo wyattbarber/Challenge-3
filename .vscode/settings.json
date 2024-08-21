@@ -82,6 +82,7 @@
         "memory_resource": "cpp",
         "string_view": "cpp",
         "cinttypes": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "chrono": "cpp"
     }
 }
