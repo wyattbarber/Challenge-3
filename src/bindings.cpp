@@ -2,7 +2,7 @@
 #include "basic/PySequence.hpp"
 #include "basic/Compound.hpp"
 #include "autoencoder/AutoEncoder.hpp"
-// #include "autoencoder/DeepAutoEncoder.hpp"
+#include "autoencoder/DeepAutoEncoder.hpp"
 #include "training/Trainer.hpp"
 #include "optimizers/Optimizer.hpp"
 #include <tuple>
@@ -66,7 +66,6 @@ void make_model(py::module m, const char* name)
     py::class_<T, DynamicModel<double>, std::shared_ptr<T>>(m, name)
     .def(py::init<Ts...>())
     .def("forward", static_cast<Eigen::VectorXd (T::*)(Eigen::VectorXd&)>(&T::forward), "Performs a forward pass through the model.");
-    // .def("forward", py::overload_cast<>(), "Performs a forward pass through the model.");
 }
 
 PYBIND11_MODULE(neuralnet, m)
@@ -82,8 +81,8 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<DynamicBinder<double, Layer<double, ActivationFunc::SoftMax, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "SoftMax");
 
     make_model<DynamicBinder<double, AutoEncoder<double, ActivationFunc::ReLU, OptimizerClass::None>>, size_t, size_t, double, double>(m, "AutoEncoder");
-    // make_model<DynamicBinder<double, DeepAutoEncoder<double, ActivationFunc::TanH, ActivationFunc::ReLU, ActivationFunc::Sigmoid, OptimizerClass::Adam>>,
-    //     std::vector<size_t>, double, double>(m, "DeepAutoEncoder");
+    make_model<DynamicBinder<double, DeepAutoEncoder<double, ActivationFunc::TanH, ActivationFunc::ReLU, ActivationFunc::Sigmoid, OptimizerClass::Adam>>,
+        std::vector<size_t>, double, double>(m, "DeepAutoEncoder");
 
     make_model<DynamicBinder<double, PySequence<double>>, std::vector<std::shared_ptr<DynamicModel<double>>>>(m, "Sequence");
 

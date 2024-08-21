@@ -78,6 +78,12 @@ namespace neuralnet {
         template<typename X>
         OutputType decode(X&& latent);
 
+        template<typename X>
+        LatentType errorReconstruct(X&& error);
+
+        template<typename X>
+        InputType errorLatent(X&& error);
+
         void update(double rate);
     
     protected:
@@ -94,12 +100,6 @@ namespace neuralnet {
         adam::AdamData<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> adam_w;
         adam::AdamData<LatentType> adam_blt;
         adam::AdamData<OutputType> adam_brc;
-
-        template<typename X>
-        LatentType errorReconstruct(X&& error);
-
-        template<typename X>
-        InputType errorLatent(X&& error);
     };
 }
 
