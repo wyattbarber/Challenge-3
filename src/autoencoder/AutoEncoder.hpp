@@ -174,7 +174,7 @@ void neuralnet::AutoEncoder<T, F, C>::update(double rate)
 {
     if constexpr (C == OptimizerClass::Adam)
     {
-        auto tmp = in * ((in * dlt.transpose()) + (drc * alt.transpose()));
+        auto tmp = ((in * dlt.transpose()) + (drc * alt.transpose()));
         adam::adam_update_params(rate / 2.0, adam_w, W, tmp);
         adam::adam_update_params(rate, adam_blt, blt, dlt);
         adam::adam_update_params(rate, adam_brc, brc, drc);

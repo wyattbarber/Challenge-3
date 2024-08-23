@@ -28,7 +28,7 @@ namespace neuralnet
             {
                 // At least two layers exist, create input and latent
                 input_layer = std::make_unique<AutoEncoder<T, FI, C>>(dims[0], dims[1], Args...);
-                latent_layer = std::make_unique<AutoEncoder<T, FL, C>>(dims[n_layers-2], dims[n_layers-1], Args...);
+                latent_layer = std::make_unique<AutoEncoder<T, FL, C>>(dims[n_layers-1], dims[n_layers], Args...);
                 if(n_layers > 2)
                 {
                     // Hidden layers exist, add to vector
