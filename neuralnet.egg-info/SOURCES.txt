@@ -1,7 +1,0 @@
-README.md
-setup.py
-neuralnet.egg-info/PKG-INFO
-neuralnet.egg-info/SOURCES.txt
-neuralnet.egg-info/dependency_links.txt
-neuralnet.egg-info/top_level.txt
-src/bindings.cpp

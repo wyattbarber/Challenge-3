@@ -2,9 +2,6 @@
 #define _TRAINER_HPP
 
 #include "../Model.hpp"
-#include <pybind11/pybind11.h>
-namespace py = pybind11;
-
 
 using namespace neuralnet;
 
@@ -77,7 +74,6 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
             // Update model
             model.update(rate);
         }
-        py::print("Epoch", iter, "average loss:", e / out_norm);
         avg_err.push_back(e / out_norm);
     }
     return avg_err;

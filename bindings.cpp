@@ -1,10 +1,10 @@
-#include "basic/Layer.hpp"
-#include "basic/PySequence.hpp"
-#include "basic/Compound.hpp"
-#include "autoencoder/AutoEncoder.hpp"
-#include "autoencoder/DeepAutoEncoder.hpp"
-#include "training/Trainer.hpp"
-#include "optimizers/Optimizer.hpp"
+#include "include/basic/Layer.hpp"
+#include "include/basic/PySequence.hpp"
+#include "include/basic/Compound.hpp"
+#include "include/autoencoder/AutoEncoder.hpp"
+#include "include/autoencoder/DeepAutoEncoder.hpp"
+#include "include/training/Trainer.hpp"
+#include "include/optimizers/Optimizer.hpp"
 #include <tuple>
 
 #include <pybind11/pybind11.h>

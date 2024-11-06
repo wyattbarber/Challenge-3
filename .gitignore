@@ -7,12 +7,13 @@ CMakeCache.txt
 UNKNOWN.egg-info/**
 *.png
 /neuralnet.egg-info
-/.vscode
+.vscode/** */
 *.html
-neuralnet.egg-info/SOURCES.txt
+neuralnet.egg-info/**
 debug/**
 !debug/__init__.py
 !debug/debug.py
 !debug/neuralnet.py
 !debug/debug.sh
 !debug/python-valgrind.supp
+rebuild.bat
