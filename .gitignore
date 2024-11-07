@@ -17,3 +17,4 @@ debug/**
 !debug/debug.sh
 !debug/python-valgrind.supp
 rebuild.bat
+test/data/**

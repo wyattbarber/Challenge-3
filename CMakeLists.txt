@@ -77,5 +77,5 @@ else()
 
     pybind11_add_module(neuralnet bindings.cpp)
     target_link_libraries(neuralnet PRIVATE Eigen3::Eigen)
-
+    install(TARGETS neuralnet DESTINATION .)
 endif()
