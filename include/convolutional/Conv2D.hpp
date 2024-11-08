@@ -5,13 +5,16 @@
 #include "../basic/Activation.hpp"
 #include "../optimizers/Optimizer.hpp"
 #include <unsupported/Eigen/CXX11/Tensor>
+#include <algorithm>
 
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
 
 using namespace optimization;
 
 namespace neuralnet {
 
-    template <typename T, size_t K, OptimizerClass C>
+    template <typename T, int K, OptimizerClass C>
     class Convolution2D : public Model<Convolution2D<T, K, C>>
     {
         static_assert(std::bool_constant<(K % 2) == 1>::value, "Kernel size K must be odd.");
@@ -60,31 +63,30 @@ namespace neuralnet {
     };
 
 
-    template<typename T, size_t K, OptimizerClass C>
+    template<typename T, int K, OptimizerClass C>
     template<typename X>
     Convolution2D<T,K,C>::OutputType Convolution2D<T,K,C>::forward(X&& input)
     {
-        auto X = input.dimension(1);
-        auto Y = input.dimension(0);
+        const int X = input.dimension(1);
+        const int Y = input.dimension(0);
+
         Eigen::Tensor<T,3> out(Y, X, out_channels);
+        Eigen::array<ptrdiff_t, 2> dims({0, 1});
+        Eigen::array<ptrdiff_t, 1> dimsum({2});
 
-        Eigen::Array<Eigen::Index, 3, 1> out_offsets = {0, 0, 0};
-        Eigen::Array<Eigen::Index, 4, 1> kernel_offsets = {0, 0, 0, 0};
-        Eigen::Array<Eigen::Index, 3, 1> out_extents = {Y,X,1};
-        Eigen::Array<Eigen::Index, 4, 1> kernel_extents = {K, K, in_channels, 1};
+        Eigen::array<Eigen::Index, 2> pad_start({K/2, K/2});
+        Eigen::array<Eigen::Index, 2> pad_extent({Y - K + 1, X - K + 1});
 
-        for(size_t i = 0; i < out_channels; ++i)
+        for(int k = 0; k < out_channels; ++k)
         {
-            out_offsets(3,0) = i;
-            kernel_offsets(4,0) = i;
-            Eigen::array<ptrdiff_t, 3> dims = {0,1,2};
-            out.chip(i, 3) = static_cast<InputType>(input).convolve(kernels.chip(i, 4), dims);
+            out.chip(k,2).slice(pad_start, pad_extent) = input.convolve(kernels.chip(k,3), dims).sum(dimsum);
         }
+
         return out;
     }
 
 
-    template<typename T, size_t K, OptimizerClass C>
+    template<typename T, int K, OptimizerClass C>
     template<typename X>
     Convolution2D<T,K,C>::InputType Convolution2D<T,K,C>::backward(X&& error)
     {

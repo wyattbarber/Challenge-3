@@ -54,7 +54,8 @@ PYBIND11_MODULE(neuralnet, m)
         >())
         .def("train", &training::Trainer<DynamicBinder<double, PySequence<double>>>::train, "Trains a model", py::return_value_policy::automatic);
 
-    m.def("convolve", [](Eigen::Tensor<double,3> in, size_t in_channels, size_t out_channels){
-        return Convolution2D<double, 5, OptimizerClass::None>(in_channels, out_channels).forward(in);
+    m.def("convolve", [](Eigen::Tensor<double,3>& in, size_t in_channels, size_t out_channels){
+        Convolution2D<double, 5, OptimizerClass::None> model(in_channels, out_channels);
+        return model.forward(in);
     });
 }
