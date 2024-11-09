@@ -2,6 +2,7 @@
 #define _TRAINER_HPP
 
 #include "../Model.hpp"
+#include <unsupported/Eigen/CXX11/Tensor>
 
 using namespace neuralnet;
 
@@ -56,7 +57,15 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
     double out_norm = 0.0;
     for (int i = 0; i < outputs.size(); ++i)
     {
-        out_norm += outputs[i].norm();
+        if constexpr (std::is_convertible_v<ModelType::OutputType, Eigen::Tensor<double,3>>)
+        {
+            Eigen::Tensor<double,0> s = outputs[i].sum();
+            out_norm += s(0);
+        }
+        else
+        {
+            out_norm += outputs[i].norm();
+        } 
     }
 
     
@@ -68,7 +77,15 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
             // Test forward pass and calculate error for this input set
             OutputType out = model.forward(inputs[i]);
             OutputType error = out - outputs[i];
-            e += error.norm();
+            if constexpr (std::is_convertible_v<ModelType::OutputType, Eigen::Tensor<double,3>>)
+            {
+                Eigen::Tensor<double,0> s = error.sum();
+                e += s(0);
+            }
+            else
+            {
+                e += error.norm();
+            } 
             // Run backward pass
             model.backward(error);
             // Update model

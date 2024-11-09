@@ -2,6 +2,7 @@
 #define _MODEL_HPP
 
 #include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <utility>
 #include <memory>
 
@@ -77,6 +78,23 @@ namespace neuralnet
         virtual void update(double rate){};
     };
 
+    template<typename T>
+    class DynamicTensor3Model
+    {
+        public:
+
+        typedef Eigen::Tensor<T, 3> InputType; 
+        typedef Eigen::Tensor<T, 3> OutputType; 
+
+        virtual OutputType forward(InputType& input) = 0;        
+        virtual OutputType forward(InputType&& input) = 0;
+
+        virtual InputType backward(OutputType& error) = 0;
+        virtual InputType backward(OutputType&& error) = 0;
+
+        virtual void update(double rate){};
+    };
+
     /**
      * 
      */
@@ -84,11 +102,33 @@ namespace neuralnet
     class DynamicBinder : public DynamicModel<T>
     {
         public:
-        typedef Eigen::Vector<T, Eigen::Dynamic> InputType; 
-        typedef Eigen::Vector<T, Eigen::Dynamic> OutputType; 
+        typedef DynamicModel<T>::InputType InputType; 
+        typedef DynamicModel<T>::OutputType OutputType; 
         
         template<typename... Ts>
         DynamicBinder(Ts... Args) : model(Args...){}
+
+        OutputType forward(InputType& input){ return model.forward(input); }
+        OutputType forward(InputType&& input){ return model.forward(input); }
+
+        InputType backward(OutputType& error){ return model.backward(error); }
+        InputType backward(OutputType&& error){ return model.backward(error); }
+
+        void update(double rate){ model.update(rate); }
+
+        protected:
+        ModelType model;
+    };
+
+     template<typename T, class ModelType>
+    class DynamicTensor3Binder : public DynamicTensor3Model<T>
+    {
+        public:
+        typedef DynamicTensor3Model<T>::InputType InputType; 
+        typedef DynamicTensor3Model<T>::OutputType OutputType; 
+        
+        template<typename... Ts>
+        DynamicTensor3Binder(Ts... Args) : model(Args...){}
 
         OutputType forward(InputType& input){ return model.forward(input); }
         OutputType forward(InputType&& input){ return model.forward(input); }

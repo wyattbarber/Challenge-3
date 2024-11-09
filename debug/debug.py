@@ -6,13 +6,21 @@ import time
 import sys
 
 np.random.seed(123)
-TRAIN_IN, TRAIN_OUT = pickle.load(open(f'{sys.argv[1]}/../data/mnist_preprocessed.pickle', 'rb'))
+
+TRAIN_IN, _ = pickle.load(open('data/mnist_preprocessed.pickle', 'rb'))
+TRAIN_IN = [np.reshape(x, (28,28,1)) for x in TRAIN_IN]
+TRAIN_OUT = [np.concatenate((x,x,x), axis=2) for x in TRAIN_IN]
 N = 2
-a = 0.0001
-AdamArgs = (0.9, 0.999)
-model = nn.Sequence([nn.DeepAutoEncoder([784, 500, 100, 50], *AdamArgs)])
+a = 0.
+
+model = nn.Conv2D(1,3)
+trainer = nn.Trainer2D(model, TRAIN_IN, TRAIN_OUT)
+
 ts = time.time()
-errors = nn.train(model, TRAIN_IN, TRAIN_IN, N, a)
-# errors = nn.fixed_encoder(TRAIN_IN, N, a)
+errors = trainer.train(N, a)
 duration = time.time() - ts
-print(f"Training of coupled autoencoder complete in {duration / N} seconds per epoch.")
+print(f"Training of model complete in {duration / N} seconds per epoch.")
+
+plt.title("Training Error")
+plt.plot(range(len(errors)), errors)
+plt.show()

@@ -32,6 +32,7 @@ namespace neuralnet {
 
                 kernels = Eigen::Tensor<T,4>(K, K, in_channels, out_channels);
                 kernels.setRandom();
+                grad_kernels = Eigen::Tensor<T,4>(K, K, in_channels, out_channels);
                 
                 if constexpr (C == OptimizerClass::Adam)
                 {
@@ -57,6 +58,8 @@ namespace neuralnet {
         protected:
             Eigen::Index in_channels, out_channels;
             Eigen::Tensor<T,4> kernels;
+            Eigen::Tensor<T, 4> grad_kernels;
+            Eigen::Tensor<T,3> padded; // stores input between forward and backward pass
 
             // Adam optimization data
             adam::AdamData<Eigen::Tensor<T,4>> adam_kernels;
@@ -74,12 +77,15 @@ namespace neuralnet {
         Eigen::array<ptrdiff_t, 2> dims({0, 1});
         Eigen::array<ptrdiff_t, 1> dimsum({2});
 
-        Eigen::array<Eigen::Index, 2> pad_start({K/2, K/2});
-        Eigen::array<Eigen::Index, 2> pad_extent({Y - K + 1, X - K + 1});
+        padded = Eigen::Tensor<T,3>(Y + K - 1, X + K - 1, in_channels);
+        padded.setZero();
+        Eigen::array<Eigen::Index, 3> pad_start({K/2, K/2, 0});
+        Eigen::array<Eigen::Index, 3> pad_extent({Y, X, in_channels});
+        padded.slice(pad_start, pad_extent) = input;
 
         for(int k = 0; k < out_channels; ++k)
         {
-            out.chip(k,2).slice(pad_start, pad_extent) = input.convolve(kernels.chip(k,3), dims).sum(dimsum);
+            out.chip(k,2) = padded.convolve(kernels.chip(k,3), dims).sum(dimsum);
         }
 
         return out;
@@ -89,8 +95,58 @@ namespace neuralnet {
     template<typename T, int K, OptimizerClass C>
     template<typename X>
     Convolution2D<T,K,C>::InputType Convolution2D<T,K,C>::backward(X&& error)
-    {
+    {       
+        py::print("Backpropagation setup");
 
+        const int X = error.dimension(1);
+        const int Y = error.dimension(0);
+
+        Eigen::array<ptrdiff_t, 2> dims({0, 1});
+        Eigen::array<bool, 2> reverse({true, true});
+        Eigen::Tensor<T,2> e_padded(Y + K - 1, X + K - 1);
+        e_padded.setZero();
+        Eigen::array<Eigen::Index, 2> pad_start({K/2, K/2});
+        Eigen::array<Eigen::Index, 2> pad_extent({Y, X});
+
+        Eigen::Tensor<T, 3> grad_out(Y-K+1, X-K+1, in_channels);
+        grad_out.setZero();
+
+        py::print("Backpropagating");
+
+        for(int ko = 0; ko < out_channels; ++ko)
+        {
+            auto e = error.chip(ko,3);
+            e_padded.slice(pad_start, pad_extent) = e;
+
+            for(int ki = 0; ki < in_channels; ++ki)
+            {
+                auto a = padded.chip(ki,2);
+                auto kernel = kernels.chip(ko,3).chip(ki,2);
+                
+                Eigen::Tensor<T,2> g = a.convolve(e, dims);
+                grad_kernels.chip(ko,3).chip(ki,2) = g;
+                py::print("Kernel gradient size ", g.dimension(0), " x ", g.dimension(1));
+                g = e_padded.convolve(kernel.reverse(reverse), dims);
+                grad_out.chip(ki,2) += g;
+                py::print("Input gradient size ", g.dimension(0), " x ", g.dimension(1));
+            }
+        }
+
+        return grad_out;
+    }
+
+
+    template<typename T, int K, OptimizerClass C>
+    void Convolution2D<T,K,C>::update(double rate)
+    {
+        if constexpr (C == OptimizerClass::Adam)
+        {
+            adam::adam_update_params(rate, adam_kernels, kernels, grad_kernels);
+        }
+        else
+        {
+            kernels -= rate * grad_kernels;
+        }
     }
 }
 #endif
