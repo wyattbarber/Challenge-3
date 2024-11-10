@@ -120,7 +120,7 @@ namespace neuralnet
         ModelType model;
     };
 
-     template<typename T, class ModelType>
+    template<typename T, class ModelType>
     class DynamicTensor3Binder : public DynamicTensor3Model<T>
     {
         public:

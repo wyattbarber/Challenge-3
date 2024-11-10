@@ -70,17 +70,17 @@ namespace neuralnet {
     template<typename X>
     Convolution2D<T,K,C>::OutputType Convolution2D<T,K,C>::forward(X&& input)
     {
-        const int X = input.dimension(1);
-        const int Y = input.dimension(0);
+        const int x = input.dimension(1);
+        const int y = input.dimension(0);
 
-        Eigen::Tensor<T,3> out(Y, X, out_channels);
+        Eigen::Tensor<T,3> out(y, x, out_channels);
         Eigen::array<ptrdiff_t, 2> dims({0, 1});
         Eigen::array<ptrdiff_t, 1> dimsum({2});
 
-        padded = Eigen::Tensor<T,3>(Y + K - 1, X + K - 1, in_channels);
+        padded = Eigen::Tensor<T,3>(y + K - 1, x + K - 1, in_channels);
         padded.setZero();
         Eigen::array<Eigen::Index, 3> pad_start({K/2, K/2, 0});
-        Eigen::array<Eigen::Index, 3> pad_extent({Y, X, in_channels});
+        Eigen::array<Eigen::Index, 3> pad_extent({y, x, in_channels});
         padded.slice(pad_start, pad_extent) = input;
 
         for(int k = 0; k < out_channels; ++k)
@@ -98,24 +98,23 @@ namespace neuralnet {
     {       
         py::print("Backpropagation setup");
 
-        const int X = error.dimension(1);
-        const int Y = error.dimension(0);
+        const int x = error.dimension(1);
+        const int y = error.dimension(0);
 
         Eigen::array<ptrdiff_t, 2> dims({0, 1});
         Eigen::array<bool, 2> reverse({true, true});
-        Eigen::Tensor<T,2> e_padded(Y + K - 1, X + K - 1);
+        Eigen::Tensor<T,2> e_padded(y + K - 1, x + K - 1);
         e_padded.setZero();
         Eigen::array<Eigen::Index, 2> pad_start({K/2, K/2});
-        Eigen::array<Eigen::Index, 2> pad_extent({Y, X});
+        Eigen::array<Eigen::Index, 2> pad_extent({y, x});
 
-        Eigen::Tensor<T, 3> grad_out(Y-K+1, X-K+1, in_channels);
-        grad_out.setZero();
+        Eigen::Tensor<T, 3> grad_out(y, x, in_channels);
 
         py::print("Backpropagating");
 
         for(int ko = 0; ko < out_channels; ++ko)
         {
-            auto e = error.chip(ko,3);
+            auto e = error.chip(ko,2);
             e_padded.slice(pad_start, pad_extent) = e;
 
             for(int ki = 0; ki < in_channels; ++ki)
@@ -123,12 +122,8 @@ namespace neuralnet {
                 auto a = padded.chip(ki,2);
                 auto kernel = kernels.chip(ko,3).chip(ki,2);
                 
-                Eigen::Tensor<T,2> g = a.convolve(e, dims);
-                grad_kernels.chip(ko,3).chip(ki,2) = g;
-                py::print("Kernel gradient size ", g.dimension(0), " x ", g.dimension(1));
-                g = e_padded.convolve(kernel.reverse(reverse), dims);
-                grad_out.chip(ki,2) += g;
-                py::print("Input gradient size ", g.dimension(0), " x ", g.dimension(1));
+                grad_kernels.chip(ko,3).chip(ki,2) = a.convolve(e, dims);
+                grad_out.chip(ki,2) += e_padded.convolve(kernel.reverse(reverse), dims);
             }
         }
 

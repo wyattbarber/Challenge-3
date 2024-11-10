@@ -6,6 +6,7 @@
 #include "include/training/Trainer.hpp"
 #include "include/optimizers/Optimizer.hpp"
 #include "include/convolutional/Conv2D.hpp"
+#include "include/datasource/DataSource.hpp"
 #include <tuple>
 
 #include <pybind11/pybind11.h>
@@ -19,6 +20,7 @@
 namespace py = pybind11;
 using namespace neuralnet;
 using namespace optimization;
+using namespace datasource;
 
 template<class T, typename... Ts>
 void make_model(py::module m, const char* name)
@@ -44,6 +46,19 @@ PYBIND11_MODULE(neuralnet, m)
 {
     m.doc() = "Various neural network implementations";
 
+    py::class_<DataSource<Eigen::VectorXd, Eigen::VectorXd>, DataSourceTrampoline<Eigen::VectorXd, Eigen::VectorXd>>(
+        m, "DataSource"
+    )
+        .def(py::init<>())
+        .def("size", &DataSource<Eigen::VectorXd, Eigen::VectorXd>::size)
+        .def("sample", &DataSource<Eigen::VectorXd, Eigen::VectorXd>::sample);
+    py::class_<DataSource<Eigen::Tensor<double,3>, Eigen::Tensor<double,3>>, DataSourceTrampoline<Eigen::Tensor<double,3>, Eigen::Tensor<double,3>>>(
+            m, "DataSource2D"
+        )
+            .def(py::init<>())
+            .def("size", &DataSource<Eigen::Tensor<double,3>, Eigen::Tensor<double,3>>::size)
+            .def("sample", &DataSource<Eigen::Tensor<double,3>, Eigen::Tensor<double,3>>::sample);
+
     py::class_<DynamicModel<double>, std::shared_ptr<DynamicModel<double>>>(m, "Model");
     py::class_<DynamicTensor3Model<double>, std::shared_ptr<DynamicTensor3Model<double>>>(m, "Model2D");
 
@@ -64,17 +79,21 @@ PYBIND11_MODULE(neuralnet, m)
     py::class_<training::Trainer<DynamicBinder<double, PySequence<double>>>>(m, "Trainer")
         .def(py::init<
             DynamicBinder<double, PySequence<double>>&,
-            std::vector<DynamicModel<double>::InputType>&,
-            std::vector<DynamicModel<double>::OutputType>&
+            DataSource<DynamicBinder<double, PySequence<double>>::InputType, DynamicBinder<double, PySequence<double>>::OutputType>&
         >())
         .def("train", &training::Trainer<DynamicBinder<double, PySequence<double>>>::train, "Trains a model", py::return_value_policy::automatic);
     
     py::class_<training::Trainer<DynamicTensor3Binder<double, Convolution2D<double, 5, OptimizerClass::None>>>>(m, "Trainer2D")
         .def(py::init<
             DynamicTensor3Binder<double, Convolution2D<double, 5, OptimizerClass::None>>&,
-            std::vector<DynamicTensor3Model<double>::InputType>&,
-            std::vector<DynamicTensor3Model<double>::OutputType>&
+            DataSource<DynamicTensor3Model<double>::InputType, DynamicTensor3Model<double>::OutputType>&
         >())
         .def("train", &training::Trainer<DynamicTensor3Binder<double, Convolution2D<double, 5, OptimizerClass::None>>>::train, "Trains a model", py::return_value_policy::automatic);
 
+    m.def("sizes", [](
+            std::vector<DynamicTensor3Model<double>::InputType>& inputs,
+            std::vector<DynamicTensor3Model<double>::OutputType>& outputs){
+                py::print("Input type: ", typeid(inputs).name());
+                py::print("N inputs: ", inputs.size(), ", N outputs: ", outputs.size());
+            });
 }

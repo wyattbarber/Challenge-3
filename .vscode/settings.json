@@ -83,6 +83,7 @@
         "string_view": "cpp",
         "cinttypes": "cpp",
         "core": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "specialfunctions": "cpp"
     }
 }

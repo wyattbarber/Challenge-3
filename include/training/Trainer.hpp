@@ -1,10 +1,13 @@
 #ifndef _TRAINER_HPP
 #define _TRAINER_HPP
+#pragma once
 
 #include "../Model.hpp"
+#include "../datasource/DataSource.hpp"
 #include <unsupported/Eigen/CXX11/Tensor>
 
 using namespace neuralnet;
+using namespace datasource;
 
 namespace training
 {
@@ -18,6 +21,7 @@ namespace training
     public:
         typedef ModelType::InputType InputType;
         typedef ModelType::OutputType OutputType;
+        typedef DataSource<InputType, OutputType>::SampleType SampleType;
         
         /** Set up a trainer
          *
@@ -25,10 +29,9 @@ namespace training
          * @param inputs Input dataset for training
          * @param outputs Output dataset for training
          */
-        Trainer(ModelType& model, std::vector<InputType>& inputs, std::vector<OutputType>& outputs) : 
+        Trainer(ModelType& model, DataSource<InputType, OutputType>& data) : 
             model(model),
-            inputs(inputs),
-            outputs(outputs)
+            data(data)
         {
         }
 
@@ -42,8 +45,7 @@ namespace training
 
     protected:
         ModelType& model;
-        std::vector<InputType>& inputs; 
-        std::vector<OutputType>& outputs;
+        DataSource<InputType, OutputType>& data;
     };  
 }
 
@@ -51,20 +53,20 @@ namespace training
 template<class ModelType>
 std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
 {
+
     std::vector<double> avg_err;
 
     // Total output size for normalizing errors
     double out_norm = 0.0;
-    for (int i = 0; i < outputs.size(); ++i)
+    for (int i = 0; i < data.size(); ++i)
     {
-        if constexpr (std::is_convertible_v<ModelType::OutputType, Eigen::Tensor<double,3>>)
+        if constexpr (std::is_convertible_v<typename ModelType::OutputType, Eigen::Tensor<double,3>>)
         {
-            Eigen::Tensor<double,0> s = outputs[i].sum();
-            out_norm += s(0);
+            out_norm += 1.0;
         }
         else
         {
-            out_norm += outputs[i].norm();
+            out_norm +=  data.sample(i).second.norm();
         } 
     }
 
@@ -72,12 +74,13 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
     for (int iter = 0; iter < N; ++iter)
     {
         double e = 0.0;
-        for (int i = 0; i < inputs.size(); ++i)
+        for (int i = 0; i < data.size(); ++i)
         {
             // Test forward pass and calculate error for this input set
-            OutputType out = model.forward(inputs[i]);
-            OutputType error = out - outputs[i];
-            if constexpr (std::is_convertible_v<ModelType::OutputType, Eigen::Tensor<double,3>>)
+            SampleType sample = data.sample(i);
+            OutputType out = model.forward(sample.first);
+            OutputType error = out - sample.second;
+            if constexpr (std::is_convertible_v<typename ModelType::OutputType, Eigen::Tensor<double,3>>)
             {
                 Eigen::Tensor<double,0> s = error.sum();
                 e += s(0);
