@@ -5,6 +5,7 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <utility>
 #include <memory>
+#include <pybind11/pybind11.h>
 
 namespace neuralnet
 {
@@ -69,13 +70,52 @@ namespace neuralnet
         typedef Eigen::Vector<T, Eigen::Dynamic> InputType; 
         typedef Eigen::Vector<T, Eigen::Dynamic> OutputType; 
 
-        virtual OutputType forward(InputType& input) = 0;        
-        virtual OutputType forward(InputType&& input) = 0;
+        virtual OutputType forward(InputType& input) = 0;   
 
         virtual InputType backward(OutputType& error) = 0;
-        virtual InputType backward(OutputType&& error) = 0;
 
         virtual void update(double rate){};
+    };
+
+    template<typename T>
+    class DynamicModelTrampoline : public DynamicModel<T>
+    {
+        public:
+            using DynamicModel<T>::DynamicModel;
+            
+            typedef DynamicModel<T>::InputType InputType; 
+            typedef DynamicModel<T>::OutputType OutputType; 
+
+            OutputType forward(InputType& input) override
+            {
+                PYBIND11_OVERRIDE_PURE(
+                    OutputType, /* Return type */
+                    DynamicModel<T>,      /* Parent class */
+                    forward,        /* Name of function in C++ (must match Python name) */
+                    input    /* Argument(s) */
+                );
+            }
+
+            
+            InputType backward(OutputType& error) override
+            {
+                PYBIND11_OVERRIDE_PURE(
+                    InputType, /* Return type */
+                    DynamicModel<T>,      /* Parent class */
+                    backward,     /* Name of function in C++ (must match Python name) */
+                    error
+                );
+            }
+
+            void update(double rate) override
+            {
+                PYBIND11_OVERRIDE_PURE(
+                    void, /* Return type */
+                    DynamicModel<T>,      /* Parent class */
+                    update,     /* Name of function in C++ (must match Python name) */
+                    rate
+                );
+            }
     };
 
     template<typename T>
@@ -86,14 +126,55 @@ namespace neuralnet
         typedef Eigen::Tensor<T, 3> InputType; 
         typedef Eigen::Tensor<T, 3> OutputType; 
 
-        virtual OutputType forward(InputType& input) = 0;        
-        virtual OutputType forward(InputType&& input) = 0;
+        virtual OutputType forward(InputType& input) = 0;    
 
         virtual InputType backward(OutputType& error) = 0;
-        virtual InputType backward(OutputType&& error) = 0;
 
         virtual void update(double rate){};
     };
+
+    
+    template<typename T>
+    class DynamicTensor3ModelTrampoline : public DynamicTensor3Model<T>
+    {
+        public:
+            using DynamicTensor3Model<T>::DynamicTensor3Model;
+            
+            typedef DynamicTensor3Model<T>::InputType InputType; 
+            typedef DynamicTensor3Model<T>::OutputType OutputType; 
+
+            OutputType forward(InputType& input) override
+            {
+                PYBIND11_OVERRIDE_PURE(
+                    OutputType, /* Return type */
+                    DynamicTensor3Model<T>,      /* Parent class */
+                    forward,        /* Name of function in C++ (must match Python name) */
+                    input    /* Argument(s) */
+                );
+            }
+
+            
+            InputType backward(OutputType& error) override
+            {
+                PYBIND11_OVERRIDE_PURE(
+                    InputType, /* Return type */
+                    DynamicTensor3Model<T>,      /* Parent class */
+                    backward,     /* Name of function in C++ (must match Python name) */
+                    error
+                );
+            }
+
+            void update(double rate) override
+            {
+                PYBIND11_OVERRIDE_PURE(
+                    void, /* Return type */
+                    DynamicTensor3Model<T>,      /* Parent class */
+                    update,     /* Name of function in C++ (must match Python name) */
+                    rate
+                );
+            }
+    };
+
 
     /**
      * 
@@ -109,10 +190,8 @@ namespace neuralnet
         DynamicBinder(Ts... Args) : model(Args...){}
 
         OutputType forward(InputType& input){ return model.forward(input); }
-        OutputType forward(InputType&& input){ return model.forward(input); }
 
         InputType backward(OutputType& error){ return model.backward(error); }
-        InputType backward(OutputType&& error){ return model.backward(error); }
 
         void update(double rate){ model.update(rate); }
 
@@ -131,10 +210,8 @@ namespace neuralnet
         DynamicTensor3Binder(Ts... Args) : model(Args...){}
 
         OutputType forward(InputType& input){ return model.forward(input); }
-        OutputType forward(InputType&& input){ return model.forward(input); }
 
         InputType backward(OutputType& error){ return model.backward(error); }
-        InputType backward(OutputType&& error){ return model.backward(error); }
 
         void update(double rate){ model.update(rate); }
 
