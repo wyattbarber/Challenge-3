@@ -48,10 +48,11 @@ namespace neuralnet {
         void update(double rate){}
 
         protected:
-        void argcmp(Eigen::Tensor<T,3>&& data, T& value, Eigen::Index& idx);
+        void argcmp(Eigen::Tensor<T,3>& data, std::pair<int,int> x_range, std::pair<int,int> y_range, int channel, T& value, Eigen::Index& idx);
 
         bool save_idx;
         Eigen::Tensor<Eigen::Index, 3> indices;
+        int max_y_idx;
         Eigen::Tensor<Eigen::Index, 3>* indices_output;
     };
 
@@ -63,34 +64,37 @@ namespace neuralnet {
         Eigen::Tensor<T, 3> out(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
         out.setZero();
         indices = Eigen::Tensor<Eigen::Index, 3>(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
+        max_y_idx = in.dimension(0);
         indices.setZero();
         
         Eigen::array<Eigen::Index, 3> out_extent({1, 1, 1});
         Eigen::array<Eigen::Index, 3> pool_dims({1, 1, in.dimension(2)});
 
-        for(int y = 0; y < in.dimension(0); y+=K)
+        for(int y = 0; y < in.dimension(0); y+=(K+1))
         {
-            for(int x = 0; x < in.dimension(1); x+=K)
+            for(int x = 0; x < in.dimension(1); x+=(K+1))
             {                
                 Eigen::array<Eigen::Index, 3> pool_extent({
                     std::min(K, static_cast<int>(in.dimension(0) - y)), 
                     std::min(K, static_cast<int>(in.dimension(1) - x)), 
                     1});
                 for(int c = 0; c < in.dimension(2); ++c)
-                {
-                    Eigen::array<Eigen::Index, 3> pool_start({y, x, c});
-                    Eigen::array<Eigen::Index, 3> out_start({y/K, x/K, c});
-                    
+                {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
                         T m;
-                        argcmp(in.slice(pool_start, pool_extent), m, indices(y,x,c));
-                        out(y,x,c) = m;
+                        argcmp(in, 
+                            {x,std::min(x+K, static_cast<int>(in.dimension(1) - 1))}, 
+                            {y,std::min(y+K, static_cast<int>(in.dimension(0) - 1))}, 
+                            c, m, indices(y/K,x/K,c));
+                        out(y/K,x/K,c) = m;
                         if(save_idx)
-                            (*indices_output)(y,x,c) = indices(y,x,c);
+                            (*indices_output)(y/K,x/K,c) = indices(y/K,x/K,c);
                     } 
                     else if constexpr (M == PoolMode::Mean)
-                    {
+                    {                       
+                        Eigen::array<Eigen::Index, 3> pool_start({y, x, c});
+                        Eigen::array<Eigen::Index, 3> out_start({y/K, x/K, c});
                         out.slice(out_start, out_extent) = in.slice(pool_start, pool_extent).mean();
                     }
                 }
@@ -123,9 +127,9 @@ namespace neuralnet {
                     
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = indices(y,x,c) / K;
-                        auto yo = indices(y,x,c) % K;
-                        static_cast<Eigen::Tensor<T,3>>(out.slice(out_start, out_extent))(yo, xo, 0) = error(y,x,c);
+                        auto xo = indices(y,x,c) / max_y_idx;
+                        auto yo = indices(y,x,c) % max_y_idx;
+                        out(yo, xo, c) = error(y,x,c);
                     }
                     else if constexpr (M == PoolMode::Mean)
                     {
@@ -144,28 +148,28 @@ namespace neuralnet {
 
     
     template <typename T, int K, PoolMode M>
-    void Pool2D<T,K,M>::argcmp(Eigen::Tensor<T,3>&& data, T& value, Eigen::Index& idx)
+    void Pool2D<T,K,M>::argcmp(Eigen::Tensor<T,3>& data, std::pair<int,int> x_range, std::pair<int,int> y_range, int channel, T& value, Eigen::Index& idx)
     {   
-        value = data(0,0,0);
+        value = data(y_range.first,x_range.first,channel);
         idx = 0;
-        for(int y = 1; y < K; ++y)
+        for(int y = y_range.first+1; y <= y_range.second; ++y)
         {
-            for(int x = 1; x < K; ++x)
+            for(int x = x_range.first+1; x <= x_range.second; ++x)
             {
                 if constexpr (M == PoolMode::Max)
                 {
-                    if(data(y,x,0) > value)
+                    if(data(y,x,channel) > value)
                     {
-                        value = data(y,x,0);
-                        idx = (x * K) + y;
+                        value = data(y,x,channel);
+                        idx = (x * data.dimension(0)) + y;
                     }
                 }
                 else
                 {
-                    if(data(y,x,0) < value)
+                    if(data(y,x,channel) < value)
                     {
-                        value = data(y,x,0);
-                        idx = (x * K) + y;
+                        value = data(y,x,channel);
+                        idx = (x * data.dimension(0)) + y;
                     }
                 }
             }

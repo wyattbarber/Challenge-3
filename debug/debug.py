@@ -8,8 +8,6 @@ from typing import List, Any
 
 np.random.seed(123)
 
-
-
 class Data(nn.DataSource2D):
     _train_in : List[Any]
     _train_out : List[Any]
