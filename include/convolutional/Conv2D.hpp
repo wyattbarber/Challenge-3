@@ -7,9 +7,6 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <algorithm>
 
-#include <pybind11/pybind11.h>
-namespace py = pybind11;
-
 using namespace optimization;
 
 namespace neuralnet {
@@ -95,9 +92,7 @@ namespace neuralnet {
     template<typename T, int K, OptimizerClass C>
     template<typename X>
     Convolution2D<T,K,C>::InputType Convolution2D<T,K,C>::backward(X&& error)
-    {       
-        py::print("Backpropagation setup");
-
+    {   
         const int x = error.dimension(1);
         const int y = error.dimension(0);
 
@@ -109,8 +104,6 @@ namespace neuralnet {
         Eigen::array<Eigen::Index, 2> pad_extent({y, x});
 
         Eigen::Tensor<T, 3> grad_out(y, x, in_channels);
-
-        py::print("Backpropagating");
 
         for(int ko = 0; ko < out_channels; ++ko)
         {

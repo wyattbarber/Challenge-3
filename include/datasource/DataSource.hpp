@@ -19,7 +19,7 @@ namespace datasource{
              * 
              * @param i Index of the sample requested. 
             */
-            virtual SampleType sample(size_t i);
+            virtual SampleType sample(size_t i) = 0;
 
             /** Returns the number of samples in the dataset 
              * 

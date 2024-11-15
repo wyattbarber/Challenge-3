@@ -7,9 +7,6 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <algorithm>
 
-#include <pybind11/pybind11.h>
-namespace py = pybind11;
-
 using namespace optimization;
 
 namespace neuralnet {
@@ -116,9 +113,9 @@ namespace neuralnet {
         Eigen::array<Eigen::Index, 3> out_extent({K, K, 1});
         Eigen::array<Eigen::Index, 3> pool_dims({1, 1, error.dimension(2)});
 
-        for(int y = 0; y < error.dimension(0); y+=K)
+        for(int y = 0; y < error.dimension(0); ++y)
         {
-            for(int x = 0; x < error.dimension(1); x+=K)
+            for(int x = 0; x < error.dimension(1); ++x)
             {                
                 for(int c = 0; c < error.dimension(2); ++c)
                 {
@@ -144,6 +141,8 @@ namespace neuralnet {
                 }
             }   
         }
+
+        return out;
     }
 
     

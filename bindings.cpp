@@ -7,6 +7,7 @@
 #include "include/optimizers/Optimizer.hpp"
 #include "include/convolutional/Conv2D.hpp"
 #include "include/convolutional/Pool2D.hpp"
+#include "include/convolutional/UnPool2D.hpp"
 #include "include/datasource/DataSource.hpp"
 #include <tuple>
 
@@ -78,7 +79,8 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<DynamicBinder<double, PySequence<double>>, std::vector<std::shared_ptr<DynamicModel<double>>>>(m, "Sequence");
 
     make_model<DynamicTensor3Binder<double, Convolution2D<double, 5, OptimizerClass::None>>, Eigen::Index, Eigen::Index>(m, "Conv2D");
-    make_model<DynamicTensor3Binder<double, Pool2D<double, 5, PoolMode::Max>>>(m, "MaxPool2D");
+    make_model<DynamicTensor3Binder<double, Pool2D<double, 4, PoolMode::Max>>>(m, "MaxPool2D");
+    make_model<DynamicTensor3Binder<double, UnPool2D<double, 4, PoolMode::Max>>>(m, "MaxUnPool2D");
 
     py::class_<training::Trainer<DynamicModel<double>>>(m, "Trainer")
         .def(py::init<
