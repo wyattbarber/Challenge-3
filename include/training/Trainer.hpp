@@ -80,12 +80,8 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
             // Test forward pass and calculate error for this input set
             SampleType sample = data.sample(i);
             OutputType out = model.forward(sample.first);
-            if constexpr (std::is_convertible_v<typename ModelType::OutputType, Eigen::Tensor<double,3>>)
-            {
-                std::cout << out.dimension(0) << ',' << out.dimension(1) << ',' << out.dimension(2) << ',' << '\n';
-                std::cout << sample.second.dimension(0) << ',' << sample.second.dimension(1) << ',' << sample.second.dimension(2) << ',' << '\n';
-            }
             OutputType error = out - sample.second;
+
             if constexpr (std::is_convertible_v<typename ModelType::OutputType, Eigen::Tensor<double,3>>)
             {
                 Eigen::Tensor<double,0> s = error.sum();
