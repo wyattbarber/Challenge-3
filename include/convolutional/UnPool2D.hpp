@@ -15,11 +15,17 @@ namespace neuralnet {
         typedef Eigen::Tensor<T, 3> InputType;
         typedef Eigen::Tensor<T, 3> OutputType;
 
-        UnPool2D(){}
+        UnPool2D() 
+        { 
+            static_assert(
+                M == PoolMode::Mean, 
+                "Min and max unpooling require a reference to a matching pooling layer"
+                ); 
+        }
 
-        UnPool2D(Eigen::Tensor<Eigen::Index, 3>& indices)
+        UnPool2D(Pool2D<T,K,M>& pool)
         {
-            indices = &indices;
+            this->pool = &pool;
         }
 
         template<typename X>
@@ -33,7 +39,7 @@ namespace neuralnet {
         protected:
         void argcmp(Eigen::Tensor<T,3>& data, std::pair<int,int> x_range, std::pair<int,int> y_range, int channel, T& value, Eigen::Index& idx);
 
-        Eigen::Tensor<Eigen::Index, 3>* indices;
+        Pool2D<T,K,M>* pool;
         int max_y_idx;
     };
 
@@ -60,8 +66,8 @@ namespace neuralnet {
                 {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = (*indices)(y,x,c) / out.dimension(0);
-                        auto yo = (*indices)(y,x,c) % out.dimension(0);
+                        auto xo = (*pool->get_indices())(y,x,c) / out.dimension(0);
+                        auto yo = (*pool->get_indices())(y,x,c) % out.dimension(0);
                         out(yo, xo, c) = in(y,x,c);
                     } 
                     else if constexpr (M == PoolMode::Mean)
@@ -104,8 +110,8 @@ namespace neuralnet {
                 {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = (*indices)(y,x,c) / error.dimension(0);
-                        auto yo = (*indices)(y,x,c) % error.dimension(0);
+                        auto xo = (*pool->get_indices())(y,x,c) / error.dimension(0);
+                        auto yo = (*pool->get_indices())(y,x,c) % error.dimension(0);
                         out(y, x, c) = error(yo,xo,c);
                     }
                     else if constexpr (M == PoolMode::Mean)

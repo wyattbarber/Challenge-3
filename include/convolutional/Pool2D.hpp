@@ -25,17 +25,6 @@ namespace neuralnet {
         typedef Eigen::Tensor<T, 3> InputType;
         typedef Eigen::Tensor<T, 3> OutputType;
 
-        Pool2D()
-        {
-            save_idx = false;
-        }
-
-        Pool2D(Eigen::Tensor<Eigen::Index, 3>& index_dst)
-        {
-            save_idx = true;
-            indices_output = &index_dst;
-        }
-
         template<typename X>
         OutputType forward(X&& in);
 
@@ -44,13 +33,13 @@ namespace neuralnet {
 
         void update(double rate){}
 
+        Eigen::Tensor<Eigen::Index, 3>* get_indices() { return &indices; }
+
         protected:
         void argcmp(Eigen::Tensor<T,3>& data, std::pair<int,int> x_range, std::pair<int,int> y_range, int channel, T& value, Eigen::Index& idx);
 
-        bool save_idx;
         Eigen::Tensor<Eigen::Index, 3> indices;
         int max_y_idx;
-        Eigen::Tensor<Eigen::Index, 3>* indices_output;
     };
 
 
@@ -85,8 +74,6 @@ namespace neuralnet {
                             {y,std::min(y+K, static_cast<int>(in.dimension(0) - 1))}, 
                             c, m, indices(y/K,x/K,c));
                         out(y/K,x/K,c) = m;
-                        if(save_idx)
-                            (*indices_output)(y/K,x/K,c) = indices(y/K,x/K,c);
                     } 
                     else if constexpr (M == PoolMode::Mean)
                     {                       

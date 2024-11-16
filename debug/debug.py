@@ -16,8 +16,7 @@ class Data(nn.DataSource2D):
         super().__init__()
         train_in, _ = pickle.load(open('test/data/mnist_preprocessed.pickle', 'rb'))
         self._train_in = [np.reshape(x, (28,28,1)) for x in train_in]
-        train_out = [np.concatenate((x,x,x), axis=2) for x in self._train_in]
-        self._train_out = [x[::5, ::5, :] for x in train_out]
+        self._train_out = [np.reshape(x, (28,28,1)) for x in train_in]
 
     def size(self):
         return len(self._train_in)
@@ -29,17 +28,38 @@ class Model(nn.Conv2D):
     def __init__(self):
         super().__init__(1,3)
         self._layer2 = nn.MaxPool2D()
+        self._layer3 = nn.Conv2D(3,3)
+        self._layer4 = nn.MaxUnPool2D(self._layer2)
+        self._layer5 = nn.Conv2D(3,1)
     
     def forward(self, input):
-        out = self._layer2.forward(super().forward(input))
-        return out
+        return self._layer5.forward(
+            self._layer4.forward(
+                self._layer3.forward(
+                    self._layer2.forward(
+                        super().forward(input)
+                    )
+                )
+            )
+        )        
     
     def backward(self, error):
-        return super().backward(self._layer2.backward(error))
+        return super().backward(
+            self._layer2.backward(
+                self._layer3.backward(
+                    self._layer4.backward(
+                        self._layer5.backward(error)
+                    )
+                )
+            )
+        )
     
     def update(self, rate):
         super().update(rate)
         self._layer2.update(rate)
+        self._layer3.update(rate)
+        self._layer4.update(rate)
+        self._layer5.update(rate)
 
 N = 2
 a = 0.001
@@ -47,8 +67,6 @@ a = 0.001
 model = Model()
 data = Data()
 trainer = nn.Trainer2D(model, data)
-
-print(model.forward(data.sample(0)[0]).shape)
 
 ts = time.time()
 errors = trainer.train(N, a)

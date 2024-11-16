@@ -84,6 +84,7 @@
         "cinttypes": "cpp",
         "core": "cpp",
         "chrono": "cpp",
-        "specialfunctions": "cpp"
+        "specialfunctions": "cpp",
+        "tensor": "cpp"
     }
 }

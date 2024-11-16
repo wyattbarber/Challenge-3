@@ -32,14 +32,16 @@ auto make_model(py::module m, const char* name)
         return py::class_<T, DynamicTensor3Model<double>, std::shared_ptr<T>>(m, name)
         .def(py::init<Ts...>())
         .def("forward", static_cast<T::OutputType (T::*)(typename T::InputType&)>(&T::forward), "Performs a forward pass through the model.")
-        .def("backward", static_cast<T::InputType (T::*)(typename T::OutputType&)>(&T::backward), "Performs backpropagation through the model.");
+        .def("backward", static_cast<T::InputType (T::*)(typename T::OutputType&)>(&T::backward), "Performs backpropagation through the model.")
+        .def("update", &T::update, "Updates trainable parameters based on current gradient.");
     }
     else
     {
         return py::class_<T, DynamicModel<double>, std::shared_ptr<T>>(m, name)
         .def(py::init<Ts...>())
         .def("forward", static_cast<T::OutputType (T::*)(typename T::InputType&)>(&T::forward), "Performs a forward pass through the model.")
-        .def("backward", static_cast<T::InputType (T::*)(typename T::OutputType&)>(&T::backward), "Performs backpropagation through the model.");
+        .def("backward", static_cast<T::InputType (T::*)(typename T::OutputType&)>(&T::backward), "Performs backpropagation through the model.")
+        .def("update", &T::update, "Updates trainable parameters based on current gradient.");
     }
 }
 
@@ -79,8 +81,16 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<DynamicBinder<double, PySequence<double>>, std::vector<std::shared_ptr<DynamicModel<double>>>>(m, "Sequence");
 
     make_model<DynamicTensor3Binder<double, Convolution2D<double, 5, OptimizerClass::None>>, Eigen::Index, Eigen::Index>(m, "Conv2D");
-    make_model<DynamicTensor3Binder<double, Pool2D<double, 4, PoolMode::Max>>>(m, "MaxPool2D");
-    make_model<DynamicTensor3Binder<double, UnPool2D<double, 4, PoolMode::Max>>>(m, "MaxUnPool2D");
+    py::class_<Pool2D<double, 4, PoolMode::Max>>(m, "MaxPool2D")
+        .def(py::init<>())
+        .def("forward", &Pool2D<double, 4, PoolMode::Max>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")
+        .def("backward", &Pool2D<double, 4, PoolMode::Max>::backward<Eigen::Tensor<double,3>&>, "Performs backpropagation through the model.")
+        .def("update", &Pool2D<double, 4, PoolMode::Max>::update, "Updates trainable parameters based on current gradient.");
+    py::class_<UnPool2D<double, 4, PoolMode::Max>>(m, "MaxUnPool2D")
+        .def(py::init<Pool2D<double, 4, PoolMode::Max>&>())
+        .def("forward", &UnPool2D<double, 4, PoolMode::Max>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")
+        .def("backward", &UnPool2D<double, 4, PoolMode::Max>::backward<Eigen::Tensor<double,3>&>, "Performs backpropagation through the model.")
+        .def("update", &UnPool2D<double, 4, PoolMode::Max>::update, "Updates trainable parameters based on current gradient.");
 
     py::class_<training::Trainer<DynamicModel<double>>>(m, "Trainer")
         .def(py::init<
@@ -94,6 +104,7 @@ PYBIND11_MODULE(neuralnet, m)
             DynamicTensor3Model<double>&,
             DataSource<DynamicTensor3Model<double>::InputType, DynamicTensor3Model<double>::OutputType>&
         >())
-        .def("train", &training::Trainer<DynamicTensor3Model<double>>::train, "Trains a model", py::return_value_policy::automatic);
+        .def("train", &training::Trainer<DynamicTensor3Model<double>>::train, "Trains a model", py::return_value_policy::automatic, 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
 
 }
