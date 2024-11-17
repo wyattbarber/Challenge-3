@@ -3,8 +3,6 @@
 
 #include "Pool2D.hpp"
 
-using namespace optimization;
-
 namespace neuralnet {
 
 
@@ -53,7 +51,7 @@ namespace neuralnet {
         
         Eigen::array<Eigen::Index, 3> out_extent({1, 1, 1});
         Eigen::array<Eigen::Index, 3> pool_dims({1, 1, in.dimension(2)});
-
+        
         for(int y = 0; y < in.dimension(0); ++y)
         {
             for(int x = 0; x < in.dimension(1); ++x)

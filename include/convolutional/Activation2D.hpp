@@ -2,71 +2,24 @@
 #define _ACTIVATION2D_HPP
 
 #include "../Model.hpp"
-#include "../optimizers/Optimizer.hpp"
-#include "Activation.hpp"
-#include <random>
-#include <memory>
+#include "../basic/Activation.hpp"
+#include <unsupported/Eigen/CXX11/Tensor>
 
 using namespace optimization;
 
 namespace neuralnet
 {
-    /** Basic layer of a neural network
+    /** Basic Layer2D of a neural network
      *
-     * @tparam F Enumerated activation function to use in this layer
+     * @tparam F Enumerated activation function to use in this Layer2D
      */
-    template <typename T, ActivationFunc F, OptimizerClass C>
-    class Layer : public Model<Layer<T, F, C>>
+    template <typename T, ActivationFunc F>
+    class Layer2D : public Model<Layer2D<T, F>>
     {
 
     public:
-        typedef Eigen::Vector<T, Eigen::Dynamic> InputType;
-        typedef Eigen::Vector<T, Eigen::Dynamic> OutputType;
-
-        /** Constructs a randomly initialized layer.
-         *
-         * Weights are initialized using He initialization, and
-         * biases are initialized to 0.
-         *
-         * @param in_size size of the input vector to this layer
-         * @param out_size size of the output vector from this layer
-         */
-        template <typename... Ts>
-        Layer(Ts... Args)
-        {
-            auto args = std::tuple<Ts...>(Args...);
-
-            int in_size = std::get<0>(args);
-            int out_size = std::get<1>(args);
-
-            // Apply he initialization
-            this->weights = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, out_size).unaryExpr([in_size](double x)
-                                                                                        { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
-
-            this->biases = OutputType::Zero(out_size);
-            this->z = OutputType::Zero(out_size);
-            this->a = OutputType::Zero(out_size);
-            this->d = OutputType::Zero(out_size);
-            this->in = InputType::Zero(in_size);
-
-            if constexpr (C == OptimizerClass::Adam)
-            {
-                adam_weights.m = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, out_size);
-                adam_weights.v = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, out_size);
-                adam_biases.m = OutputType::Zero(out_size);
-                adam_biases.v = OutputType::Zero(out_size);
-
-                adam_weights.b1 = std::get<2>(args);
-                adam_weights.b2 = std::get<3>(args);
-                adam_biases.b1 = std::get<2>(args);
-                adam_biases.b2 = std::get<3>(args);
-
-                adam_weights.b1powt = adam_weights.b1;
-                adam_weights.b2powt = adam_weights.b2;
-                adam_biases.b1powt = adam_biases.b1;
-                adam_biases.b2powt = adam_biases.b2;
-            }
-        }
+        typedef Eigen::Tensor<T, 3> InputType;
+        typedef Eigen::Tensor<T, 3> OutputType;
 
         template<typename X>      
         OutputType forward(X&& input);
@@ -74,59 +27,185 @@ namespace neuralnet
         template<typename X>
         InputType backward(X&& error);
 
-        void update(double rate);
+        void update(double rate){}
 
     protected:
-        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> weights;
-        OutputType biases;
-        OutputType z;
-        OutputType a;
-        OutputType d;
-        InputType in;
+        Eigen::Tensor<T, 3> z, a;
+    };
 
-        // Data for adam optimization
-        adam::AdamData<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> adam_weights;
-        adam::AdamData<OutputType> adam_biases;
+    
+    /** Applies templated activation functions
+     *
+     */
+    template <typename T, ActivationFunc F>
+    class Activation2D
+    {
+    public:
+        template <typename X> static Eigen::Tensor<T, 3> f(X&& input);
+        template <typename Y, typename Z> static Eigen::Tensor<T, 3> df(Y&& activation, Z&& error);
+    };
+
+    // Specialization definitions
+    template<typename T>
+    class Activation2D<T, ActivationFunc::Linear>
+    {
+    public:
+        template <typename X> static Eigen::Tensor<T, 3> f(X&& input);
+        template <typename Y, typename Z> static Eigen::Tensor<T, 3> df(Y&& activation, Z&& error);
+    };
+
+    template<typename T>
+    class Activation2D<T, ActivationFunc::ReLU>
+    {
+    public:
+        template <typename X> static Eigen::Tensor<T, 3> f(X&& input);
+        template <typename Y, typename Z> static Eigen::Tensor<T, 3> df(Y&& activation, Z&& error);
+    };
+
+    template<typename T>
+    class Activation2D<T, ActivationFunc::Sigmoid>
+    {
+    public:
+        template <typename X> static Eigen::Tensor<T, 3> f(X&& input);
+        template <typename Y, typename Z> static Eigen::Tensor<T, 3> df(Y&& activation, Z&& error);
+    };
+
+    template<typename T>
+    class Activation2D<T, ActivationFunc::TanH>
+    {
+    public:
+        template <typename X> static Eigen::Tensor<T, 3> f(X&& input);
+        template <typename Y, typename Z> static Eigen::Tensor<T, 3> df(Y&& activation, Z&& error);
+    };
+
+    template<typename T>
+    class Activation2D<T, ActivationFunc::SoftMax>
+    {
+    public:
+        template <typename X> static Eigen::Tensor<T, 3> f(X&& input);
+        template <typename Y, typename Z> static Eigen::Tensor<T, 3> df(Y&& activation, Z&& error);
     };
 }
 
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-void neuralnet::Layer<T, F, C>::update(double rate)
-{
-    if constexpr (C == OptimizerClass::Adam)
-    {
-        auto tmp = in * d.transpose();
-        adam::adam_update_params(rate, adam_weights, weights, tmp);
-        adam::adam_update_params(rate, adam_biases, biases, d);
-    }
-    else
-    {
-        weights -= in * (d.transpose() * rate);
-        biases -= rate * d;
-    }
-}
 
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+template <typename T, neuralnet::ActivationFunc F>
 template<typename X>
-neuralnet::Layer<T, F, C>::OutputType neuralnet::Layer<T, F, C>::forward(X&& input)
+neuralnet::Layer2D<T, F>::OutputType neuralnet::Layer2D<T, F>::forward(X&& input)
 {
-    // Save input for this pass and calculate weighted signals
-    in = {input};
-    z = biases;
-    z += (weights.transpose() * input);
     // Calculate and save activation function output
-    a =  Activation<Eigen::Dynamic, T, F>::f(z);
+    a =  Activation2D<T, F>::f(input);
     return a;
 }
 
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+template <typename T, neuralnet::ActivationFunc F>
 template<typename X>
-neuralnet::Layer<T, F, C>::InputType neuralnet::Layer<T, F, C>::backward(X&& err)
+neuralnet::Layer2D<T, F>::InputType neuralnet::Layer2D<T, F>::backward(X&& err)
 {
-    // Calculate this layers error gradient
-    d = Activation<Eigen::Dynamic, T, F>::df(z, a, err);
-    // Calculate and return error gradient input to next layer
-    return weights * d;
+    return Activation2D<T, F>::df(a, err);
 }
 
+
+/*
+ReLU activation function
+*/
+template<typename T>
+template <typename X> 
+Eigen::Tensor<T, 3> neuralnet::Activation2D<T, neuralnet::ActivationFunc::ReLU>::f(X&& input)
+{
+    return input.cwiseMax(T(0));
+}
+
+template<typename T>
+template <typename Y, typename Z> 
+Eigen::Tensor<T, 3> neuralnet::Activation2D<T, neuralnet::ActivationFunc::ReLU>::df(Y&& activation, Z&& error)
+{
+    return activation.unaryExpr([](T x){ return x > 0 ? T(1) : T(0); }) * error;
+}
+
+/*
+Sigmoid activation function
+*/
+template<typename T>
+template <typename X> 
+Eigen::Tensor<T, 3> neuralnet::Activation2D<T, neuralnet::ActivationFunc::Sigmoid>::f(X&& input)
+{
+    return T(1) / (T(1) + (-input).exp());
+}
+
+template<typename T>
+template <typename Y, typename Z>  
+Eigen::Tensor<T, 3> neuralnet::Activation2D<T, neuralnet::ActivationFunc::Sigmoid>::df(Y&& activation, Z&& error)
+{
+    return error * (activation * (T(1) - activation));
+}
+
+/*
+TanH activation function
+*/
+template<typename T>
+template <typename X> 
+Eigen::Tensor<T, 3> neuralnet::Activation2D<T, neuralnet::ActivationFunc::TanH>::f(X&& input)
+{
+    auto ex = input.exp();
+    auto nex = (-input).exp();
+    return (ex - nex) / (ex + nex);
+}
+
+template<typename T>
+template <typename Y, typename Z> 
+Eigen::Tensor<T, 3> neuralnet::Activation2D<T, neuralnet::ActivationFunc::TanH>::df(Y&& activation, Z&& error)
+{
+    return error * (T(1) - (activation.square()));
+}
+
+/*
+Softmax activation function
+*/
+template<typename T>
+template <typename X> 
+Eigen::Tensor<T, 3> neuralnet::Activation2D<T, neuralnet::ActivationFunc::SoftMax>::f(X&& input)
+{
+    Eigen::Tensor<T, 3> out(input.dimension(0), input.dimension(1), input.dimension(2));
+
+    for(int y = 0; y < input.dimension(0); ++y)
+    {
+        for(int x = 0; y < input.dimension(1); ++x)
+        {
+            auto e = out.chip(y,0).chip(x,1).exp().cwiseMin(1e300); // Prevent exploding values
+            Eigen::Tensor<T,0> sum = e.sum();
+            T div = abs(sum(0)) < epsilon ? (epsilon * (std::signbit(sum(0)) ? T(-1) : T(1))) : sum(0);
+            out.chip(y,0).chip(x,0) = e / div;
+        }
+    }
+
+    return out;
+}
+
+template<typename T>
+template <typename Y, typename Z> 
+Eigen::Tensor<T, 3> neuralnet::Activation2D<T, neuralnet::ActivationFunc::SoftMax>::df(Y&& activation, Z&& error)
+{
+    Eigen::Tensor<T, 3> out(error.dimension(0), error.dimension(1), error.dimension(2));
+    Eigen::Tensor<T, 1> kd(error.dimension(2));
+    kd.setZero();
+
+    for(int y = 0; y < error.dimension(0); ++y)
+    {
+        for(int x = 0; y < error.dimension(1); ++x)
+        {
+            for (int c = 0; c < error.dimension(2); ++c)
+            {
+                kd(c) = T(1); // Kronecker delta, dz_i/dz_j is 1 for i==j, 0 for all others
+                Eigen::Tensor<T,1> pixel = activation.chip(y,0).chip(x,1);
+                auto dif = kd - pixel;
+                auto dot = error.chip(y,0).chip(x,1) * (pixel(c) * dif);
+                Eigen::Tensor<T,0> s = dot.sum();
+                out(c) = s(0);
+                kd(c) = T(0); // Reset dz_i/dz_j
+            }
+        }
+    }
+
+    return out;
+}
 #endif

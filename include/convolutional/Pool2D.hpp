@@ -2,12 +2,9 @@
 #define _POOL2D_HPP
 
 #include "../Model.hpp"
-#include "../basic/Activation.hpp"
-#include "../optimizers/Optimizer.hpp"
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <algorithm>
 
-using namespace optimization;
 
 namespace neuralnet {
 

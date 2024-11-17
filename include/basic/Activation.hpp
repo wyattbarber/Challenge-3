@@ -98,7 +98,7 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::ReLU>
 {
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(input.size());
     for (size_t i = 0; i < input.size(); ++i)
-        out(i) = std::max(0.0, input(i));
+        out(i) = std::max(T(0), input(i));
     return out;
 }
 
@@ -109,7 +109,7 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::ReLU>
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(activation.size());
     for (int i = 0; i < activation.size(); ++i)
     {
-        out(i) = activation(i) > 0 ? error(i) : 0.0;
+        out(i) = activation(i) > 0 ? error(i) : T(0);
     }
     return out;
 }
@@ -124,7 +124,7 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Sigmo
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(input.size());
     for (int i = 0; i < input.size(); ++i)
     {
-        out(i) = 1.0 / (1.0 + std::exp(-input(i)));
+        out(i) = T(1) / (T(1) + std::exp(-input(i)));
     }
 
     return out;
@@ -138,7 +138,7 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::Sigmo
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(activation.size());
     for (int i = 0; i < activation.size(); ++i)
     {
-        out(i) = activation(i) * (1.0 - activation(i));
+        out(i) = activation(i) * (T(1) - activation(i));
     }
     return out.cwiseProduct(error);
 }
@@ -167,7 +167,7 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::TanH>
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(activation);
     for (int i = 0; i < activation.size(); ++i)
     {
-        out(i) = 1.0 - (activation(i) * activation(i));
+        out(i) = T(1) - (activation(i) * activation(i));
     }
     return out.cwiseProduct(error);
 }
@@ -186,7 +186,7 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::SoftM
         out(i) = std::min(std::exp(input(i)), 1e300); // Prevent exploding values
     }
     double sum = out.array().sum();
-    out /= abs(sum) < epsilon ? (epsilon * (std::signbit(sum) ? -1.0 : 1.0)) : sum;
+    out /= abs(sum) < epsilon ? (epsilon * (std::signbit(sum) ? -T(1) : T(1))) : sum;
     return out;
 }
 
@@ -198,9 +198,9 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::SoftM
     Eigen::Vector<T, N> kd = Eigen::Vector<T, N>::Zero(activation.size());
     for (int i = 0; i < activation.size(); ++i)
     {
-        kd(i) = 1.0; // Kronecker delta, dz_i/dz_j is 1 for i==j, 0 for all others
+        kd(i) = T(1); // Kronecker delta, dz_i/dz_j is 1 for i==j, 0 for all others
         out(i) = error.dot(activation(i) * (kd - activation));
-        kd(i) = 0.0; // Reset dz_i/dz_j
+        kd(i) = T(0); // Reset dz_i/dz_j
     }
     return out;
 }

@@ -8,6 +8,7 @@
 #include "include/convolutional/Conv2D.hpp"
 #include "include/convolutional/Pool2D.hpp"
 #include "include/convolutional/UnPool2D.hpp"
+#include "include/convolutional/Activation2D.hpp"
 #include "include/datasource/DataSource.hpp"
 #include <tuple>
 
@@ -81,6 +82,10 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<DynamicBinder<double, PySequence<double>>, std::vector<std::shared_ptr<DynamicModel<double>>>>(m, "Sequence");
 
     make_model<DynamicTensor3Binder<double, Convolution2D<double, 5, OptimizerClass::None>>, Eigen::Index, Eigen::Index>(m, "Conv2D");
+    make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::ReLU>>>(m, "ReLU2D");
+    make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::Sigmoid>>>(m, "Sigmoid2D");
+    make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::TanH>>>(m, "TanH2D");
+    make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::SoftMax>>>(m, "SoftMax2D");
     py::class_<Pool2D<double, 4, PoolMode::Max>>(m, "MaxPool2D")
         .def(py::init<>())
         .def("forward", &Pool2D<double, 4, PoolMode::Max>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")
