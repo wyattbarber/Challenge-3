@@ -1,6 +1,9 @@
 #ifndef _ADAM_HPP
 #define _ADAM_HPP
 
+#include <unsupported/Eigen/CXX11/Tensor>
+#include <Eigen/Dense>
+
 namespace optimization
 {
     namespace adam
@@ -35,6 +38,23 @@ namespace optimization
             auto vhat = (data.v / decay2).cwiseSqrt();
             params -= rate * mhat.cwiseQuotient(vhat.unaryExpr([epsilon = data.epsilon](double x)
                                                                { return x + epsilon; }));
+            // Increment exponential decays
+            data.b1powt *= data.b1;
+            data.b2powt *= data.b2;
+        }
+
+        template <typename Derived, typename DerivedGrad>
+        void adam_update_params(double rate, AdamData<Derived> &data, Eigen::TensorBase<Derived> &params, Eigen::TensorBase<DerivedGrad> &gradient)
+        {
+            double decay1 = 1.0 - data.b1powt;
+            double decay2 = 1.0 - data.b2powt;
+
+            // Update weight moments
+            data.m = (data.b1 * data.m) + ((1.0 - data.b1) * gradient);
+            data.v = (data.b2 * data.v) + ((1.0 - data.b2) * gradient.square());
+            auto mhat = data.m / decay1;
+            auto vhat = (data.v / decay2).sqrt();
+            params -= rate * mhat / (vhat + data.epsilon);
             // Increment exponential decays
             data.b1powt *= data.b1;
             data.b2powt *= data.b2;

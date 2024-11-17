@@ -81,7 +81,7 @@ PYBIND11_MODULE(neuralnet, m)
 
     make_model<DynamicBinder<double, PySequence<double>>, std::vector<std::shared_ptr<DynamicModel<double>>>>(m, "Sequence");
 
-    make_model<DynamicTensor3Binder<double, Convolution2D<double, 5, OptimizerClass::None>>, Eigen::Index, Eigen::Index>(m, "Conv2D");
+    make_model<DynamicTensor3Binder<double, Convolution2D<double, 5, OptimizerClass::Adam>>, Eigen::Index, Eigen::Index, double, double>(m, "Conv2D");
     make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::ReLU>>>(m, "ReLU2D");
     make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::Sigmoid>>>(m, "Sigmoid2D");
     make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::TanH>>>(m, "TanH2D");
