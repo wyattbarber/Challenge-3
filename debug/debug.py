@@ -27,11 +27,11 @@ class Data(nn.DataSource2D):
 class Model(nn.Model2D):
     def __init__(self):
         super().__init__()
-        self._layer1 = nn.Conv2D(1,3)
+        self._layer1 = nn.Conv2D(1,3, 0.9,0.999)
         self._layer2 = nn.MaxPool2D()
-        self._layer3 = nn.Conv2D(3,3)
+        self._layer3 = nn.Conv2D(3,3, 0.9,0.999)
         self._layer4 = nn.MaxUnPool2D(self._layer2)
-        self._layer5 = nn.Conv2D(3,1)
+        self._layer5 = nn.Conv2D(3,1, 0.9,0.999)
         self._layer6 = nn.Sigmoid2D()
     
     def forward(self, input):
@@ -70,7 +70,7 @@ class Model(nn.Model2D):
 
 
 N = 2
-a = 0.001
+a = 0.00001
 
 model = Model()
 data = Data()

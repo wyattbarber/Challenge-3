@@ -35,8 +35,6 @@ namespace neuralnet {
         void update(double rate){}
 
         protected:
-        void argcmp(Eigen::Tensor<T,3>& data, std::pair<int,int> x_range, std::pair<int,int> y_range, int channel, T& value, Eigen::Index& idx);
-
         Pool2D<T,K,M>* pool;
         int max_y_idx;
     };
@@ -48,10 +46,7 @@ namespace neuralnet {
     {
         Eigen::Tensor<T, 3> out(in.dimension(0) * K, in.dimension(1) * K, in.dimension(2));
         out.setZero();
-        
-        Eigen::array<Eigen::Index, 3> out_extent({1, 1, 1});
-        Eigen::array<Eigen::Index, 3> pool_dims({1, 1, in.dimension(2)});
-        
+                
         for(int y = 0; y < in.dimension(0); ++y)
         {
             for(int x = 0; x < in.dimension(1); ++x)
@@ -64,8 +59,8 @@ namespace neuralnet {
                 {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = (*pool->get_indices())(y,x,c) / out.dimension(0);
-                        auto yo = (*pool->get_indices())(y,x,c) % out.dimension(0);
+                        auto xo = (*pool->get_indices())(y,x,c).first;
+                        auto yo = (*pool->get_indices())(y,x,c).second;
                         out(yo, xo, c) = in(y,x,c);
                     } 
                     else if constexpr (M == PoolMode::Mean)
@@ -108,8 +103,8 @@ namespace neuralnet {
                 {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = (*pool->get_indices())(y,x,c) / error.dimension(0);
-                        auto yo = (*pool->get_indices())(y,x,c) % error.dimension(0);
+                        auto xo = (*pool->get_indices())(y,x,c).first;
+                        auto yo = (*pool->get_indices())(y,x,c).second;
                         out(y, x, c) = error(yo,xo,c);
                     }
                     else if constexpr (M == PoolMode::Mean)

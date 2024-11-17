@@ -30,12 +30,12 @@ namespace neuralnet {
 
         void update(double rate){}
 
-        Eigen::Tensor<Eigen::Index, 3>* get_indices() { return &indices; }
+        Eigen::Tensor<std::pair<int,int>, 3>* get_indices() { return &indices; }
 
         protected:
-        void argcmp(Eigen::Tensor<T,3>& data, std::pair<int,int> x_range, std::pair<int,int> y_range, int channel, T& value, Eigen::Index& idx);
+        void argcmp(Eigen::Tensor<T,3>& data, int x_start, int x_range, int y_start, int y_range, int channel, T* value);
 
-        Eigen::Tensor<Eigen::Index, 3> indices;
+        Eigen::Tensor<std::pair<int,int>, 3> indices;
         int max_y_idx;
     };
 
@@ -45,10 +45,8 @@ namespace neuralnet {
     Pool2D<T,K,M>::OutputType Pool2D<T,K,M>::forward(X&& in)
     {
         Eigen::Tensor<T, 3> out(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
-        out.setZero();
-        indices = Eigen::Tensor<Eigen::Index, 3>(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
+        indices = Eigen::Tensor<std::pair<int,int>, 3>(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
         max_y_idx = in.dimension(0);
-        indices.setZero();
         
         Eigen::array<Eigen::Index, 3> out_extent({1, 1, 1});
         Eigen::array<Eigen::Index, 3> pool_dims({1, 1, in.dimension(2)});
@@ -67,9 +65,9 @@ namespace neuralnet {
                     {
                         T m;
                         argcmp(in, 
-                            {x,std::min(x+K, static_cast<int>(in.dimension(1) - 1))}, 
-                            {y,std::min(y+K, static_cast<int>(in.dimension(0) - 1))}, 
-                            c, m, indices(y/K,x/K,c));
+                            x,std::min(K, static_cast<int>(in.dimension(1) - x)), 
+                            y,std::min(K, static_cast<int>(in.dimension(0) - y)), 
+                            c, &m);
                         out(y/K,x/K,c) = m;
                     } 
                     else if constexpr (M == PoolMode::Mean)
@@ -108,8 +106,8 @@ namespace neuralnet {
                     
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = indices(y,x,c) / max_y_idx;
-                        auto yo = indices(y,x,c) % max_y_idx;
+                        auto xo = indices(y,x,c).first;
+                        auto yo = indices(y,x,c).second;
                         out(yo, xo, c) = error(y,x,c);
                     }
                     else if constexpr (M == PoolMode::Mean)
@@ -131,32 +129,35 @@ namespace neuralnet {
 
     
     template <typename T, int K, PoolMode M>
-    void Pool2D<T,K,M>::argcmp(Eigen::Tensor<T,3>& data, std::pair<int,int> x_range, std::pair<int,int> y_range, int channel, T& value, Eigen::Index& idx)
-    {   
-        value = data(y_range.first,x_range.first,channel);
-        idx = 0;
-        for(int y = y_range.first+1; y <= y_range.second; ++y)
+    void Pool2D<T,K,M>::argcmp(Eigen::Tensor<T,3>& data, int x_start, int x_range, int y_start, int y_range, int channel, T* value)
+    {           
+        Eigen::array<Eigen::Index, 2> offsets = {y_start, x_start};
+        Eigen::array<Eigen::Index, 2> extents = {y_range, x_range};
+        auto patch = data.chip(channel,2).slice(offsets,extents);
+        Eigen::Tensor<T,0> m;
+        if constexpr (M == PoolMode::Max)
         {
-            for(int x = x_range.first+1; x <= x_range.second; ++x)
+            m = patch.maximum();
+        }
+        else
+        {
+            m = patch.minimum();
+        }
+        *value = m(0);
+
+        for(int y = y_start; y <= y_start + y_range; ++y)
+        {
+            for(int x = x_start; x <= x_start + x_range; ++x)
             {
-                if constexpr (M == PoolMode::Max)
+                if(data(y,x,channel) == *value)
                 {
-                    if(data(y,x,channel) > value)
-                    {
-                        value = data(y,x,channel);
-                        idx = (x * data.dimension(0)) + y;
-                    }
-                }
-                else
-                {
-                    if(data(y,x,channel) < value)
-                    {
-                        value = data(y,x,channel);
-                        idx = (x * data.dimension(0)) + y;
-                    }
+                    indices(y_start/K, x_start/K, channel) = std::make_pair(x,y);
+                    break;
                 }
             }
         }
+
+        
     }
 
 }
