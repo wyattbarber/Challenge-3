@@ -84,9 +84,10 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<DynamicBinder<double, DeepAutoEncoder<double, ActivationFunc::TanH, ActivationFunc::ReLU, ActivationFunc::Sigmoid, OptimizerClass::Adam>>,
         std::vector<size_t>, double, double>(m, "DeepAutoEncoder");
 
-    make_model<DynamicBinder<double, PySequence<double>>, std::vector<std::shared_ptr<DynamicModel<double>>>>(m, "Sequence");
+    make_model<DynamicBinder<double, PySequence<DynamicModel<double>>>, std::vector<std::shared_ptr<DynamicModel<double>>>>(m, "Sequence");
+    make_model<DynamicTensor3Binder<double, PySequence<DynamicTensor3Model<double>>>, std::vector<std::shared_ptr<DynamicTensor3Model<double>>>>(m, "Sequence2D");
 
-    make_model<DynamicTensor3Binder<double, Convolution2D<double, 5, OptimizerClass::None>>, Eigen::Index, Eigen::Index, double, double>(m, "Conv2D");
+    make_model<DynamicTensor3Binder<double, Convolution2D<double, 5, OptimizerClass::Adam>>, Eigen::Index, Eigen::Index, double, double>(m, "Conv2D");
     make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::ReLU>>>(m, "ReLU2D");
     make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::Sigmoid>>>(m, "Sigmoid2D");
     make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::TanH>>>(m, "TanH2D");
@@ -96,16 +97,16 @@ PYBIND11_MODULE(neuralnet, m)
         .def("forward", &Reshape1D<double>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")
         .def("backward", &Reshape1D<double>::backward<Eigen::Vector<double,Eigen::Dynamic>&>, "Performs backpropagation through the model.")
         .def("update", &Reshape1D<double>::update, "Updates trainable parameters based on current gradient.");
-    py::class_<Pool2D<double, 4, PoolMode::Max>>(m, "MaxPool2D")
+    py::class_<Pool2D<double, 2, PoolMode::Max>>(m, "MaxPool2D")
         .def(py::init<>())
-        .def("forward", &Pool2D<double, 4, PoolMode::Max>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")
-        .def("backward", &Pool2D<double, 4, PoolMode::Max>::backward<Eigen::Tensor<double,3>&>, "Performs backpropagation through the model.")
-        .def("update", &Pool2D<double, 4, PoolMode::Max>::update, "Updates trainable parameters based on current gradient.");
-    py::class_<UnPool2D<double, 4, PoolMode::Max>>(m, "MaxUnPool2D")
-        .def(py::init<Pool2D<double, 4, PoolMode::Max>&>())
-        .def("forward", &UnPool2D<double, 4, PoolMode::Max>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")
-        .def("backward", &UnPool2D<double, 4, PoolMode::Max>::backward<Eigen::Tensor<double,3>&>, "Performs backpropagation through the model.")
-        .def("update", &UnPool2D<double, 4, PoolMode::Max>::update, "Updates trainable parameters based on current gradient.");
+        .def("forward", &Pool2D<double, 2, PoolMode::Max>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")
+        .def("backward", &Pool2D<double, 2, PoolMode::Max>::backward<Eigen::Tensor<double,3>&>, "Performs backpropagation through the model.")
+        .def("update", &Pool2D<double, 2, PoolMode::Max>::update, "Updates trainable parameters based on current gradient.");
+    py::class_<UnPool2D<double, 2, PoolMode::Max>>(m, "MaxUnPool2D")
+        .def(py::init<Pool2D<double, 2, PoolMode::Max>&>())
+        .def("forward", &UnPool2D<double, 2, PoolMode::Max>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")
+        .def("backward", &UnPool2D<double, 2, PoolMode::Max>::backward<Eigen::Tensor<double,3>&>, "Performs backpropagation through the model.")
+        .def("update", &UnPool2D<double, 2, PoolMode::Max>::update, "Updates trainable parameters based on current gradient.");
 
     py::class_<training::Trainer<DynamicModel<double>>>(m, "Trainer")
         .def(py::init<

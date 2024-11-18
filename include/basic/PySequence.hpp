@@ -11,20 +11,20 @@ namespace neuralnet
      * 
      * 
      */
-    template <typename T>
-    class PySequence : public Model<PySequence<T>>
+    template <typename H>
+    class PySequence : public Model<PySequence<H>>
     {
     protected:
-        std::vector<std::shared_ptr<DynamicModel<T>>> layers;
+        std::vector<std::shared_ptr<H>> layers;
 
     public:
-        typedef Eigen::Vector<T, Eigen::Dynamic> InputType;
-        typedef Eigen::Vector<T, Eigen::Dynamic> OutputType;
+        typedef H::InputType InputType;
+        typedef H::OutputType OutputType;
 
         /** Compose a model from a sequence of smaller models
          * 
         */
-        PySequence(std::vector<std::shared_ptr<DynamicModel<T>>> layers) : layers{layers}
+        PySequence(std::vector<std::shared_ptr<H>> layers) : layers{layers}
         {
         }
 
@@ -50,9 +50,9 @@ namespace neuralnet
     };
 };
 
-template <typename T>
+template <typename H>
 template<typename X>
-neuralnet::PySequence<T>::OutputType neuralnet::PySequence<T>::forward(X&& input)
+neuralnet::PySequence<H>::OutputType neuralnet::PySequence<H>::forward(X&& input)
 {
     InputType h = input;
     for (auto l : layers)
@@ -63,9 +63,9 @@ neuralnet::PySequence<T>::OutputType neuralnet::PySequence<T>::forward(X&& input
 }
 
 
-template <typename T>
+template <typename H>
 template<typename X>
-neuralnet::PySequence<T>::InputType neuralnet::PySequence<T>::backward(X&& err)
+neuralnet::PySequence<H>::InputType neuralnet::PySequence<H>::backward(X&& err)
 {
     OutputType e = err;
     for (int l = layers.size() - 1; l >= 0; --l)
@@ -76,8 +76,8 @@ neuralnet::PySequence<T>::InputType neuralnet::PySequence<T>::backward(X&& err)
 }
 
 
-template <typename T>
-void neuralnet::PySequence<T>::update(double rate)
+template <typename H>
+void neuralnet::PySequence<H>::update(double rate)
 {
     for(auto l : layers)
     {
