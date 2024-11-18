@@ -9,6 +9,7 @@
 #include "include/convolutional/Pool2D.hpp"
 #include "include/convolutional/UnPool2D.hpp"
 #include "include/convolutional/Activation2D.hpp"
+#include "include/convolutional/Reshape.hpp"
 #include "include/datasource/DataSource.hpp"
 #include <tuple>
 
@@ -51,13 +52,17 @@ PYBIND11_MODULE(neuralnet, m)
 {
     m.doc() = "Various neural network implementations";
 
-    py::class_<DataSource<Eigen::VectorXd, Eigen::VectorXd>, DataSourceTrampoline<Eigen::VectorXd, Eigen::VectorXd>>(
+    py::class_<DataSource<Eigen::VectorXd, Eigen::VectorXd>, 
+                DataSourceTrampoline<Eigen::VectorXd, Eigen::VectorXd>,
+                std::shared_ptr<DataSource<Eigen::VectorXd, Eigen::VectorXd>>>(
         m, "DataSource"
     )
         .def(py::init<>())
         .def("size", &DataSource<Eigen::VectorXd, Eigen::VectorXd>::size)
         .def("sample", &DataSource<Eigen::VectorXd, Eigen::VectorXd>::sample);
-    py::class_<DataSource<Eigen::Tensor<double,3>, Eigen::Tensor<double,3>>, DataSourceTrampoline<Eigen::Tensor<double,3>, Eigen::Tensor<double,3>>>(
+    py::class_<DataSource<Eigen::Tensor<double,3>, Eigen::Tensor<double,3>>,  
+                DataSourceTrampoline<Eigen::Tensor<double,3>, Eigen::Tensor<double,3>>,
+                std::shared_ptr<DataSource<Eigen::Tensor<double,3>, Eigen::Tensor<double,3>>>>(
             m, "DataSource2D"
         )
             .def(py::init<>())
@@ -86,6 +91,11 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::Sigmoid>>>(m, "Sigmoid2D");
     make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::TanH>>>(m, "TanH2D");
     make_model<DynamicTensor3Binder<double, Layer2D<double, ActivationFunc::SoftMax>>>(m, "SoftMax2D");
+    py::class_<Reshape1D<double>>(m, "Reshape1D")
+        .def(py::init<>())
+        .def("forward", &Reshape1D<double>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")
+        .def("backward", &Reshape1D<double>::backward<Eigen::Vector<double,Eigen::Dynamic>&>, "Performs backpropagation through the model.")
+        .def("update", &Reshape1D<double>::update, "Updates trainable parameters based on current gradient.");
     py::class_<Pool2D<double, 4, PoolMode::Max>>(m, "MaxPool2D")
         .def(py::init<>())
         .def("forward", &Pool2D<double, 4, PoolMode::Max>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")
