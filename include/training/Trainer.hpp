@@ -4,6 +4,8 @@
 
 #include "../Model.hpp"
 #include "../datasource/DataSource.hpp"
+#include "../loss/L1.hpp"
+#include "../loss/L2.hpp"
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <iostream>
 
@@ -47,6 +49,7 @@ namespace training
     protected:
         ModelType& model;
         DataSource<InputType, OutputType>& data;
+        loss::L2<double> loss;
     };  
 }
 
@@ -56,21 +59,6 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
 {
 
     std::vector<double> avg_err;
-
-    // Total output size for normalizing errors
-    double out_norm = 0.0;
-    for (int i = 0; i < data.size(); ++i)
-    {
-        if constexpr (std::is_convertible_v<typename ModelType::OutputType, Eigen::Tensor<double,3>>)
-        {
-            out_norm += 1.0;
-        }
-        else
-        {
-            out_norm +=  data.sample(i).second.norm();
-        } 
-    }
-
     
     for (int iter = 0; iter < N; ++iter)
     {
@@ -82,21 +70,15 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
             OutputType out = model.forward(sample.first);
             OutputType error = out - sample.second;
 
-            if constexpr (std::is_convertible_v<typename ModelType::OutputType, Eigen::Tensor<double,3>>)
-            {
-                Eigen::Tensor<double,0> s = error.sum();
-                e += s(0);
-            }
-            else
-            {
-                e += error.norm();
-            } 
             // Run backward pass
-            model.backward(error);
+            double ei;
+            OutputType eg = loss.grad(out, sample.second, ei);
+            model.backward(eg);
             // Update model
             model.update(rate);
+            e += ei;
         }
-        avg_err.push_back(e / out_norm);
+        avg_err.push_back(e / data.size());
     }
     return avg_err;
 }

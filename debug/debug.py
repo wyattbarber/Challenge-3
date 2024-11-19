@@ -19,7 +19,7 @@ class Data(nn.DataSource):
 
 
 data = Data()
-N = 20
+N = 2
 a = 0.0001
 AdamArgs = (0.9, 0.999)
 

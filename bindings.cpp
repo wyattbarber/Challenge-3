@@ -11,6 +11,9 @@
 #include "include/convolutional/Activation2D.hpp"
 #include "include/convolutional/Reshape.hpp"
 #include "include/datasource/DataSource.hpp"
+#include "include/loss/Loss.hpp"
+#include "include/loss/L1.hpp"
+#include "include/loss/L2.hpp"
 #include <tuple>
 
 #include <pybind11/pybind11.h>
@@ -122,5 +125,4 @@ PYBIND11_MODULE(neuralnet, m)
         >())
         .def("train", &training::Trainer<DynamicTensor3Model<double>>::train, "Trains a model", py::return_value_policy::automatic, 
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
-
 }
