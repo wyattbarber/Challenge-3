@@ -36,17 +36,23 @@ auto make_model(py::module m, const char* name)
     {
         return py::class_<T, DynamicTensor3Model<double>, std::shared_ptr<T>>(m, name)
         .def(py::init<Ts...>())
-        .def("forward", static_cast<T::OutputType (T::*)(typename T::InputType&)>(&T::forward), "Performs a forward pass through the model.")
-        .def("backward", static_cast<T::InputType (T::*)(typename T::OutputType&)>(&T::backward), "Performs backpropagation through the model.")
-        .def("update", &T::update, "Updates trainable parameters based on current gradient.");
+        .def("forward", static_cast<T::OutputType (T::*)(typename T::InputType&)>(&T::forward), "Performs a forward pass through the model.", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("backward", static_cast<T::InputType (T::*)(typename T::OutputType&)>(&T::backward), "Performs backpropagation through the model.", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("update", &T::update, "Updates trainable parameters based on current gradient.", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
     }
     else
     {
         return py::class_<T, DynamicModel<double>, std::shared_ptr<T>>(m, name)
         .def(py::init<Ts...>())
-        .def("forward", static_cast<T::OutputType (T::*)(typename T::InputType&)>(&T::forward), "Performs a forward pass through the model.")
-        .def("backward", static_cast<T::InputType (T::*)(typename T::OutputType&)>(&T::backward), "Performs backpropagation through the model.")
-        .def("update", &T::update, "Updates trainable parameters based on current gradient.");
+        .def("forward", static_cast<T::OutputType (T::*)(typename T::InputType&)>(&T::forward), "Performs a forward pass through the model.", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("backward", static_cast<T::InputType (T::*)(typename T::OutputType&)>(&T::backward), "Performs backpropagation through the model.", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+        .def("update", &T::update, "Updates trainable parameters based on current gradient.", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
     }
 }
 

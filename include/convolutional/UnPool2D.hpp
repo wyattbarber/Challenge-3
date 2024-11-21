@@ -2,6 +2,7 @@
 #define _UNPOOL2D_HPP
 
 #include "Pool2D.hpp"
+#include <iostream>
 
 namespace neuralnet {
 
@@ -50,29 +51,22 @@ namespace neuralnet {
         for(int y = 0; y < in.dimension(0); ++y)
         {
             for(int x = 0; x < in.dimension(1); ++x)
-            {                
-                Eigen::array<Eigen::Index, 3> pool_extent({
-                    std::min(K, static_cast<int>(in.dimension(0) - y)), 
-                    std::min(K, static_cast<int>(in.dimension(1) - x)), 
-                    1});
+            { 
                 for(int c = 0; c < in.dimension(2); ++c)
                 {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
                         auto xo = (*pool->get_indices())(y,x,c).first;
                         auto yo = (*pool->get_indices())(y,x,c).second;
-                        out(yo, xo, c) = in(y,x,c);
+                        out(yo, xo, c) = in(y,x,c); 
                     } 
                     else if constexpr (M == PoolMode::Mean)
-                    {    
-                        Eigen::array<Eigen::Index, 3> out_extent({K, K, 1});                  
-                        Eigen::array<Eigen::Index, 3> out_start({y*K, x*K, c}); 
-                        
+                    {                            
                         for(int xo = 0; xo < K; ++xo)
                         {
                             for(int yo = 0; yo < K; ++yo)
                             {
-                                static_cast<Eigen::Tensor<T,3>>(out.slice(out_start, out_extent))(yo,xo,0) = in(y,x,c);                                
+                                out(y*K + yo, x*K + xo, c) = in(y,x,c);                                
                             }
                         }
                     }
@@ -92,12 +86,10 @@ namespace neuralnet {
         out.setZero();
 
         Eigen::array<Eigen::Index, 3> pool_extent({K, K, 1});
-        Eigen::array<Eigen::Index, 3> out_extent({1, 1, 1});
-        Eigen::array<Eigen::Index, 3> pool_dims({1, 1, error.dimension(2)});
 
-        for(int y = 0; y < out.dimension(0); y+=K)
+        for(int y = 0; y < out.dimension(0); ++y)
         {
-            for(int x = 0; x < out.dimension(1); x+=K)
+            for(int x = 0; x < out.dimension(1); ++x)
             {                
                 for(int c = 0; c < out.dimension(2); ++c)
                 {                    
@@ -109,15 +101,9 @@ namespace neuralnet {
                     }
                     else if constexpr (M == PoolMode::Mean)
                     {
-                        for(int xo = 0; xo < K; ++xo)
-                        {
-                            for(int yo = 0; yo < K; ++yo)
-                            {
-                                Eigen::array<Eigen::Index, 3> pool_start({y*K, x*K, c});
-                                Eigen::array<Eigen::Index, 3> out_start({y, x, c});
-                                out.slice(out_start, out_extent) = error.slice(pool_start, pool_extent).mean();                                
-                            }
-                        }
+                        Eigen::array<Eigen::Index, 3> pool_start({y*K, x*K, c});
+                        Eigen::Tensor<T,0> avg = error.slice(pool_start, pool_extent).mean();
+                        out(y,x,c) = avg(0);  
                     }
                 }
             }   
