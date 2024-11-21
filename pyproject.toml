@@ -2,6 +2,12 @@
 requires = ["scikit-build-core", "pybind11"]
 build-backend = "scikit_build_core.build"
 
+[tool.setuptools.packages.find]
+where = ["neuralnet"]
+
+[tool.setuptools.package-data]
+mypkg = ["*.pyd", "*.so"]
+
 [project]
-name = "neuralnet"
+name = "pyneuralnet"
 version = "1.1.0"

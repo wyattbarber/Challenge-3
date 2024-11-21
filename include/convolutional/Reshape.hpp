@@ -22,7 +22,7 @@ namespace neuralnet {
         template<typename X>
         OutputType forward(X&& input)
         {
-            Eigen::Tensor<T, 1> flat = input.reshape(Eigen::array<int, 1>{input.size()});
+            Eigen::Tensor<T, 1> flat = input.reshape(Eigen::array<Eigen::Index, 1>{input.size()});
             dims = input.dimensions();
             return Eigen::Map<Eigen::VectorXd>(flat.data(), flat.size());
         }

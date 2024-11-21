@@ -8,15 +8,18 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fopenmp")
 
 option(NOPYTHON "Build C library instead of Python package" OFF)
 
+
 project(neuralnet LANGUAGES CXX)
+
+
 execute_process(
-       COMMAND python ${PROJECT_SOURCE_DIR}/getversion.py "${PROJECT_SOURCE_DIR}"
+       COMMAND python ${CMAKE_SOURCE_DIR}/getversion.py "${CMAKE_SOURCE_DIR}"
        OUTPUT_VARIABLE TOML_PACKAGE_VERSION
    )
 message(STATUS "Building neuralnet version ${TOML_PACKAGE_VERSION}")
@@ -86,5 +89,5 @@ else()
 
     pybind11_add_module(neuralnet bindings.cpp)
     target_link_libraries(neuralnet PRIVATE Eigen3::Eigen OpenMP::OpenMP_CXX)
-    install(TARGETS neuralnet DESTINATION .)
+    install(TARGETS neuralnet DESTINATION ${CMAKE_SOURCE_DIR}/pyneuralnet)
 endif()

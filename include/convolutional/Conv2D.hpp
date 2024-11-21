@@ -31,11 +31,11 @@ namespace neuralnet {
                 // Apply he initialization
                 kernels = kernels.setRandom().unaryExpr([](double x)
                             { return x * std::sqrt(2.0 / static_cast<double>(K)); });
-                bias = Eigen::Tensor<T,2>(in_channels, out_channels);
+                bias = Eigen::Tensor<T,1>(out_channels);
                 bias.setZero();
 
                 grad_kernels = Eigen::Tensor<T,4>(K, K, in_channels, out_channels);
-                grad_bias = Eigen::Tensor<T,2>(in_channels, out_channels);
+                grad_bias = Eigen::Tensor<T,1>(out_channels);
                 
                 if constexpr (C == OptimizerClass::Adam)
                 {
@@ -48,9 +48,9 @@ namespace neuralnet {
                     adam_kernels.b1powt = adam_kernels.b1;
                     adam_kernels.b2powt = adam_kernels.b2;
 
-                    adam_bias.m = Eigen::Tensor<T,2>(in_channels, out_channels);
+                    adam_bias.m = Eigen::Tensor<T,1>(out_channels);
                     adam_bias.m.setZero();
-                    adam_bias.v= Eigen::Tensor<T,2>(in_channels, out_channels);
+                    adam_bias.v= Eigen::Tensor<T,1>(out_channels);
                     adam_bias.v.setZero();
                     adam_bias.b1 = std::get<2>(args);
                     adam_bias.b2 = std::get<3>(args);
@@ -70,14 +70,14 @@ namespace neuralnet {
         protected:
             Eigen::Index in_channels, out_channels;
             Eigen::Tensor<T,4> kernels;
-            Eigen::Tensor<T,2> bias;
-            Eigen::Tensor<T, 4> grad_kernels;
-            Eigen::Tensor<T,2> grad_bias;
+            Eigen::Tensor<T,1> bias;
+            Eigen::Tensor<T,4> grad_kernels;
+            Eigen::Tensor<T,1> grad_bias;
             Eigen::Tensor<T,3> padded; // stores input between forward and backward pass
 
             // Adam optimization data
             adam::AdamData<Eigen::Tensor<T,4>> adam_kernels;
-            adam::AdamData<Eigen::Tensor<T,2>> adam_bias;
+            adam::AdamData<Eigen::Tensor<T,1>> adam_bias;
     };
 
 
@@ -101,7 +101,7 @@ namespace neuralnet {
 
         for(int k = 0; k < out_channels; ++k)
         {
-            out.chip(k,2) = padded.convolve(kernels.chip(k,3), dims).sum(dimsum);
+            out.chip(k,2) = padded.convolve(kernels.chip(k,3), dims).sum(dimsum) + bias(k);
         }
 
         return out;
@@ -130,6 +130,7 @@ namespace neuralnet {
 
         for(int ko = 0; ko < out_channels; ++ko)
         {
+            grad_bias(ko) = 0;
             for(int ki = 0; ki < in_channels; ++ki)
             {
                 auto a = padded.chip(ki,2);
@@ -137,7 +138,7 @@ namespace neuralnet {
                 
                 grad_kernels.chip(ko,3).chip(ki,2) = a.convolve(error.chip(ko,2), dims);
                 Eigen::Tensor<T,0> s = error.chip(ko,2).sum();
-                grad_bias(ki,ko) = s(0);
+                grad_bias(ko) += s(0);
                 grad_out.chip(ki,2) += e_padded.chip(ko,2).convolve(kernel.reverse(reverse), dims);
             }
         }

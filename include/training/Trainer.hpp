@@ -11,6 +11,7 @@
 
 using namespace neuralnet;
 using namespace datasource;
+using namespace loss;
 
 namespace training
 {
@@ -32,9 +33,10 @@ namespace training
          * @param inputs Input dataset for training
          * @param outputs Output dataset for training
          */
-        Trainer(ModelType& model, DataSource<InputType, OutputType>& data) : 
+        Trainer(ModelType& model, DataSource<InputType, OutputType>& data, Loss<double>& loss) : 
             model(model),
-            data(data)
+            data(data),
+            loss(loss)
         {
         }
 
@@ -49,7 +51,7 @@ namespace training
     protected:
         ModelType& model;
         DataSource<InputType, OutputType>& data;
-        loss::L2<double> loss;
+        Loss<double>& loss;
     };  
 }
 
@@ -68,15 +70,15 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
             // Test forward pass and calculate error for this input set
             SampleType sample = data.sample(i);
             OutputType out = model.forward(sample.first);
-            OutputType error = out - sample.second;
 
             // Run backward pass
             double ei;
             OutputType eg = loss.grad(out, sample.second, ei);
+            e += ei;
             model.backward(eg);
+
             // Update model
             model.update(rate);
-            e += ei;
         }
         avg_err.push_back(e / data.size());
     }

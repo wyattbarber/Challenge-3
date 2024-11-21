@@ -13,7 +13,7 @@ namespace loss
     class L1 : public Loss<T>
     {
         public:
-        /** Evaluates the L1 loss gradient.
+        /** Evaluates the L1, or MAE, loss gradient.
          * 
          * Returns the partial gradient of the loss with respect
          * to each predicted value. The net loss is stored in the 
@@ -23,11 +23,14 @@ namespace loss
          * @param actual Ground truth data
          * @param loss Optional reference to variable that net loss will be stored in
         */
+        Eigen::Vector<T, Eigen::Dynamic> grad(Eigen::Vector<T, Eigen::Dynamic>& predicted, Eigen::Vector<T, Eigen::Dynamic>& actual, T& loss) { return _grad(predicted, actual, loss); };
+        Eigen::Tensor<T, 3> grad(Eigen::Tensor<T, 3>& predicted, Eigen::Tensor<T, 3>& actual, T& loss) { return _grad(predicted, actual, loss); };
+
         template<typename X>
-        static X grad(X& predicted, X& actual, T& loss)
+        static X _grad(X& predicted, X& actual, T& loss)
         {
             X diff = (predicted - actual);
-            loss = Loss<T>::make_array(diff).abs().sum();
+            loss = Loss<T>::make_array(diff).abs().sum() / actual.size();
 
             // Gradient is the sign of the difference, or forced to 0 if error is 0 
             return diff.unaryExpr([](T x){ 

@@ -14,6 +14,8 @@
 #include "include/loss/Loss.hpp"
 #include "include/loss/L1.hpp"
 #include "include/loss/L2.hpp"
+#include "include/loss/IoU.hpp"
+#include "include/loss/BCE.hpp"
 #include <tuple>
 
 #include <pybind11/pybind11.h>
@@ -28,6 +30,7 @@ namespace py = pybind11;
 using namespace neuralnet;
 using namespace optimization;
 using namespace datasource;
+using namespace loss;
 
 template<class T, typename... Ts>
 auto make_model(py::module m, const char* name)
@@ -120,15 +123,23 @@ PYBIND11_MODULE(neuralnet, m)
     py::class_<training::Trainer<DynamicModel<double>>>(m, "Trainer")
         .def(py::init<
             DynamicModel<double>&,
-            DataSource<DynamicModel<double>::InputType, DynamicModel<double>::OutputType>&
+            DataSource<DynamicModel<double>::InputType, DynamicModel<double>::OutputType>&,
+            Loss<double>&
         >())
         .def("train", &training::Trainer<DynamicModel<double>>::train, "Trains a model", py::return_value_policy::automatic);
     
     py::class_<training::Trainer<DynamicTensor3Model<double>>>(m, "Trainer2D")
         .def(py::init<
             DynamicTensor3Model<double>&,
-            DataSource<DynamicTensor3Model<double>::InputType, DynamicTensor3Model<double>::OutputType>&
+            DataSource<DynamicTensor3Model<double>::InputType, DynamicTensor3Model<double>::OutputType>&,
+            Loss<double>&
         >())
         .def("train", &training::Trainer<DynamicTensor3Model<double>>::train, "Trains a model", py::return_value_policy::automatic, 
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
+
+    py::class_<loss::Loss<double>, LossTrampoline<double>, std::shared_ptr<Loss<double>>>(m, "LossBase");
+    py::class_<loss::L1<double>, loss::Loss<double>, std::shared_ptr<L1<double>>>(m, "L1Loss").def(py::init<>());
+    py::class_<loss::L2<double>, loss::Loss<double>, std::shared_ptr<L2<double>>>(m, "L2Loss").def(py::init<>());
+    py::class_<loss::IoU<double>, loss::Loss<double>, std::shared_ptr<IoU<double>>>(m, "IoULoss").def(py::init<>());
+    py::class_<loss::BCE<double>, loss::Loss<double>, std::shared_ptr<BCE<double>>>(m, "BCELoss").def(py::init<>());
 }

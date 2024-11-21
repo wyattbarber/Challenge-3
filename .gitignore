@@ -18,3 +18,5 @@ debug/**
 !debug/python-valgrind.supp
 rebuild.bat
 test/data/**
+**.pyd
+**.so
