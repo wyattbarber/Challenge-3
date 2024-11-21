@@ -92,9 +92,11 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<DynamicBinder<double, Layer<double, ActivationFunc::TanH, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "TanH");
     make_model<DynamicBinder<double, Layer<double, ActivationFunc::SoftMax, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "SoftMax");
 
-    make_model<DynamicBinder<double, AutoEncoder<double, ActivationFunc::ReLU, OptimizerClass::None>>, size_t, size_t, double, double>(m, "AutoEncoder");
-    make_model<DynamicBinder<double, DeepAutoEncoder<double, ActivationFunc::TanH, ActivationFunc::ReLU, ActivationFunc::Sigmoid, OptimizerClass::Adam>>,
-        std::vector<size_t>, double, double>(m, "DeepAutoEncoder");
+    make_model<DynamicBinder<double, AutoEncoder<double, ActivationFunc::Linear, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "LinearAutoEncoder");
+    make_model<DynamicBinder<double, AutoEncoder<double, ActivationFunc::ReLU, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "ReLUAutoEncoder");
+    make_model<DynamicBinder<double, AutoEncoder<double, ActivationFunc::Sigmoid, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "SigmoidAutoEncoder");
+    make_model<DynamicBinder<double, AutoEncoder<double, ActivationFunc::TanH, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "TanHAutoEncoder");
+    make_model<DynamicBinder<double, AutoEncoder<double, ActivationFunc::SoftMax, OptimizerClass::Adam>>, size_t, size_t, double, double>(m, "SoftMaxAutoEncoder");
 
     make_model<DynamicBinder<double, PySequence<DynamicModel<double>>>, std::vector<std::shared_ptr<DynamicModel<double>>>>(m, "Sequence");
     make_model<DynamicTensor3Binder<double, PySequence<DynamicTensor3Model<double>>>, std::vector<std::shared_ptr<DynamicTensor3Model<double>>>>(m, "Sequence2D");

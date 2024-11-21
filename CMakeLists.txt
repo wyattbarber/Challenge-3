@@ -89,5 +89,5 @@ else()
 
     pybind11_add_module(neuralnet bindings.cpp)
     target_link_libraries(neuralnet PRIVATE Eigen3::Eigen OpenMP::OpenMP_CXX)
-    install(TARGETS neuralnet DESTINATION ${CMAKE_SOURCE_DIR}/pyneuralnet)
+    install(TARGETS neuralnet DESTINATION .)
 endif()
