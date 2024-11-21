@@ -2,6 +2,7 @@
 #define _LOSS_HPP
 
 #include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
 
 namespace loss
 {
@@ -23,8 +24,8 @@ namespace loss
          * @param actual Ground truth data
          * @param loss Optional reference to variable that net loss will be stored in
         */
-        template<typename X>
-        X grad(X&& predicted, X& actual, T& loss);
+        virtual Eigen::Vector<T, Eigen::Dynamic> grad(Eigen::Vector<T, Eigen::Dynamic>& predicted, Eigen::Vector<T, Eigen::Dynamic>& actual, T& loss) = 0;
+        virtual Eigen::Tensor<T, 3> grad(Eigen::Tensor<T, 3>& predicted, Eigen::Tensor<T, 3>& actual, T& loss) = 0;
         
         template<typename X>
         X grad(X& predicted, X& actual)
@@ -47,6 +48,40 @@ namespace loss
                 data.data(), data.size()
             );
         }
+    };
+
+
+    template<typename T>
+    class LossTrampoline : public Loss<T>
+    {
+        protected:
+            typedef Eigen::Vector<T,Eigen::Dynamic> ret1;
+            typedef Eigen::Tensor<T,3> ret2;
+
+        public:
+            using Loss<T>::Loss;
+
+
+            Eigen::Vector<T,Eigen::Dynamic> grad(Eigen::Vector<T, Eigen::Dynamic>& predicted, Eigen::Vector<T, Eigen::Dynamic>& actual, T& loss) override
+            {
+                PYBIND11_OVERLOAD_PURE(
+                    ret1, /* Return type */
+                    Loss<T>,      /* Parent class */
+                    grad,        /* Name of function in C++ (must match Python name) */
+                    predicted, actual, loss      /* Argument(s) */
+                );
+            }
+
+            Eigen::Tensor<T,3> grad(Eigen::Tensor<T,3>& predicted, Eigen::Tensor<T,3>& actual, T& loss) override
+            {
+                PYBIND11_OVERLOAD_PURE(
+                    ret2, /* Return type */
+                    Loss<T>,      /* Parent class */
+                    grad,        /* Name of function in C++ (must match Python name) */
+                    predicted, actual, loss      /* Argument(s) */
+                );
+            }
+
     };
 }
 
