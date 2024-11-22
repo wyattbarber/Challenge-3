@@ -1,6 +1,7 @@
 data/**
 results/**
 build/**
+dist/**
 **/__pycache__/**
 CMakeFiles/**
 CMakeCache.txt

@@ -17,53 +17,12 @@ namespace neuralnet {
         typedef InputType OutputType;
         typedef Eigen::Vector<T, Eigen::Dynamic> LatentType;
 
-        template <typename... Ts>
-        AutoEncoder(Ts... Args)
-        {            
-            auto args = std::tuple<Ts...>(Args...);
-
-            this->in_size = std::get<0>(args);
-            this->latent_size = std::get<1>(args);
-
-            // Apply he initialization
-            this->W = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, latent_size).unaryExpr([in_size = in_size](double x)
-                                                                                        { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
-
-            this->blt = LatentType::Zero(latent_size);
-            this->alt = LatentType::Zero(latent_size);
-            this->dlt = LatentType::Zero(latent_size);
-            this->zlt  = InputType::Zero(in_size);
-
-            this->brc = InputType::Zero(in_size);
-            this->arc = InputType::Zero(in_size);
-            this->drc = InputType::Zero(in_size);
-            this->zrc = LatentType::Zero(latent_size);
-
-            this->in = InputType::Zero(in_size);
-
-            if constexpr (C == OptimizerClass::Adam)
-            {
-                adam_w.m = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, latent_size);
-                adam_w.v = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, latent_size);
-                adam_brc.m = InputType::Zero(in_size);
-                adam_brc.v = InputType::Zero(in_size);                
-                adam_blt.m = LatentType::Zero(latent_size);
-                adam_blt.v = LatentType::Zero(latent_size);
-
-                adam_w.b1 = std::get<2>(args);
-                adam_w.b2 = std::get<3>(args);
-                adam_brc.b1 = std::get<2>(args);
-                adam_brc.b2 = std::get<3>(args);
-                adam_blt.b1 = std::get<2>(args);
-                adam_blt.b2 = std::get<3>(args);
-
-                adam_w.b1powt = adam_w.b1;
-                adam_w.b2powt = adam_w.b2;
-                adam_brc.b1powt = adam_brc.b1;
-                adam_brc.b2powt = adam_brc.b2;
-                adam_blt.b1powt = adam_blt.b1;
-                adam_blt.b2powt = adam_blt.b2;
-            }
+        AutoEncoder(){ setup(0,0,0,0); }
+        AutoEncoder(int in_size, int latent_size, double b1, double b2){ setup(in_size, latent_size, b1, b2); }
+        AutoEncoder(int in_size, int latent_size)
+        { 
+            static_assert(C==OptimizerClass::None, "Adam parameters missing"); 
+            setup(in_size, latent_size); 
         }
 
         template<typename X>
@@ -110,6 +69,55 @@ namespace neuralnet {
         adam::AdamData<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> adam_w;
         adam::AdamData<LatentType> adam_blt;
         adam::AdamData<OutputType> adam_brc;
+
+        template<typename... Ts>
+        void setup(Ts... Args)
+        {
+            auto args = std::tuple<Ts...>(Args...);
+
+            this->in_size = std::get<0>(args);
+            this->latent_size = std::get<1>(args);
+
+            // Apply he initialization
+            this->W = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, latent_size).unaryExpr([in_size = in_size](double x)
+                                                                                        { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
+
+            this->blt = LatentType::Zero(latent_size);
+            this->alt = LatentType::Zero(latent_size);
+            this->dlt = LatentType::Zero(latent_size);
+            this->zlt  = InputType::Zero(in_size);
+
+            this->brc = InputType::Zero(in_size);
+            this->arc = InputType::Zero(in_size);
+            this->drc = InputType::Zero(in_size);
+            this->zrc = LatentType::Zero(latent_size);
+
+            this->in = InputType::Zero(in_size);
+
+            if constexpr (C == OptimizerClass::Adam)
+            {
+                adam_w.m = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, latent_size);
+                adam_w.v = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, latent_size);
+                adam_brc.m = InputType::Zero(in_size);
+                adam_brc.v = InputType::Zero(in_size);                
+                adam_blt.m = LatentType::Zero(latent_size);
+                adam_blt.v = LatentType::Zero(latent_size);
+
+                adam_w.b1 = std::get<2>(args);
+                adam_w.b2 = std::get<3>(args);
+                adam_brc.b1 = std::get<2>(args);
+                adam_brc.b2 = std::get<3>(args);
+                adam_blt.b1 = std::get<2>(args);
+                adam_blt.b2 = std::get<3>(args);
+
+                adam_w.b1powt = adam_w.b1;
+                adam_w.b2powt = adam_w.b2;
+                adam_brc.b1powt = adam_brc.b1;
+                adam_brc.b2powt = adam_brc.b2;
+                adam_blt.b1powt = adam_blt.b1;
+                adam_blt.b2powt = adam_blt.b2;
+            }
+        }
     };
 }
 
@@ -204,26 +212,26 @@ py::tuple neuralnet::AutoEncoder<T, F, C>::getstate(const neuralnet::AutoEncoder
     if constexpr (C == OptimizerClass::Adam)
     {
         return py::make_tuple(
-            W.rows(), W.cols(),
-            adam_w.b1, adam_w.b2,
-            std::vector<T>(W.data(), W.data() + W.size()),
-            std::vector<T>(blt.data(), blt.data() + blt.size()),            
-            std::vector<T>(brc.data(), brc.data() + brc.size())
+            obj.W.rows(), obj.W.cols(),
+            obj.adam_w.b1, obj.adam_w.b2,
+            std::vector<T>(obj.W.data(), obj.W.data() + obj.W.size()),
+            std::vector<T>(obj.blt.data(), obj.blt.data() + obj.blt.size()),            
+            std::vector<T>(obj.brc.data(), obj.brc.data() + obj.brc.size())
         );
     }
     else
     {
         return py::make_tuple(
-            W.rows(), W.cols(),
-            std::vector<T>(W.data(), W.data() + W.size()),
-            std::vector<T>(blt.data(), blt.data() + blt.size()),            
-            std::vector<T>(brc.data(), brc.data() + brc.size())
+            obj.W.rows(), obj.W.cols(),
+            std::vector<T>(obj.W.data(), obj.W.data() + obj.W.size()),
+            std::vector<T>(obj.blt.data(), obj.blt.data() + obj.blt.size()),            
+            std::vector<T>(obj.brc.data(), obj.brc.data() + obj.brc.size())
         );
     }
 }
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-static neuralnet::AutoEncoder<T,F,C> neuralnet::AutoEncoder<T, F, C>::setstate(py::tuple data)
+neuralnet::AutoEncoder<T,F,C> neuralnet::AutoEncoder<T, F, C>::setstate(py::tuple data)
 {
     AutoEncoder<T,F,C> out;
     std::vector<T> w, bl, br;

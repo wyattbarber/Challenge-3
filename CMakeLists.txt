@@ -11,7 +11,7 @@ endif()
 if(WIN32)
     set(CMAKE_CXX_FLAGS "/W0 /openmp:experimental")
     set(CMAKE_CXX_FLAGS_DEBUG "/DEBUG ")
-    set(CMAKE_CXX_FLAGS_RELEASE "/02")
+    set(CMAKE_CXX_FLAGS_RELEASE "/O2")
 else()
     set(CMAKE_CXX_FLAGS "-Wall")
     set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -89,11 +89,18 @@ if(NOPYTHON)
     )
 
 else()
-    find_package(Python 3.11 COMPONENTS Interpreter Development REQUIRED)
+    find_package(Python3 3.11 COMPONENTS Interpreter Development REQUIRED)
     find_package(pybind11 CONFIG REQUIRED)
     find_package(OpenMP REQUIRED)
 
     pybind11_add_module(neuralnet bindings.cpp)
     target_link_libraries(neuralnet PRIVATE Eigen3::Eigen OpenMP::OpenMP_CXX)
-    install(TARGETS neuralnet DESTINATION .)
+
+    
+    message(STATUS "Found Python3 installation location: ${Python3_SITELIB}")
+    install(TARGETS neuralnet
+        COMPONENT python
+        LIBRARY DESTINATION "${Python3_SITELIB}"
+        ARCHIVE DESTINATION "lib"
+        RUNTIME DESTINATION "bin")
 endif()

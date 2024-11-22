@@ -31,41 +31,12 @@ namespace neuralnet
          * @param in_size size of the input vector to this layer
          * @param out_size size of the output vector from this layer
          */
-        template <typename... Ts>
-        Layer(Ts... Args)
-        {
-            auto args = std::tuple<Ts...>(Args...);
-
-            int in_size = std::get<0>(args);
-            int out_size = std::get<1>(args);
-
-            // Apply he initialization
-            this->weights = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, out_size).unaryExpr([in_size](double x)
-                                                                                        { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
-
-            this->biases = OutputType::Zero(out_size);
-            this->z = OutputType::Zero(out_size);
-            this->a = OutputType::Zero(out_size);
-            this->d = OutputType::Zero(out_size);
-            this->in = InputType::Zero(in_size);
-
-            if constexpr (C == OptimizerClass::Adam)
-            {
-                adam_weights.m = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, out_size);
-                adam_weights.v = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, out_size);
-                adam_biases.m = OutputType::Zero(out_size);
-                adam_biases.v = OutputType::Zero(out_size);
-
-                adam_weights.b1 = std::get<2>(args);
-                adam_weights.b2 = std::get<3>(args);
-                adam_biases.b1 = std::get<2>(args);
-                adam_biases.b2 = std::get<3>(args);
-
-                adam_weights.b1powt = adam_weights.b1;
-                adam_weights.b2powt = adam_weights.b2;
-                adam_biases.b1powt = adam_biases.b1;
-                adam_biases.b2powt = adam_biases.b2;
-            }
+        Layer(){ setup(0,0,0,0); }
+        Layer(int in_size, int out_size, double b1, double b2){ setup(in_size, out_size, b1, b2); }
+        Layer(int in_size, int out_size)
+        { 
+            static_assert(C==OptimizerClass::None, "Adam parameters missing"); 
+            setup(in_size, out_size); 
         }
 
         template<typename X>      
@@ -97,6 +68,44 @@ namespace neuralnet
         // Data for adam optimization
         adam::AdamData<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> adam_weights;
         adam::AdamData<OutputType> adam_biases;
+
+        
+        template <typename... Ts>
+        void setup(Ts... Args)
+        {
+            auto args = std::tuple<Ts...>(Args...);
+
+            int in_size = std::get<0>(args);
+            int out_size = std::get<1>(args);
+
+            // Apply he initialization
+            this->weights = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, out_size).unaryExpr([in_size](double x)
+                                                                                        { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
+
+            this->biases = OutputType::Zero(out_size);
+            this->z = OutputType::Zero(out_size);
+            this->a = OutputType::Zero(out_size);
+            this->d = OutputType::Zero(out_size);
+            this->in = InputType::Zero(in_size);
+
+            if constexpr (C == OptimizerClass::Adam)
+            {
+                adam_weights.m = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, out_size);
+                adam_weights.v = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, out_size);
+                adam_biases.m = OutputType::Zero(out_size);
+                adam_biases.v = OutputType::Zero(out_size);
+
+                adam_weights.b1 = std::get<0>(args);
+                adam_weights.b2 = std::get<1>(args);
+                adam_biases.b1 = std::get<0>(args);
+                adam_biases.b2 = std::get<1>(args);
+
+                adam_weights.b1powt = adam_weights.b1;
+                adam_weights.b2powt = adam_weights.b2;
+                adam_biases.b1powt = adam_biases.b1;
+                adam_biases.b2powt = adam_biases.b2;
+            }
+        }
     };
 }
 
@@ -147,24 +156,24 @@ py::tuple neuralnet::Layer<T, F, C>::getstate(const neuralnet::Layer<T,F,C>& obj
     if constexpr (C == OptimizerClass::Adam)
     {
         return py::make_tuple(
-            weights.rows(), weights.cols(),
-            adam_weights.b1, adam_weights.b2,
-            std::vector<T>(weights.data(), weights.data() + weights.size()),
-            std::vector<T>(biases.data(), biases.data() + biases.size())
+            obj.weights.rows(), obj.weights.cols(),
+            obj.adam_weights.b1, obj.adam_weights.b2,
+            std::vector<T>(obj.weights.data(), obj.weights.data() + obj.weights.size()),
+            std::vector<T>(obj.biases.data(), obj.biases.data() + obj.biases.size())
         );
     }
     else
     {
         return py::make_tuple(
-            weights.rows(), weights.cols(),
-            std::vector<T>(weights.data(), weights.data() + weights.size()),
-            std::vector<T>(biases.data(), biases.data() + biases.size())
+            obj.weights.rows(), obj.weights.cols(),
+            std::vector<T>(obj.weights.data(), obj.weights.data() + obj.weights.size()),
+            std::vector<T>(obj.biases.data(), obj.biases.data() + obj.biases.size())
         );
     }
 }
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-static neuralnet::Layer<T,F,C> neuralnet::Layer<T, F, C>::setstate(py::tuple data)
+neuralnet::Layer<T,F,C> neuralnet::Layer<T, F, C>::setstate(py::tuple data)
 {
     Layer<T,F,C> out;
     std::vector<T> w, b;
