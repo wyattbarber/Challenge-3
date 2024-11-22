@@ -76,6 +76,16 @@ namespace neuralnet
 
         void update(double rate);
 
+#ifndef NOPYTHON
+        /** Pickling implementation
+         *  
+         * @return (in size, out size, optimizer args..., weights, biases)
+         */
+        static py::tuple getstate(const Layer<T,F,C>& obj);
+
+        static Layer<T,F,C> setstate(py::tuple data);
+#endif
+
     protected:
         Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> weights;
         OutputType biases;
@@ -128,5 +138,58 @@ neuralnet::Layer<T, F, C>::InputType neuralnet::Layer<T, F, C>::backward(X&& err
     // Calculate and return error gradient input to next layer
     return weights * d;
 }
+
+
+#ifndef NOPYTHON
+template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+py::tuple neuralnet::Layer<T, F, C>::getstate(const neuralnet::Layer<T,F,C>& obj)
+{
+    if constexpr (C == OptimizerClass::Adam)
+    {
+        return py::make_tuple(
+            weights.rows(), weights.cols(),
+            adam_weights.b1, adam_weights.b2,
+            std::vector<T>(weights.data(), weights.data() + weights.size()),
+            std::vector<T>(biases.data(), biases.data() + biases.size())
+        );
+    }
+    else
+    {
+        return py::make_tuple(
+            weights.rows(), weights.cols(),
+            std::vector<T>(weights.data(), weights.data() + weights.size()),
+            std::vector<T>(biases.data(), biases.data() + biases.size())
+        );
+    }
+}
+
+template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+static neuralnet::Layer<T,F,C> neuralnet::Layer<T, F, C>::setstate(py::tuple data)
+{
+    Layer<T,F,C> out;
+    std::vector<T> w, b;
+    int in = data[0].cast<int>();
+    int o = data[1].cast<int>();
+
+    if constexpr (C == OptimizerClass::Adam)
+    {
+        out = Layer<T,F,C>(in, o, data[2].cast<double>(), data[3].cast<double>());
+        w = data[4].cast<std::vector<T>>();
+        b = data[5].cast<std::vector<T>>();
+    }
+    else
+    {
+        out = Layer<T,F,C>(in, o);
+        w = data[2].cast<std::vector<T>>();
+        b = data[3].cast<std::vector<T>>();
+    }
+
+    out.weights = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(w.data(), in, o);
+    out.biases = Eigen::Map<Eigen::Vector<T, Eigen::Dynamic>>(b.data(), o);
+
+    return out;
+}
+#endif
+
 
 #endif

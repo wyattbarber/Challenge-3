@@ -2,7 +2,7 @@
 #define _RESHAPE_HPP
 
 #include "../Model.hpp"
-#include <unsupported/Eigen/CXX11/Tensor>
+
 
 namespace neuralnet {
 
@@ -35,6 +35,20 @@ namespace neuralnet {
         }
 
         void update(double rate){};
+
+#ifndef NOPYTHON
+        /** Pickling implementation
+         * 
+         * This model has no state or constructor args,
+         * so it is only defined for compatibility and 
+         * to allow it to be part of larger picklable models.
+         *  
+         * @return empty
+         */
+        static py::tuple getstate(const Reshape1D<T>& obj){ return py::tuple(); }
+
+        static Reshape1D<T> setstate(py::tuple data){ return Reshape1D<T>(); }
+#endif
 
         protected:
         InputType::Dimensions dims; /// Size and shape of last input tensor

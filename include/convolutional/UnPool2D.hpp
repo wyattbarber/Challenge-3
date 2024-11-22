@@ -4,6 +4,7 @@
 #include "Pool2D.hpp"
 #include <iostream>
 
+
 namespace neuralnet {
 
 
@@ -34,6 +35,21 @@ namespace neuralnet {
         InputType backward(X&& error);
 
         void update(double rate){}
+
+#ifndef NOPYTHON
+        /** Pickling implementation
+         * 
+         * This is only to be used with mean unpooling. Min and
+         * max unpooling require a reference to a pooling layer,
+         * for pickling compatibility they must be paired in an 
+         * encoder class.
+         *  
+         * @return empty
+         */
+        static py::tuple getstate(const UnPool2D<T,K,M>& obj){ return py::tuple(); }
+
+        static UnPool2D<T,K,M> setstate(py::tuple data){ return UnPool2D<T,K,M>(); }
+#endif
 
         protected:
         Pool2D<T,K,M>* pool;

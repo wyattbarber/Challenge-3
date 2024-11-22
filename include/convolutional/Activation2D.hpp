@@ -3,7 +3,6 @@
 
 #include "../Model.hpp"
 #include "../basic/Activation.hpp"
-#include <unsupported/Eigen/CXX11/Tensor>
 
 using namespace optimization;
 
@@ -28,6 +27,20 @@ namespace neuralnet
         InputType backward(X&& error);
 
         void update(double rate){}
+
+#ifndef NOPYTHON
+        /** Pickling implementation
+         * 
+         * This model has no state or constructor args,
+         * so it is only defined for compatibility and 
+         * to allow it to be part of larger picklable models.
+         *  
+         * @return empty
+         */
+        static py::tuple getstate(const Layer2D<T,F>& obj){ return py::tuple(); }
+
+        static Layer2D<T,F> setstate(py::tuple data){ return Layer2D<T,F>(); }
+#endif
 
     protected:
         Eigen::Tensor<T, 3> z, a;

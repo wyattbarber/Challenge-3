@@ -2,7 +2,6 @@
 #define _POOL2D_HPP
 
 #include "../Model.hpp"
-#include <unsupported/Eigen/CXX11/Tensor>
 #include <algorithm>
 
 
@@ -31,6 +30,20 @@ namespace neuralnet {
         void update(double rate){}
 
         Eigen::Tensor<std::pair<int,int>, 3>* get_indices() { return &indices; }
+
+#ifndef NOPYTHON
+        /** Pickling implementation
+         * 
+         * This model has no state or constructor args,
+         * so it is only defined for compatibility and 
+         * to allow it to be part of larger picklable models.
+         *  
+         * @return empty
+         */
+        static py::tuple getstate(const Pool2D<T,K,M>& obj){ return py::tuple(); }
+
+        static Pool2D<T,K,M> setstate(py::tuple data){ return Pool2D<T,K,M>(); }
+#endif
 
         protected:
         void argcmp(Eigen::Tensor<T,3>& data, int x_start, int x_range, int y_start, int y_range, int channel, T* value);

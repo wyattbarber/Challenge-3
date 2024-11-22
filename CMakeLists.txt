@@ -8,9 +8,15 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_CXX_FLAGS "-Wall")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fopenmp")
+if(WIN32)
+    set(CMAKE_CXX_FLAGS "/W0 /openmp:experimental")
+    set(CMAKE_CXX_FLAGS_DEBUG "/DEBUG ")
+    set(CMAKE_CXX_FLAGS_RELEASE "/02")
+else()
+    set(CMAKE_CXX_FLAGS "-Wall")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+endif()
 
 option(NOPYTHON "Build C library instead of Python package" OFF)
 

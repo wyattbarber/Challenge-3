@@ -4,8 +4,8 @@
 #include "../Model.hpp"
 #include "../basic/Activation.hpp"
 #include "../optimizers/Optimizer.hpp"
-#include <unsupported/Eigen/CXX11/Tensor>
 #include <algorithm>
+
 
 using namespace optimization;
 
@@ -67,6 +67,16 @@ namespace neuralnet {
 
             void update(double rate);
         
+#ifndef NOPYTHON
+            /** Pickling implementation
+             *  
+             * @return (in channels, out channels, optimizer args..., kernels, biases)
+             */
+            static py::tuple getstate(const Convolution2D<T,K,C>& obj);
+
+            static Convolution2D<T,K,C> setstate(py::tuple data);
+#endif
+
         protected:
             Eigen::Index in_channels, out_channels;
             Eigen::Tensor<T,4> kernels;
@@ -161,5 +171,61 @@ namespace neuralnet {
             bias -= rate * grad_bias;
         }
     }
+
+#ifndef NOPYTHON
+    template <typename T, int K, OptimizerClass C>
+    py::tuple Convolution2D<T,K,C>::getstate(const Convolution2D<T,K,C>& obj)
+    {
+        if constexpr (C == OptimizerClass::Adam)
+        {
+            return py::make_tuple(
+                kernels.dimension(2), kernels.dimension(3),
+                adam_kernels.b1, adam_kernels.b2,
+                std::vector<T>(kernels.data(), kernels.data() + kernels.size()),
+                std::vector<T>(bias.data(), bias.data() + bias.size())
+            );
+        }
+        else
+        {
+            return py::make_tuple(
+                kernels.dimension(2), kernels.dimension(3),
+                std::vector<T>(kernels.data(), kernels.data() + kernels.size()),
+                std::vector<T>(bias.data(), bias.data() + bias.size())
+            );
+        }
+    }
+
+    template <typename T, int K, OptimizerClass C>
+    static Convolution2D<T,K,C> Convolution2D<T,K,C>::setstate(py::tuple data)
+    {
+        Convolution2D<T,K,C> out;
+        std::vector<T> k, b;
+        int chn_in = data[0].cast<int>();
+        int chn_out = data[1].cast<int>();
+
+        if constexpr (C == OptimizerClass::Adam)
+        {
+            out = Convolution2D<T,K,C>(chn_in, chn_out, data[2].cast<double>(), data[3].cast<double>());
+            k = data[4].cast<std::vector<T>>();
+            b = data[5].cast<std::vector<T>>();
+        }
+        else
+        {
+            out = Convolution2D<T,K,C>(chn_in, chn_out);
+            k = data[4].cast<std::vector<T>>();
+            b = data[5].cast<std::vector<T>>();
+        }
+
+        out.kernels = Eigen::Tensor<T,4>(K,K,chn_in,chn_out);
+        out.kernels.setValues(std::initializer_list<T>(k.begin(), k.end()));
+
+        out.biases = Eigen::Tensor<T,1>(chn_out);
+        out.biases.setValues(std::initializer_list<T>(b.begin(), b.end()));
+
+        return out;
+    }
+#endif
+
+
 }
 #endif

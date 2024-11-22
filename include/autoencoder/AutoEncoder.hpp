@@ -85,6 +85,16 @@ namespace neuralnet {
         InputType errorLatent(X&& error);
 
         void update(double rate);
+
+#ifndef NOPYTHON
+        /** Pickling implementation
+         *  
+         * @return (in size, latent size, optimizer args..., weights, encoding biases, decoding biases)
+         */
+        static py::tuple getstate(const AutoEncoder<T,F,C>& obj);
+
+        static AutoEncoder<T,F,C> setstate(py::tuple data);
+#endif
     
     protected:
         size_t in_size, latent_size;
@@ -151,9 +161,9 @@ template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
 template<typename X>
 neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::errorReconstruct(X&& err)
 {
-    // Calculate this layers error gradient
+    // Calculate this AutoEncoders error gradient
     drc = Activation<Eigen::Dynamic, T, F>::df(zrc, arc, err);
-    // Calculate and return error gradient input to next layer
+    // Calculate and return error gradient input to next AutoEncoder
     return W.transpose() * drc;
 }
 
@@ -162,9 +172,9 @@ template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
 template<typename X>
 neuralnet::AutoEncoder<T, F, C>::InputType neuralnet::AutoEncoder<T, F, C>::errorLatent(X&& err)
 {
-    // Calculate this layers error gradient
+    // Calculate this AutoEncoders error gradient
     dlt = Activation<Eigen::Dynamic, T, F>::df(zlt, alt, err);
-    // Calculate and return error gradient input to next layer
+    // Calculate and return error gradient input to next AutoEncoder
     return W * dlt;
 }
 
@@ -186,4 +196,62 @@ void neuralnet::AutoEncoder<T, F, C>::update(double rate)
         brc -= rate * drc;
     }
 }
+
+#ifndef NOPYTHON
+template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+py::tuple neuralnet::AutoEncoder<T, F, C>::getstate(const neuralnet::AutoEncoder<T,F,C>& obj)
+{
+    if constexpr (C == OptimizerClass::Adam)
+    {
+        return py::make_tuple(
+            W.rows(), W.cols(),
+            adam_w.b1, adam_w.b2,
+            std::vector<T>(W.data(), W.data() + W.size()),
+            std::vector<T>(blt.data(), blt.data() + blt.size()),            
+            std::vector<T>(brc.data(), brc.data() + brc.size())
+        );
+    }
+    else
+    {
+        return py::make_tuple(
+            W.rows(), W.cols(),
+            std::vector<T>(W.data(), W.data() + W.size()),
+            std::vector<T>(blt.data(), blt.data() + blt.size()),            
+            std::vector<T>(brc.data(), brc.data() + brc.size())
+        );
+    }
+}
+
+template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+static neuralnet::AutoEncoder<T,F,C> neuralnet::AutoEncoder<T, F, C>::setstate(py::tuple data)
+{
+    AutoEncoder<T,F,C> out;
+    std::vector<T> w, bl, br;
+    int in = data[0].cast<int>();
+    int lt = data[1].cast<int>();
+
+    if constexpr (C == OptimizerClass::Adam)
+    {
+        out = AutoEncoder<T,F,C>(in, lt, data[2].cast<double>(), data[3].cast<double>());
+        w = data[4].cast<std::vector<T>>();
+        bl = data[5].cast<std::vector<T>>();
+        br = data[6].cast<std::vector<T>>();
+    }
+    else
+    {
+        out = AutoEncoder<T,F,C>(in, lt);
+        w = data[2].cast<std::vector<T>>();
+        bl = data[3].cast<std::vector<T>>();
+        br = data[4].cast<std::vector<T>>();
+    }
+
+    out.W = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(w.data(), in, lt);
+    out.blt = Eigen::Map<Eigen::Vector<T, Eigen::Dynamic>>(bl.data(), lt);
+    out.brc = Eigen::Map<Eigen::Vector<T, Eigen::Dynamic>>(br.data(), in);
+
+    return out;
+}
+#endif
+
+
 #endif
