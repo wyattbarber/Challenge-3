@@ -74,7 +74,7 @@ namespace neuralnet
          * 
          * @return py::tuple containing all necessary state info for the model.
         */
-        static py::tuple getstate(const Model<ModelType>& obj){ return static_cast<ModelType*>(this)->getstate(obj); }
+        static py::tuple getstate(const Model<ModelType>& obj){ return ModelType::getstate(obj); }
 
         /** Sets the models state from pickled data.
          * 
@@ -83,7 +83,7 @@ namespace neuralnet
          * 
          * @param data py::tuple produced by `getstate`
          */
-        static Model<ModelType> setstate(py::tuple data){ return static_cast<ModelType*>(this)->setstate(data); }
+        static Model<ModelType> setstate(py::tuple data){ return ModelType::setstate(data); }
 #endif
     };
 

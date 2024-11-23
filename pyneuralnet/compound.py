@@ -20,9 +20,9 @@ class Sequence(Model, Model2D):
             h.append(l.forward(h[-1]))
         return h[-1]
     
-    def forward(self, error):
+    def backward(self, error):
         h = [error]
-        for l in self._layers:
+        for l in self._layers[::-1]:
             h.append(l.backward(h[-1]))
         return h[-1]
     

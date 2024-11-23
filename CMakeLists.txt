@@ -4,10 +4,6 @@ set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ version selection")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-
-set(CMAKE_BUILD_TYPE Debug)
-
-
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -103,10 +99,10 @@ else()
     pybind11_add_module(neuralnet bindings.cpp)
     target_link_libraries(neuralnet PRIVATE Eigen3::Eigen OpenMP::OpenMP_CXX)
     
-    message(STATUS "Found Python3 installation location: ${Python3_SITELIB}")
+    message(STATUS "Found Python3 installation location: ${Python3_SITEARCH}")
     install(TARGETS neuralnet
         COMPONENT python
-        LIBRARY DESTINATION "${Python3_SITELIB}"
+        LIBRARY DESTINATION "${Python3_SITEARCH}"
         ARCHIVE DESTINATION "lib"
         RUNTIME DESTINATION "bin")
 endif()

@@ -22,3 +22,6 @@ test/data/**
 **.pyd
 **.so
 version.h
+env/**
+valgrind.txt
+debug.py
