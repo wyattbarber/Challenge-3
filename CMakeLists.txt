@@ -4,6 +4,10 @@ set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ version selection")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
+set(CMAKE_BUILD_TYPE Debug)
+
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -28,6 +32,7 @@ execute_process(
        COMMAND python ${CMAKE_SOURCE_DIR}/getversion.py "${CMAKE_SOURCE_DIR}"
        OUTPUT_VARIABLE TOML_PACKAGE_VERSION
    )
+string(STRIP "${TOML_PACKAGE_VERSION}" TOML_PACKAGE_VERSION)
 message(STATUS "Building neuralnet version ${TOML_PACKAGE_VERSION}")
 set(PROJECT_VERSION ${TOML_PACKAGE_VERSION})
 
@@ -93,9 +98,10 @@ else()
     find_package(pybind11 CONFIG REQUIRED)
     find_package(OpenMP REQUIRED)
 
+    configure_file (version.h.in ${CMAKE_CURRENT_SOURCE_DIR}/version.h @ONLY) 
+    
     pybind11_add_module(neuralnet bindings.cpp)
     target_link_libraries(neuralnet PRIVATE Eigen3::Eigen OpenMP::OpenMP_CXX)
-
     
     message(STATUS "Found Python3 installation location: ${Python3_SITELIB}")
     install(TARGETS neuralnet

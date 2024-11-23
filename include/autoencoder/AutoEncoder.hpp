@@ -10,7 +10,7 @@ using namespace optimization;
 namespace neuralnet {
 
     template <typename T, ActivationFunc F, OptimizerClass C>
-    class AutoEncoder : public Model<AutoEncoder<T, F, C>>
+    class AutoEncoder : public Encoder<AutoEncoder<T, F, C>>
     {
     public:
         typedef Eigen::Vector<T, Eigen::Dynamic> InputType;

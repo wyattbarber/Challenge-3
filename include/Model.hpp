@@ -87,5 +87,31 @@ namespace neuralnet
 #endif
     };
 
+
+    /** Abstract class defining basic behavior for linked encoder type components
+     *
+     */
+    template <class ModelType>
+    class Encoder : Model<ModelType>
+    {
+        public:
+
+        /** Generate a latent embedding for one input sample
+         *
+         * @param input input vector
+         * @return latent space embedding
+         */
+        template<typename X>
+        auto encode(X&& input){return static_cast<ModelType*>(this)->encode(std::forward<X>(input));}
+
+        /** Decode a latent embedding
+         *
+         * @param latent embedding vector
+         * @return decoded data
+         */
+        template<typename X>
+        auto dencode(X&& embed){return static_cast<ModelType*>(this)->dencode(std::forward<X>(embed));}
+
+    };
 }
 #endif

@@ -86,6 +86,7 @@
         "chrono": "cpp",
         "specialfunctions": "cpp",
         "tensor": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "*.in": "cpp"
     }
 }
