@@ -18,15 +18,17 @@ namespace optimization
         class AdamData
         {
             public:
+            typedef MatType::Scalar Scalar;
+
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
             AdamData(){}
             ~AdamData(){}
 
-            double b1;
-            double b2;
-            double b1powt;
-            double b2powt;
-            double epsilon = 1e-9;
+            Scalar b1;
+            Scalar b2;
+            Scalar b1powt;
+            Scalar b2powt;
+            Scalar epsilon = {1e-9};
             MatType m;
             MatType v;
         };
@@ -91,8 +93,10 @@ namespace optimization
         template <typename Derived, typename DerivedGrad>
         void adam_update_params(double rate, AdamData<Derived> &data, Eigen::MatrixBase<Derived> &params, Eigen::MatrixBase<DerivedGrad> &gradient)
         {
-            double decay1 = 1.0 - data.b1powt;
-            double decay2 = 1.0 - data.b2powt;
+            using S = AdamData<Derived>::Scalar;
+
+            S decay1 = 1.0 - data.b1powt;
+            S decay2 = 1.0 - data.b2powt;
 
             // Update weight moments
             data.m = (data.b1 * data.m) + ((1.0 - data.b1) * gradient);
@@ -109,8 +113,10 @@ namespace optimization
         template <typename Derived, typename DerivedGrad>
         void adam_update_params(double rate, AdamData<Derived> &data, Eigen::TensorBase<Derived> &params, Eigen::TensorBase<DerivedGrad> &gradient)
         {
-            double decay1 = 1.0 - data.b1powt;
-            double decay2 = 1.0 - data.b2powt;
+            using S = AdamData<Derived>::Scalar;
+
+            S decay1 = 1.0 - data.b1powt;
+            S decay2 = 1.0 - data.b2powt;
 
             // Update weight moments
             data.m = (data.b1 * data.m) + ((1.0 - data.b1) * gradient);
