@@ -216,7 +216,10 @@ py::tuple neuralnet::AutoEncoder<T, F, C>::getstate(const neuralnet::AutoEncoder
             obj.adam_w.b1, obj.adam_w.b2,
             std::vector<T>(obj.W.data(), obj.W.data() + obj.W.size()),
             std::vector<T>(obj.blt.data(), obj.blt.data() + obj.blt.size()),            
-            std::vector<T>(obj.brc.data(), obj.brc.data() + obj.brc.size())
+            std::vector<T>(obj.brc.data(), obj.brc.data() + obj.brc.size()),
+            adam::pickle(obj.adam_w),
+            adam::pickle(obj.adam_blt),
+            adam::pickle(obj.adam_brc)
         );
     }
     else
@@ -244,6 +247,9 @@ neuralnet::AutoEncoder<T,F,C> neuralnet::AutoEncoder<T, F, C>::setstate(py::tupl
         w = data[4].cast<std::vector<T>>();
         bl = data[5].cast<std::vector<T>>();
         br = data[6].cast<std::vector<T>>();
+        adam::unpickle(data[7], out.adam_w);
+        adam::unpickle(data[8], out.adam_blt);
+        adam::unpickle(data[9], out.adam_brc);
     }
     else
     {

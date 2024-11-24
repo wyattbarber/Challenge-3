@@ -50,7 +50,7 @@ namespace neuralnet
 #ifndef NOPYTHON
         /** Pickling implementation
          *  
-         * @return (in size, out size, optimizer args..., weights, biases)
+         * @return (in size, out size, optimizer args..., weights, biases, (optimizer state...))
          */
         static py::tuple getstate(const Layer<T,F,C>& obj);
 
@@ -159,7 +159,9 @@ py::tuple neuralnet::Layer<T, F, C>::getstate(const neuralnet::Layer<T,F,C>& obj
             obj.weights.rows(), obj.weights.cols(),
             obj.adam_weights.b1, obj.adam_weights.b2,
             std::vector<T>(obj.weights.data(), obj.weights.data() + obj.weights.size()),
-            std::vector<T>(obj.biases.data(), obj.biases.data() + obj.biases.size())
+            std::vector<T>(obj.biases.data(), obj.biases.data() + obj.biases.size()),
+            adam::pickle(obj.adam_weights),
+            adam::pickle(obj.adam_biases)
         );
     }
     else
@@ -185,6 +187,8 @@ neuralnet::Layer<T,F,C> neuralnet::Layer<T, F, C>::setstate(py::tuple data)
         out = Layer<T,F,C>(in, o, data[2].cast<double>(), data[3].cast<double>());
         w = data[4].cast<std::vector<T>>();
         b = data[5].cast<std::vector<T>>();
+        adam::unpickle(data[6], out.adam_weights);
+        adam::unpickle(data[7], out.adam_biases);
     }
     else
     {

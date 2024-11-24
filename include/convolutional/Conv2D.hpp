@@ -191,7 +191,9 @@ namespace neuralnet {
                 obj.kernels.dimension(2), obj.kernels.dimension(3),
                 obj.adam_kernels.b1, obj.adam_kernels.b2,
                 std::vector<T>(obj.kernels.data(), obj.kernels.data() + obj.kernels.size()),
-                std::vector<T>(obj.bias.data(), obj.bias.data() + obj.bias.size())
+                std::vector<T>(obj.bias.data(), obj.bias.data() + obj.bias.size()),
+                adam::pickle(obj.adam_kernels),
+                adam::pickle(obj.adam_bias)
             );
         }
         else
@@ -217,6 +219,8 @@ namespace neuralnet {
             out = Convolution2D<T,K,C>(chn_in, chn_out, data[2].cast<double>(), data[3].cast<double>());
             k = data[4].cast<std::vector<T>>();
             b = data[5].cast<std::vector<T>>();
+            adam::unpickle(data[6], out.adam_kernels);
+            adam::unpickle(data[7], out.adam_bias);
         }
         else
         {
