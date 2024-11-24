@@ -9,6 +9,7 @@
 #include "include/convolutional/Conv2D.hpp"
 #include "include/convolutional/Pool2D.hpp"
 #include "include/convolutional/UnPool2D.hpp"
+#include "include/convolutional/PoolUnPool2D.hpp"
 #include "include/convolutional/Activation2D.hpp"
 #include "include/convolutional/Reshape.hpp"
 #include "include/datasource/DataSource.hpp"
@@ -76,6 +77,26 @@ auto make_encoder(py::module m, const char* name)
             "Performs backpropagation through the model.", 
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
 
+        .def("encode", 
+            static_cast<DT::LatentType (DT::*)(typename DT::InputType&)>(&DT::encode), 
+            "Generates a latent embedding", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+
+        .def("decode", 
+            static_cast<DT::OutputType (DT::*)(typename DT::LatentType&)>(&DT::decode), 
+            "Reconstructs a latent embedding", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+
+        .def("backward_encode", 
+            static_cast<DT::InputType (DT::*)(typename DT::LatentType&)>(&DT::backward_encode), 
+            "Backpropagates error for the encoding portion", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+
+        .def("backward_decode", 
+            static_cast<DT::LatentType (DT::*)(typename DT::OutputType&)>(&DT::backward_decode), 
+            "Backpropagates error for the decoding portion", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+
         .def("update", &DT::update, "Updates trainable parameters based on current gradient.", 
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
 
@@ -140,6 +161,9 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<Pool2D<double, 2, PoolMode::Min>>(m, "MinPool2D");
     make_model<Pool2D<double, 2, PoolMode::Mean>>(m, "MeanPool2D");
     make_model<UnPool2D<double, 2, PoolMode::Mean>>(m, "MeanUnPool2D");
+    make_encoder<PoolUnPool2D<double, 2, PoolMode::Mean>>(m, "MeanPoolEncoder2D");
+    make_encoder<PoolUnPool2D<double, 2, PoolMode::Max>>(m, "MaxPoolEncoder2D");
+    make_encoder<PoolUnPool2D<double, 2, PoolMode::Min>>(m, "MinPoolEncoder2D");
     py::class_<Reshape1D<double>>(m, "Reshape1D")
         .def(py::init<>())
         .def("forward", &Reshape1D<double>::forward<Eigen::Tensor<double,3>&>, "Performs a forward pass through the model.")

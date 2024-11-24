@@ -26,10 +26,10 @@ namespace neuralnet {
         }
 
         template<typename X>
-        OutputType forward(X&& input);
+        OutputType forward(X&& input){ return decode(encode(input)); }
 
         template<typename X>
-        InputType backward(X&& error);
+        InputType backward(X&& error){ return backward_encode(backward_decode(error)); }
 
         template<typename X>
         LatentType encode(X&& input);
@@ -38,10 +38,10 @@ namespace neuralnet {
         OutputType decode(X&& latent);
 
         template<typename X>
-        LatentType errorReconstruct(X&& error);
+        LatentType backward_decode(X&& error);
 
         template<typename X>
-        InputType errorLatent(X&& error);
+        InputType backward_encode(X&& error);
 
         void update(double rate);
 
@@ -121,23 +121,6 @@ namespace neuralnet {
     };
 }
 
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-template<typename X>
-neuralnet::AutoEncoder<T, F, C>::OutputType neuralnet::AutoEncoder<T, F, C>::forward(X&& input)
-{
-    auto x = encode(input);
-    return decode(x);
-}
-
-
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-template<typename X>
-neuralnet::AutoEncoder<T, F, C>::InputType neuralnet::AutoEncoder<T, F, C>::backward(X&& error)
-{
-    auto x = errorReconstruct(error);
-    return errorLatent(x);
-}
-
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
 template<typename X>
@@ -167,7 +150,7 @@ neuralnet::AutoEncoder<T, F, C>::OutputType neuralnet::AutoEncoder<T, F, C>::dec
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
 template<typename X>
-neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::errorReconstruct(X&& err)
+neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::backward_decode(X&& err)
 {
     // Calculate this AutoEncoders error gradient
     drc = Activation<Eigen::Dynamic, T, F>::df(zrc, arc, err);
@@ -178,7 +161,7 @@ neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::err
 
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
 template<typename X>
-neuralnet::AutoEncoder<T, F, C>::InputType neuralnet::AutoEncoder<T, F, C>::errorLatent(X&& err)
+neuralnet::AutoEncoder<T, F, C>::InputType neuralnet::AutoEncoder<T, F, C>::backward_encode(X&& err)
 {
     // Calculate this AutoEncoders error gradient
     dlt = Activation<Eigen::Dynamic, T, F>::df(zlt, alt, err);

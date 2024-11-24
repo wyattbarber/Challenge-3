@@ -91,7 +91,7 @@ namespace optimization
 #endif
 
         template <typename Derived, typename DerivedGrad>
-        void adam_update_params(double rate, AdamData<Derived> &data, Eigen::MatrixBase<Derived> &params, Eigen::MatrixBase<DerivedGrad> &gradient)
+        void adam_update_params(double rate, AdamData<Derived> &data, Eigen::MatrixBase<Derived> &params, Eigen::MatrixBase<DerivedGrad>& gradient)
         {
             using S = AdamData<Derived>::Scalar;
 
@@ -111,7 +111,7 @@ namespace optimization
         }
 
         template <typename Derived, typename DerivedGrad>
-        void adam_update_params(double rate, AdamData<Derived> &data, Eigen::TensorBase<Derived> &params, Eigen::TensorBase<DerivedGrad> &gradient)
+        void adam_update_params(double rate, AdamData<Derived> &data, Eigen::TensorBase<Derived> &params, Eigen::TensorBase<DerivedGrad>& gradient)
         {
             using S = AdamData<Derived>::Scalar;
 

@@ -110,7 +110,23 @@ namespace neuralnet
          * @return decoded data
          */
         template<typename X>
-        auto dencode(X&& embed){return static_cast<ModelType*>(this)->dencode(std::forward<X>(embed));}
+        auto decode(X&& embed){return static_cast<ModelType*>(this)->decode(std::forward<X>(embed));}
+
+        /** Perform backward pass over the encoder portion
+         *
+         * @param error error gradient of the embedding
+         * @return propagated error gradient
+         */
+        template<typename X>
+        auto backward_encode(X&& error){return static_cast<ModelType*>(this)->backward_encode(std::forward<X>(error));}
+
+        /** Perform backward pass over the decoder portion
+         *
+         * @param error error gradient of the output
+         * @return propagated error gradient
+         */
+        template<typename X>
+        auto backward_decode(X&& error){return static_cast<ModelType*>(this)->backward_decode(std::forward<X>(error));}
 
     };
 }
