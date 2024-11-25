@@ -24,6 +24,36 @@ namespace neuralnet {
             static_assert(C==OptimizerClass::None, "Adam parameters missing"); 
             setup(in_size, latent_size); 
         }
+#ifndef NOPYTHON
+        AutoEncoder(py::tuple data)
+        { 
+            std::vector<T> w, bl, br;
+            int in = data[0].cast<int>();
+            int lt = data[1].cast<int>();
+
+            if constexpr (C == OptimizerClass::Adam)
+            {
+                setup(in, lt, data[2].cast<T>(), data[3].cast<T>()); 
+                w = data[4].cast<std::vector<T>>();
+                bl = data[5].cast<std::vector<T>>();
+                br = data[6].cast<std::vector<T>>();
+                adam::unpickle(data[7], adam_w);
+                adam::unpickle(data[8], adam_blt);
+                adam::unpickle(data[9], adam_brc);
+            }
+            else
+            {
+                setup(in, lt);
+                w = data[2].cast<std::vector<T>>();
+                bl = data[3].cast<std::vector<T>>();
+                br = data[4].cast<std::vector<T>>();
+            }
+
+            W = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(w.data(), in, lt);
+            blt = Eigen::Map<Eigen::Vector<T, Eigen::Dynamic>>(bl.data(), lt);
+            brc = Eigen::Map<Eigen::Vector<T, Eigen::Dynamic>>(br.data(), in);
+        }
+#endif
 
         template<typename X>
         OutputType forward(X&& input){ return decode(encode(input)); }
@@ -50,9 +80,7 @@ namespace neuralnet {
          *  
          * @return (in size, latent size, optimizer args..., weights, encoding biases, decoding biases)
          */
-        static py::tuple getstate(const AutoEncoder<T,F,C>& obj);
-
-        static AutoEncoder<T,F,C> setstate(py::tuple data);
+        py::tuple getstate() const;
 #endif
     
     protected:
@@ -190,63 +218,30 @@ void neuralnet::AutoEncoder<T, F, C>::update(double rate)
 
 #ifndef NOPYTHON
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-py::tuple neuralnet::AutoEncoder<T, F, C>::getstate(const neuralnet::AutoEncoder<T,F,C>& obj)
+py::tuple neuralnet::AutoEncoder<T, F, C>::getstate() const
 {
     if constexpr (C == OptimizerClass::Adam)
     {
         return py::make_tuple(
-            obj.W.rows(), obj.W.cols(),
-            obj.adam_w.b1, obj.adam_w.b2,
-            std::vector<T>(obj.W.data(), obj.W.data() + obj.W.size()),
-            std::vector<T>(obj.blt.data(), obj.blt.data() + obj.blt.size()),            
-            std::vector<T>(obj.brc.data(), obj.brc.data() + obj.brc.size()),
-            adam::pickle(obj.adam_w),
-            adam::pickle(obj.adam_blt),
-            adam::pickle(obj.adam_brc)
+            W.rows(), W.cols(),
+            adam_w.b1, adam_w.b2,
+            std::vector<T>(W.data(), W.data() + W.size()),
+            std::vector<T>(blt.data(), blt.data() + blt.size()),            
+            std::vector<T>(brc.data(), brc.data() + brc.size()),
+            adam::pickle(adam_w),
+            adam::pickle(adam_blt),
+            adam::pickle(adam_brc)
         );
     }
     else
     {
         return py::make_tuple(
-            obj.W.rows(), obj.W.cols(),
-            std::vector<T>(obj.W.data(), obj.W.data() + obj.W.size()),
-            std::vector<T>(obj.blt.data(), obj.blt.data() + obj.blt.size()),            
-            std::vector<T>(obj.brc.data(), obj.brc.data() + obj.brc.size())
+            W.rows(), W.cols(),
+            std::vector<T>(W.data(), W.data() + W.size()),
+            std::vector<T>(blt.data(), blt.data() + blt.size()),            
+            std::vector<T>(brc.data(), brc.data() + brc.size())
         );
     }
-}
-
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::AutoEncoder<T,F,C> neuralnet::AutoEncoder<T, F, C>::setstate(py::tuple data)
-{
-    AutoEncoder<T,F,C> out;
-    std::vector<T> w, bl, br;
-    int in = data[0].cast<int>();
-    int lt = data[1].cast<int>();
-
-    if constexpr (C == OptimizerClass::Adam)
-    {
-        out = AutoEncoder<T,F,C>(in, lt, data[2].cast<double>(), data[3].cast<double>());
-        w = data[4].cast<std::vector<T>>();
-        bl = data[5].cast<std::vector<T>>();
-        br = data[6].cast<std::vector<T>>();
-        adam::unpickle(data[7], out.adam_w);
-        adam::unpickle(data[8], out.adam_blt);
-        adam::unpickle(data[9], out.adam_brc);
-    }
-    else
-    {
-        out = AutoEncoder<T,F,C>(in, lt);
-        w = data[2].cast<std::vector<T>>();
-        bl = data[3].cast<std::vector<T>>();
-        br = data[4].cast<std::vector<T>>();
-    }
-
-    out.W = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(w.data(), in, lt);
-    out.blt = Eigen::Map<Eigen::Vector<T, Eigen::Dynamic>>(bl.data(), lt);
-    out.brc = Eigen::Map<Eigen::Vector<T, Eigen::Dynamic>>(br.data(), in);
-
-    return out;
 }
 #endif
 

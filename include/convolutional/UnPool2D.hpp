@@ -25,8 +25,13 @@ namespace neuralnet {
 
         UnPool2D(Pool2D<T,K,M>& pool)
         {
+            std::cout << "Unpool created at " << this << " with pool at " << &pool << std::endl;
             this->pool = &pool;
         }
+
+#ifndef NOPYTHON
+        UnPool2D(py::tuple){}
+#endif
 
         template<typename X>
         OutputType forward(X&& in);
@@ -46,9 +51,7 @@ namespace neuralnet {
          *  
          * @return empty
          */
-        static py::tuple getstate(const UnPool2D<T,K,M>& obj){ return py::tuple(); }
-
-        static UnPool2D<T,K,M> setstate(py::tuple data){ return UnPool2D<T,K,M>(); }
+        py::tuple getstate() const { return py::tuple(); }
 #endif
 
         protected:
@@ -61,9 +64,11 @@ namespace neuralnet {
     template<typename X>
     UnPool2D<T,K,M>::OutputType UnPool2D<T,K,M>::forward(X&& in)
     {
+        std::cout << "Indices read from " << pool->get_indices() << std::endl;
+
         Eigen::Tensor<T, 3> out(in.dimension(0) * K, in.dimension(1) * K, in.dimension(2));
         out.setZero();
-                
+              
         for(int y = 0; y < in.dimension(0); ++y)
         {
             for(int x = 0; x < in.dimension(1); ++x)

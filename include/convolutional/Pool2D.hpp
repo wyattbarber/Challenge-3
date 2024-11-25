@@ -21,6 +21,11 @@ namespace neuralnet {
         typedef Eigen::Tensor<T, 3> InputType;
         typedef Eigen::Tensor<T, 3> OutputType;
 
+        Pool2D(){ std::cout << "Pool created at " << this << std::endl; }
+#ifndef NOPYTHON
+        Pool2D(py::tuple){ std::cout << "Pool unpickled at " << this << std::endl; }
+#endif
+
         template<typename X>
         OutputType forward(X&& in);
 
@@ -40,9 +45,7 @@ namespace neuralnet {
          *  
          * @return empty
          */
-        static py::tuple getstate(const Pool2D<T,K,M>& obj){ return py::tuple(); }
-
-        static Pool2D<T,K,M> setstate(py::tuple data){ return Pool2D<T,K,M>(); }
+        py::tuple getstate() const { return py::tuple(); }
 #endif
 
         protected:
@@ -59,6 +62,8 @@ namespace neuralnet {
         Eigen::Tensor<T, 3> out(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
         out.setZero();
         indices = Eigen::Tensor<std::pair<int,int>, 3>(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
+        
+        std::cout << "Indices created at " << &indices << std::endl;
 
         for(int y = 0; y < in.dimension(0); y+=K)
         {

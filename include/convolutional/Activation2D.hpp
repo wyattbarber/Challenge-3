@@ -20,6 +20,11 @@ namespace neuralnet
         typedef Eigen::Tensor<T, 3> InputType;
         typedef Eigen::Tensor<T, 3> OutputType;
 
+#ifndef NOPYTHON
+        Layer2D(){}
+        Layer2D(py::tuple){}
+#endif
+
         template<typename X>      
         OutputType forward(X&& input);
         
@@ -37,9 +42,7 @@ namespace neuralnet
          *  
          * @return empty
          */
-        static py::tuple getstate(const Layer2D<T,F>& obj){ return py::tuple(); }
-
-        static Layer2D<T,F> setstate(py::tuple data){ return Layer2D<T,F>(); }
+        py::tuple getstate() const { return py::tuple(); }
 #endif
 
     protected:

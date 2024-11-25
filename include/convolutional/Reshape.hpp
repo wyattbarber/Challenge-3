@@ -18,6 +18,11 @@ namespace neuralnet {
         public:
         typedef Eigen::Tensor<T,3> InputType;
         typedef Eigen::Vector<T,Eigen::Dynamic> OutputType;
+
+#ifndef NOPYTHON
+        Reshape1D(){}
+        Reshape1D(py::tuple){}
+#endif
         
         template<typename X>
         OutputType forward(X&& input)
@@ -45,9 +50,7 @@ namespace neuralnet {
          *  
          * @return empty
          */
-        static py::tuple getstate(const Reshape1D<T>& obj){ return py::tuple(); }
-
-        static Reshape1D<T> setstate(py::tuple data){ return Reshape1D<T>(); }
+        py::tuple getstate() const { return py::tuple(); }
 #endif
 
         protected:

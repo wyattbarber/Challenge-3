@@ -10,7 +10,7 @@ namespace neuralnet {
      * 
      */
     template <typename T, int K, PoolMode M>
-    class PoolUnPool2D : public Encoder<UnPool2D<T, K, M>>
+    class PoolUnPool2D : public Encoder<PoolUnPool2D<T, K, M>>
     {
         public:
         typedef Eigen::Tensor<T, 3> InputType;
@@ -18,6 +18,9 @@ namespace neuralnet {
         typedef Eigen::Tensor<T, 3> LatentType;
 
         PoolUnPool2D() : pool(), unpool(pool) {}
+#ifndef NOPYTHON
+        PoolUnPool2D(py::tuple) : pool(), unpool(pool) {}
+#endif
 
         template<typename X>
         OutputType forward(X&& in){ return decode(encode(in)); }
@@ -48,9 +51,7 @@ namespace neuralnet {
          *  
          * @return empty
          */
-        static py::tuple getstate(const PoolUnPool2D<T,K,M>& obj){ return py::tuple(); }
-
-        static PoolUnPool2D<T,K,M> setstate(py::tuple data){ return PoolUnPool2D<T,K,M>(); }
+        py::tuple getstate() const { return py::tuple(); }
 #endif
 
         protected:

@@ -55,8 +55,8 @@ auto make_model(py::module m, const char* name)
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
 
         .def(py::pickle(
-            [](const DT& obj){ return T::getstate(*obj.getmodel()); },
-            [](py::tuple data){ return DT(T::setstate(data)); }
+            [](const DT& obj){ return obj.getstate(); },
+            [](py::tuple data){ return DT(data); }
             ));
 }
 
@@ -101,8 +101,8 @@ auto make_encoder(py::module m, const char* name)
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
 
         .def(py::pickle(
-            [](const DT& obj){ return T::getstate(*obj.getmodel()); },
-            [](py::tuple data){ return DT(T::setstate(data)); }
+            [](const DT& obj){ return obj.getstate(); },
+            [](py::tuple data){ return DT(data); }
             ));
 }
 

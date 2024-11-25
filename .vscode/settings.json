@@ -87,6 +87,7 @@
         "specialfunctions": "cpp",
         "tensor": "cpp",
         "*.inc": "cpp",
-        "*.in": "cpp"
+        "*.in": "cpp",
+        "fstream": "cpp"
     }
 }

@@ -38,6 +38,32 @@ namespace neuralnet
             static_assert(C==OptimizerClass::None, "Adam parameters missing"); 
             setup(in_size, out_size); 
         }
+#ifndef NOPYTHON
+        Layer(py::tuple data)
+        {
+            std::vector<T> w, b;
+            int in = data[0].cast<int>();
+            int o = data[1].cast<int>();
+
+            if constexpr (C == OptimizerClass::Adam)
+            {
+                setup(in, o, data[2].cast<double>(), data[3].cast<double>());
+                w = data[4].cast<std::vector<T>>();
+                b = data[5].cast<std::vector<T>>();
+                adam::unpickle(data[6], adam_weights);
+                adam::unpickle(data[7], adam_biases);
+            }
+            else
+            {
+                setup(in, o);
+                w = data[2].cast<std::vector<T>>();
+                b = data[3].cast<std::vector<T>>();
+            }
+
+            weights = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(w.data(), in, o);
+            biases = Eigen::Map<Eigen::Vector<T, Eigen::Dynamic>>(b.data(), o);
+        }
+#endif
 
         template<typename X>      
         OutputType forward(X&& input);
@@ -52,9 +78,7 @@ namespace neuralnet
          *  
          * @return (in size, out size, optimizer args..., weights, biases, (optimizer state...))
          */
-        static py::tuple getstate(const Layer<T,F,C>& obj);
-
-        static Layer<T,F,C> setstate(py::tuple data);
+        py::tuple getstate() const;
 #endif
 
     protected:
@@ -151,56 +175,27 @@ neuralnet::Layer<T, F, C>::InputType neuralnet::Layer<T, F, C>::backward(X&& err
 
 #ifndef NOPYTHON
 template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-py::tuple neuralnet::Layer<T, F, C>::getstate(const neuralnet::Layer<T,F,C>& obj)
+py::tuple neuralnet::Layer<T, F, C>::getstate() const
 {
     if constexpr (C == OptimizerClass::Adam)
     {
         return py::make_tuple(
-            obj.weights.rows(), obj.weights.cols(),
-            obj.adam_weights.b1, obj.adam_weights.b2,
-            std::vector<T>(obj.weights.data(), obj.weights.data() + obj.weights.size()),
-            std::vector<T>(obj.biases.data(), obj.biases.data() + obj.biases.size()),
-            adam::pickle(obj.adam_weights),
-            adam::pickle(obj.adam_biases)
+            weights.rows(), weights.cols(),
+            adam_weights.b1, adam_weights.b2,
+            std::vector<T>(weights.data(), weights.data() + weights.size()),
+            std::vector<T>(biases.data(), biases.data() + biases.size()),
+            adam::pickle(adam_weights),
+            adam::pickle(adam_biases)
         );
     }
     else
     {
         return py::make_tuple(
-            obj.weights.rows(), obj.weights.cols(),
-            std::vector<T>(obj.weights.data(), obj.weights.data() + obj.weights.size()),
-            std::vector<T>(obj.biases.data(), obj.biases.data() + obj.biases.size())
+            weights.rows(), weights.cols(),
+            std::vector<T>(weights.data(), weights.data() + weights.size()),
+            std::vector<T>(biases.data(), biases.data() + biases.size())
         );
     }
-}
-
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
-neuralnet::Layer<T,F,C> neuralnet::Layer<T, F, C>::setstate(py::tuple data)
-{
-    Layer<T,F,C> out;
-    std::vector<T> w, b;
-    int in = data[0].cast<int>();
-    int o = data[1].cast<int>();
-
-    if constexpr (C == OptimizerClass::Adam)
-    {
-        out = Layer<T,F,C>(in, o, data[2].cast<double>(), data[3].cast<double>());
-        w = data[4].cast<std::vector<T>>();
-        b = data[5].cast<std::vector<T>>();
-        adam::unpickle(data[6], out.adam_weights);
-        adam::unpickle(data[7], out.adam_biases);
-    }
-    else
-    {
-        out = Layer<T,F,C>(in, o);
-        w = data[2].cast<std::vector<T>>();
-        b = data[3].cast<std::vector<T>>();
-    }
-
-    out.weights = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(w.data(), in, o);
-    out.biases = Eigen::Map<Eigen::Vector<T, Eigen::Dynamic>>(b.data(), o);
-
-    return out;
 }
 #endif
 

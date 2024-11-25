@@ -120,7 +120,6 @@ namespace neuralnet
 
         template<typename... Ts>
         DynamicEncoderBinder(Ts... Args) : model(Args...){}
-        DynamicEncoderBinder(ModelType m){ model = m; }
 
         OutputType forward(InputType& input) override { return model.forward(input); }
 
@@ -136,7 +135,9 @@ namespace neuralnet
 
         void update(double rate) override { model.update(rate); }
 
-        const ModelType* getmodel() const { return &model; }
+#ifndef NOPYTHON
+        py::tuple getstate() const { return model.getstate(); }
+#endif
 
         protected:
         ModelType model;

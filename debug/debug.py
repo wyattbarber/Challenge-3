@@ -1,48 +1,95 @@
-import pyneuralnet as nn
+from . import neuralnet as nn
 # Import other libraries
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 import time
+from typing import List, Any
 np.random.seed(123)
 
-N = 2
-a = 0.00001
-AdamArgs = (0.9, 0.999)
 
-layers = [
-    nn.fullconnect.TanH(784, 500, *AdamArgs), 
-    nn.fullconnect.ReLU(500, 300, *AdamArgs), 
-    nn.fullconnect.ReLU(300, 100, *AdamArgs), 
-    nn.fullconnect.ReLU(100, 100, *AdamArgs), 
-    nn.fullconnect.ReLU(100, 50, *AdamArgs), 
-    nn.fullconnect.SoftMax(50, 10, *AdamArgs)
-]
-model = nn.compound.Sequence(*layers)
-
-class Data(nn.abstract.DataSource):
+class Model(nn.Model2D):
     def __init__(self):
         super().__init__()
-        self.TRAIN_IN, self.TRAIN_OUT = pickle.load(open('data/mnist_preprocessed.pickle', 'rb'))
+        self._pool = nn.MaxPoolEncoder2D()
+        self._layer1 = nn.Conv2D(1,3, 0.9,0.999)
+        # self._layer2 = nn.convolution.MaxPool2D()
+        self._layer3 = nn.Conv2D(3,3, 0.9,0.999)
+        # self._layer4 = nn.convolution.MaxUnPool2D(self._layer2)
+        self._layer5 = nn.Conv2D(3,1, 0.9,0.999)
+        self._layer6 = nn.Sigmoid2D()
     
+    def forward(self, input):
+        x = self._layer3.forward(
+                self._pool.encode(
+                    self._layer1.forward(input)
+                )
+            )
+        return  self._layer6.forward(
+                    self._layer5.forward(
+                        self._pool.decode(
+                            x
+                        )
+                    )
+                )
+    
+    def backward(self, error):
+        x = self._layer3.backward(
+                            self._pool.backward_decode(
+                                self._layer5.backward(
+                                    self._layer6.backward(error)
+                                )
+                            )
+                        )
+        return  self._layer1.backward(
+                    self._pool.backward_encode(
+                        x
+                    )
+                )
+    
+    def update(self, rate):
+        self._layer1.update(rate)
+        self._layer3.update(rate)
+        self._layer5.update(rate)
+        self._layer6.update(rate)
+
+    def __getstate__(self):
+        return self.__dict__
+    
+    def __setstate__(self, state):
+        self.__dict__  = state
+
+   
+
+class Data(nn.DataSource2D):
+    _train_in : List[Any]
+    _train_out : List[Any]
+
+    def __init__(self):
+        super().__init__()
+        train_in, _ = pickle.load(open('test/data/mnist_preprocessed.pickle', 'rb'))
+        self._train_in = [np.reshape(x, (28,28,1)) for x in train_in]
+        self._train_out = [np.reshape(x, (28,28,1)) for x in train_in]
+
     def size(self):
-        return len(self.TRAIN_IN)
+        return len(self._train_in)
+
+    def sample(self, i : int):
+        return (self._train_in[i], self._train_out[i])
     
-    def sample(self, i):
-        out = np.zeros((10,1))
-        out[self.TRAIN_OUT[i]] = 1.0
-        return (self.TRAIN_IN[i], out)
 
 data = Data()
-loss = nn.loss.L2()
+# model = Model()
+model = nn.MaxPoolEncoder2D()
 
-trainer = nn.Trainer(model, data)
+import pickle
 
-ts = time.time()
-errors = trainer.train(N, a)
-duration = time.time() - ts
-print(f"Training of coupled autoencoder complete in {duration / N} seconds per epoch.")
-
-plt.title("Training Error")
-plt.plot(range(len(errors)), errors)
-plt.show()
+print("Pickling...")
+bts = pickle.dumps(model)
+print("Unpickling...")
+sour_model = pickle.loads(bts)
+out1 = model.forward(data.sample(0)[0])
+print("Pickled Model...")
+out2 = sour_model.forward(data.sample(0)[0])
+diff = abs(out1 - out2)
+print(f"{np.min(diff)} - {np.mean(diff)} - {np.max(diff)}")
