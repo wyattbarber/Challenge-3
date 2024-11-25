@@ -84,7 +84,7 @@ model = nn.MaxPoolEncoder2D()
 
 import pickle
 
-print("Pickling...")
+print(f"Pickling with format {pickle.format_version}...")
 bts = pickle.dumps(model)
 print("Unpickling...")
 sour_model = pickle.loads(bts)

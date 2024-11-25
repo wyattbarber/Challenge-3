@@ -22,10 +22,13 @@ namespace neuralnet {
         typedef Eigen::Tensor<T, 3> OutputType;
         
         Pool2D(){ share_indices = false; }
-        Pool2D(Eigen::Tensor<std::pair<int,int>, 3>& indices)
+        Pool2D(Eigen::Tensor<int, 3>& x_indices, Eigen::Tensor<int, 3>& y_indices)
         {   
+            std::cout << "Pooler created with indices at " <<
+                &x_indices << ", " << &y_indices << std::endl;
             share_indices = true;
-            this->indices_shared = &indices;
+            this->x_indices_shared = &x_indices;
+            this->y_indices_shared = &y_indices;
         }
 #ifndef NOPYTHON
         Pool2D(py::tuple){ std::cout << "Pool unpickled at " << this << std::endl; }
@@ -54,8 +57,9 @@ namespace neuralnet {
         protected:
         void argcmp(Eigen::Tensor<T,3>& data, int x_start, int x_range, int y_start, int y_range, int channel, T* value);
 
-        Eigen::Tensor<std::pair<int,int>, 3> indices;
-        Eigen::Tensor<std::pair<int,int>, 3>* indices_shared;
+        Eigen::Tensor<int, 3> x_indices, y_indices;
+        Eigen::Tensor<int, 3>* x_indices_shared;
+        Eigen::Tensor<int, 3>* y_indices_shared;
         bool share_indices;
     };
 
@@ -66,19 +70,7 @@ namespace neuralnet {
     {
         Eigen::Tensor<T, 3> out(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
         out.setZero();
-        if(share_indices)
-        {
-            if(indices_shared->dimensions() != in.dimensions())
-                (*indices_shared) = Eigen::Tensor<std::pair<int,int>,3>(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
-        }
-        else
-        {   
-            if(indices.dimensions() != in.dimensions())
-                indices = Eigen::Tensor<std::pair<int,int>,3>(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
-        }
-
-        std::cout << "Indices resized at " << &indices << std::endl;
-
+        
         for(int y = 0; y < in.dimension(0); y+=K)
         {
             for(int x = 0; x < in.dimension(1); x+=K)
@@ -120,6 +112,9 @@ namespace neuralnet {
         Eigen::Tensor<T, 3> out(error.dimension(0) * K, error.dimension(1) * K, error.dimension(2));
         out.setZero();
 
+        auto* x_ind = share_indices ? x_indices_shared : &x_indices;
+        auto* y_ind = share_indices ? y_indices_shared : &y_indices;
+
         for(int y = 0; y < error.dimension(0); ++y)
         {
             for(int x = 0; x < error.dimension(1); ++x)
@@ -128,8 +123,8 @@ namespace neuralnet {
                 {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = share_indices ? (*indices_shared)(y,x,c).first : indices(y,x,c).first;
-                        auto yo = share_indices ? (*indices_shared)(y,x,c).second : indices(y,x,c).second;
+                        auto xo = (*x_ind)(y,x,c);
+                        auto yo = (*y_ind)(y,x,c);
                         out(yo, xo, c) = error(y,x,c);
                     }
                     else if constexpr (M == PoolMode::Mean)
@@ -175,11 +170,13 @@ namespace neuralnet {
                 {
                     if(share_indices)
                     {
-                        (*indices_shared)(y_start/K, x_start/K, channel) = std::make_pair(x,y);
+                        (*x_indices_shared)(y_start/K, x_start/K, channel) = x;
+                        (*y_indices_shared)(y_start/K, x_start/K, channel) = y;
                     }
                     else
                     {
-                        indices(y_start/K, x_start/K, channel) = std::make_pair(x,y);
+                        x_indices(y_start/K, x_start/K, channel) = x;
+                        y_indices(y_start/K, x_start/K, channel) = y;
                     }
                     break;
                 }

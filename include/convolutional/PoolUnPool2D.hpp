@@ -19,27 +19,37 @@ namespace neuralnet {
 
         PoolUnPool2D()
         {
-            indices = Eigen::Tensor<std::pair<int,int>, 3>(14,14,3);
-            pool = Pool2D<T,K,M>(indices);
-            unpool = UnPool2D<T,K,M>(indices);
+            std::cout << "Pooling encoder created with indices at " <<
+                &x_indices << ", " << &y_indices << std::endl;
+            pool = Pool2D<T,K,M>(this->x_indices, this->y_indices);
+            unpool = UnPool2D<T,K,M>(this->x_indices, this->y_indices);
         }
 #ifndef NOPYTHON
         PoolUnPool2D(py::tuple)
         {
-            indices = Eigen::Tensor<std::pair<int,int>, 3>(14,14,3);
-            pool = Pool2D<T,K,M>(indices);
-            unpool = UnPool2D<T,K,M>(indices);
+            std::cout << "Pooling encoder unpickled with indices at " <<
+                &x_indices << ", " << &y_indices << std::endl;
+            pool = Pool2D<T,K,M>(this->x_indices, this->y_indices);
+            unpool = UnPool2D<T,K,M>(this->x_indices, this->y_indices);
         }
 #endif
 
         template<typename X>
-        OutputType forward(X&& in){ return decode(encode(in)); }
+        OutputType forward(X&& in) { return decode(encode(in)); }
 
         template<typename X>
         InputType backward(X&& error){ return backward_encode(backward_decode(error)); }
 
         template<typename X>
-        LatentType encode(X&& in){ return pool.forward(in); }
+        LatentType encode(X&& in)
+        {
+            if(x_indices.dimensions() != in.dimensions())
+            {
+                x_indices.resize(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
+                y_indices.resize(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
+            }
+            return pool.forward(in);
+        }
 
         template<typename X>
         OutputType decode(X&& embed){ return unpool.forward(embed); };
@@ -65,10 +75,9 @@ namespace neuralnet {
 #endif
 
         protected:
-
         Pool2D<T,K,M> pool;
         UnPool2D<T,K,M> unpool;
-        Eigen::Tensor<std::pair<int,int>, 3> indices;
+        Eigen::Tensor<int, 3> x_indices, y_indices;
     };
 }
 

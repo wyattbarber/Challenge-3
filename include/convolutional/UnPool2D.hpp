@@ -17,10 +17,13 @@ namespace neuralnet {
 
 
         UnPool2D() {}
-        UnPool2D(Eigen::Tensor<std::pair<int,int>, 3>& indices)
+        UnPool2D(Eigen::Tensor<int, 3>& x_indices, Eigen::Tensor<int, 3>& y_indices)
         {
-            std::cout << "Unpool created at " << this << " with indices at " << &indices << std::endl;
-            this->indices = &indices;
+            std::cout << "Unpooler created with indices at " <<
+                &x_indices << ", " << &y_indices << std::endl;
+
+            this->x_indices = &x_indices;
+            this->y_indices = &y_indices;
         }
 #ifndef NOPYTHON
         UnPool2D(py::tuple){}
@@ -48,7 +51,8 @@ namespace neuralnet {
 #endif
 
         protected:
-        Eigen::Tensor<std::pair<int,int>, 3>* indices;
+        Eigen::Tensor<int, 3>* x_indices;
+        Eigen::Tensor<int, 3>* y_indices;
         int max_y_idx;
     };
 
@@ -57,8 +61,6 @@ namespace neuralnet {
     template<typename X>
     UnPool2D<T,K,M>::OutputType UnPool2D<T,K,M>::forward(X&& in)
     {
-        std::cout << "Indices read from " << indices << std::endl;
-
         Eigen::Tensor<T, 3> out(in.dimension(0) * K, in.dimension(1) * K, in.dimension(2));
         out.setZero();
               
@@ -70,8 +72,8 @@ namespace neuralnet {
                 {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = (*indices)(y,x,c).first;
-                        auto yo = (*indices)(y,x,c).second;
+                        auto xo = (*x_indices)(y,x,c);
+                        auto yo = (*y_indices)(y,x,c);
                         out(yo, xo, c) = in(y,x,c); 
                     } 
                     else if constexpr (M == PoolMode::Mean)
@@ -109,8 +111,8 @@ namespace neuralnet {
                 {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = (*indices)(y,x,c).first;
-                        auto yo = (*indices)(y,x,c).second;
+                        auto xo = (*x_indices)(y,x,c);
+                        auto yo = (*y_indices)(y,x,c);
                         out(y, x, c) = error(yo,xo,c);
                     }
                     else if constexpr (M == PoolMode::Mean)
