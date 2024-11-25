@@ -15,20 +15,13 @@ namespace neuralnet {
         typedef Eigen::Tensor<T, 3> InputType;
         typedef Eigen::Tensor<T, 3> OutputType;
 
-        UnPool2D() 
-        { 
-            static_assert(
-                M == PoolMode::Mean, 
-                "Min and max unpooling require a reference to a matching pooling layer"
-                ); 
-        }
 
-        UnPool2D(Pool2D<T,K,M>& pool)
+        UnPool2D() {}
+        UnPool2D(Eigen::Tensor<std::pair<int,int>, 3>& indices)
         {
-            std::cout << "Unpool created at " << this << " with pool at " << &pool << std::endl;
-            this->pool = &pool;
+            std::cout << "Unpool created at " << this << " with indices at " << &indices << std::endl;
+            this->indices = &indices;
         }
-
 #ifndef NOPYTHON
         UnPool2D(py::tuple){}
 #endif
@@ -55,7 +48,7 @@ namespace neuralnet {
 #endif
 
         protected:
-        Pool2D<T,K,M>* pool;
+        Eigen::Tensor<std::pair<int,int>, 3>* indices;
         int max_y_idx;
     };
 
@@ -64,7 +57,7 @@ namespace neuralnet {
     template<typename X>
     UnPool2D<T,K,M>::OutputType UnPool2D<T,K,M>::forward(X&& in)
     {
-        std::cout << "Indices read from " << pool->get_indices() << std::endl;
+        std::cout << "Indices read from " << indices << std::endl;
 
         Eigen::Tensor<T, 3> out(in.dimension(0) * K, in.dimension(1) * K, in.dimension(2));
         out.setZero();
@@ -77,8 +70,8 @@ namespace neuralnet {
                 {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = (*pool->get_indices())(y,x,c).first;
-                        auto yo = (*pool->get_indices())(y,x,c).second;
+                        auto xo = (*indices)(y,x,c).first;
+                        auto yo = (*indices)(y,x,c).second;
                         out(yo, xo, c) = in(y,x,c); 
                     } 
                     else if constexpr (M == PoolMode::Mean)
@@ -116,8 +109,8 @@ namespace neuralnet {
                 {                    
                     if constexpr ((M == PoolMode::Max) || (M == PoolMode::Min))
                     {
-                        auto xo = (*pool->get_indices())(y,x,c).first;
-                        auto yo = (*pool->get_indices())(y,x,c).second;
+                        auto xo = (*indices)(y,x,c).first;
+                        auto yo = (*indices)(y,x,c).second;
                         out(y, x, c) = error(yo,xo,c);
                     }
                     else if constexpr (M == PoolMode::Mean)

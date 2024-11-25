@@ -17,9 +17,19 @@ namespace neuralnet {
         typedef Eigen::Tensor<T, 3> OutputType;
         typedef Eigen::Tensor<T, 3> LatentType;
 
-        PoolUnPool2D() : pool(), unpool(pool) {}
+        PoolUnPool2D()
+        {
+            indices = Eigen::Tensor<std::pair<int,int>, 3>(14,14,3);
+            pool = Pool2D<T,K,M>(indices);
+            unpool = UnPool2D<T,K,M>(indices);
+        }
 #ifndef NOPYTHON
-        PoolUnPool2D(py::tuple) : pool(), unpool(pool) {}
+        PoolUnPool2D(py::tuple)
+        {
+            indices = Eigen::Tensor<std::pair<int,int>, 3>(14,14,3);
+            pool = Pool2D<T,K,M>(indices);
+            unpool = UnPool2D<T,K,M>(indices);
+        }
 #endif
 
         template<typename X>
@@ -58,6 +68,7 @@ namespace neuralnet {
 
         Pool2D<T,K,M> pool;
         UnPool2D<T,K,M> unpool;
+        Eigen::Tensor<std::pair<int,int>, 3> indices;
     };
 }
 

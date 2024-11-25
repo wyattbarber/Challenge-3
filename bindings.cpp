@@ -1,5 +1,5 @@
 #include "version.h"
-
+#include "include/Model.hpp"
 #include "include/Dynamic.hpp"
 #include "include/DynamicEncoder.hpp"
 #include "include/basic/Layer.hpp"
