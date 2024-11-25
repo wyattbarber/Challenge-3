@@ -8,8 +8,8 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-if(WIN32)
-    set(CMAKE_CXX_FLAGS "/W0 /openmp:experimental")
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "/Wall /openmp:experimental")
     set(CMAKE_CXX_FLAGS_DEBUG "/DEBUG ")
     set(CMAKE_CXX_FLAGS_RELEASE "/O2")
 else()
@@ -33,6 +33,9 @@ message(STATUS "Building neuralnet version ${TOML_PACKAGE_VERSION}")
 set(PROJECT_VERSION ${TOML_PACKAGE_VERSION})
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(OpenMP REQUIRED)
+find_package(Python3 3.11 COMPONENTS Interpreter Development REQUIRED)
+find_package(pybind11 CONFIG REQUIRED)
 
 if(NOPYTHON)
     add_library(neuralnet STATIC)
@@ -90,10 +93,6 @@ if(NOPYTHON)
     )
 
 else()
-    find_package(Python3 3.11 COMPONENTS Interpreter Development REQUIRED)
-    find_package(pybind11 CONFIG REQUIRED)
-    find_package(OpenMP REQUIRED)
-
     configure_file (version.h.in ${CMAKE_CURRENT_SOURCE_DIR}/version.h @ONLY) 
     
     pybind11_add_module(neuralnet bindings.cpp)
