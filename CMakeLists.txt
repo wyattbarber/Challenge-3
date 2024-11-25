@@ -23,19 +23,20 @@ option(NOPYTHON "Build C library instead of Python package" OFF)
 
 project(neuralnet LANGUAGES CXX)
 
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(OpenMP REQUIRED)
+find_package(Python3 3.11 COMPONENTS Interpreter Development REQUIRED)
+find_package(pybind11 CONFIG REQUIRED)
+
 
 execute_process(
-       COMMAND python ${CMAKE_SOURCE_DIR}/getversion.py "${CMAKE_SOURCE_DIR}"
+       COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/getversion.py "${CMAKE_SOURCE_DIR}"
        OUTPUT_VARIABLE TOML_PACKAGE_VERSION
    )
 string(STRIP "${TOML_PACKAGE_VERSION}" TOML_PACKAGE_VERSION)
 message(STATUS "Building neuralnet version ${TOML_PACKAGE_VERSION}")
 set(PROJECT_VERSION ${TOML_PACKAGE_VERSION})
 
-find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-find_package(OpenMP REQUIRED)
-find_package(Python3 3.11 COMPONENTS Interpreter Development REQUIRED)
-find_package(pybind11 CONFIG REQUIRED)
 
 if(NOPYTHON)
     add_library(neuralnet STATIC)
