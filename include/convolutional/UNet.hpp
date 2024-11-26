@@ -4,6 +4,7 @@
 #include "Conv2D.hpp"
 #include "Activation2D.hpp"
 #include "PoolUnPool2D.hpp"
+#include "../normalize/ReNorm2D.hpp"
 
 using namespace optimization;
 
@@ -53,45 +54,88 @@ namespace neuralnet {
              * then `final` should be specified as true. This will add additional
              * convolutions so that the models encode generates 4N channels rather than 2N.
              * 
-             * @param N number of input channels
-             * @param final this is the final (innermost) component
+             * @param N number of input channels.
+             * @param alpha batch renormalization update rate.
+             * @param b1 Adam optimizer momentum decay rate.
+             * @param b2 Adam optimizer velocity decay rate.
+             * @param final this is the final (innermost) component.
             */
-            UNet(int N, bool final = false) :
+            UNet(int N, T alpha, bool final = false) :
+                is_final(final),
                 relu(),
                 conv_enc_1(N, 2*N),
+                norm_enc_1(2*N, alpha),
                 conv_enc_2(2*N, N),
+                norm_enc_2(N, alpha),
                 conv_dec_1(4*N, 2*N),
+                norm_dec_1(2*N, alpha),
                 conv_dec_2(4*N, 2*N),
+                norm_dec_2(2*N, alpha),
                 conv_dec_3(2*N, 2*N),
+                norm_dec_3(2*N, alpha),
                 pool(),
                 unpool()
-            { this->is_final = final; }
-            UNet(int N, T b1, T b2,  bool final = false) :
+            {
+                if(is_final)
+                {
+                    conv_enc_3 = std::make_unique<Convolution2D<T, 3, C>>(2*N, 4*N);
+                    norm_enc_3 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha);
+                    conv_enc_4 = std::make_unique<Convolution2D<T, 3, C>>(4*N, 4*N);
+                    norm_enc_4 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha);
+                }
+            }
+            UNet(int N, T alpha, T b1, T b2,  bool final = false) :
+                is_final(final),
                 relu(),
                 conv_enc_1(N, 2*N, b1, b2),
+                norm_enc_1(2*N, alpha, b1, b2),
                 conv_enc_2(2*N, N, b1, b2),
+                norm_enc_2(N, alpha, b1, b2),
                 conv_dec_1(4*N, 2*N, b1, b2),
+                norm_dec_1(2*N, alpha, b1, b2),
                 conv_dec_2(4*N, 2*N, b1, b2),
+                norm_dec_2(2*N, alpha, b1, b2),
                 conv_dec_3(2*N, 2*N, b1, b2),
+                norm_dec_3(2*N, alpha, b1, b2),
                 pool(),
                 unpool()
-            { this->is_final = final; }
+            {
+                if(is_final)
+                {
+                    conv_enc_3 = std::make_unique<Convolution2D<T, 3, C>>(2*N, 4*N, b1, b2);
+                    norm_enc_3 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha, b1, b2);
+                    conv_enc_4 = std::make_unique<Convolution2D<T, 3, C>>(4*N, 4*N, b1, b2);
+                    norm_enc_4 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha, b1, b2); 
+                }
+            }
 
 #ifndef NOPYTHON 
             /** Unpickling constructor
              * 
              */
             UNet(py::tuple data) :
+                is_final(data[0].cast<bool>()),
                 relu(),
-                conv_enc_1(data[1]),
-                conv_enc_2(data[2]),
-                conv_dec_1(data[3]),
-                conv_dec_2(data[4]),
-                conv_dec_3(data[5]),
+                conv_enc_1(data[1].cast<py::tuple>()),
+                norm_enc_1(data[2].cast<py::tuple>()),
+                conv_enc_2(data[3].cast<py::tuple>()),
+                norm_enc_2(data[4].cast<py::tuple>()),
+                conv_dec_1(data[5].cast<py::tuple>()),
+                norm_dec_1(data[6].cast<py::tuple>()),
+                conv_dec_2(data[7].cast<py::tuple>()),
+                norm_dec_2(data[8].cast<py::tuple>()),
+                conv_dec_3(data[9].cast<py::tuple>()),
+                norm_dec_3(data[10].cast<py::tuple>()),
                 pool(),
                 unpool()
-            {   
-                this->is_final = data[0].cast<bool>();
+            {
+                if(is_final)
+                {
+                    conv_enc_3 = std::make_unique<Convolution2D<T, 3, C>>(data[11].cast<py::tuple>());
+                    norm_enc_3 = std::make_unique<ReNorm2D<T,C>>(data[12].cast<py::tuple>());
+                    conv_enc_4 = std::make_unique<Convolution2D<T, 3, C>>(data[13].cast<py::tuple>());
+                    norm_enc_4 = std::make_unique<ReNorm2D<T,C>>(data[14].cast<py::tuple>());
+                }
             }
 #endif
             template<typename X>
@@ -103,23 +147,64 @@ namespace neuralnet {
             template<typename X>
             LatentType encode(X&& input)
             {
-                return pool.forward(
-                    conv_enc_2.forward(
-                        conv_enc_1.forward(
-                            std::forward<X>(input)
+                inter = relu.forward(
+                    norm_enc_2.forward(
+                        conv_enc_2.forward(
+                            relu.forward(
+                                norm_enc_1.forward(
+                                    conv_enc_1.forward(
+                                        std::forward<X>(input)
+                                    )
+                                )
+                            )
                         )
                     )
                 );
+                
+                return is_final ? 
+                    relu.forward(
+                        norm_enc_4->forward(
+                            conv_enc_4->forward(
+                                relu.forward(
+                                    norm_enc_4->forward(
+                                        conv_enc_4->forward(
+                                            pool.forward( 
+                                                inter
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                    : 
+                    pool.forward(inter)
+                ;
             }
 
             template<typename X>
             OutputType decode(X&& embed)
             {
-                return conv_dec_3.forward(
-                    conv_dec_2.forward(
-                        unpool.forward(
+                // Upsample
+                auto tmp = unpool.forward(
+                    relu.forward(
+                        norm_dec_1.forward(
                             conv_dec_1.forward(
                                 std::forward<X>(embed)
+                            )
+                        )
+                    )
+                );
+                // Concatenate and continue
+                return relu.forward(
+                    norm_dec_3.forward(
+                        conv_dec_3.forward(
+                            relu.forward(
+                                norm_dec_2.forward(
+                                    conv_dec_2.forward(
+                                        static_cast<Eigen::Tensor<T,3>>(tmp.concatenate(inter,2))
+                                    )
+                                )
                             )
                         )
                     )
@@ -129,10 +214,35 @@ namespace neuralnet {
             template<typename X>
             InputType backward_encode(X&& error)
             {
+                // backpropagate downsampling
+                auto tmp = pool.backward( is_final ? 
+                    conv_enc_3->backward(
+                        norm_enc_3->backward(
+                            relu.backward(
+                                conv_enc_4->backward(
+                                    norm_enc_4->backward(
+                                        relu.backward(
+                                            std::forward<X>(error)
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                    :
+                    std::forward<X>(error)
+                );
+                // complete backpropagation with combined gradient
                 return conv_enc_1.backward(
-                    conv_enc_2.backward(
-                        pool.backward(
-                            std::forward<X>(error)
+                    norm_enc_1.backward(
+                        relu.backward(
+                            conv_enc_2.backward(
+                                norm_enc_2.backward(
+                                    relu.backward(
+                                        static_cast<Eigen::Tensor<T,3>>(tmp + inter)
+                                    )
+                                )
+                            )
                         )
                     )
                 );
@@ -141,11 +251,33 @@ namespace neuralnet {
             template<typename X>
             LatentType backward_decode(X&& error)
             {
-                return conv_dec_1.backward(
-                    unpool.backward(
-                        conv_dec_2.backward(
+                // Backpropagate upsampled data
+                auto tmp = conv_dec_2.backward(
+                    norm_dec_2.backward(
+                        relu.backward(
                             conv_dec_3.backward(
-                                std::forward<X>(error)
+                                norm_dec_3.backward(
+                                    relu.backward(
+                                        std::forward<X>(error)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+
+                // Split 4N channel gradients to 2N downconversion gradient and 2N high res gradient
+                Eigen::array<Eigen::Index,3> slice_size = {tmp.dimension(0), tmp.dimension(1), tmp.dimension(2)/2};
+                Eigen::array<Eigen::Index,3> slice_tmp_start = {0, 0, 0};
+                Eigen::array<Eigen::Index,3> slice_inter_start = {0, 0, tmp.dimension(2)/2};
+                inter = tmp.slice(slice_inter_start, slice_size);
+
+                // Complete backpropagation over upsampler
+                return conv_dec_1.backward(
+                    norm_dec_1.backward(
+                        relu.backward(
+                            unpool.backward(
+                                static_cast<Eigen::Tensor<T,3>>(tmp.slice(slice_tmp_start, slice_size))
                             )
                         )
                     )
@@ -155,45 +287,84 @@ namespace neuralnet {
             void update(double rate)
             {
                 conv_enc_1.update(rate);
+                norm_enc_1.update(rate);
                 conv_enc_2.update(rate);
+                norm_enc_2.update(rate);
                 conv_dec_1.update(rate);
+                norm_dec_1.update(rate);
                 conv_dec_2.update(rate);
+                norm_dec_2.update(rate);
                 conv_dec_3.update(rate);
+                norm_dec_3.update(rate);
+                if(is_final)
+                {
+                    conv_enc_3->update(rate);
+                    norm_enc_3->update(rate);
+                    conv_enc_4->update(rate);
+                    norm_enc_4->update(rate);
+                }
             }
         
 #ifndef NOPYTHON
             /** Pickling implementation
              * 
-                conv_enc_1(data[1]),
-                conv_enc_2(data[2]),
-                conv_dec_1(data[3]),
-                conv_dec_2(data[4]),
-                conv_dec_3(data[5]),
-             *  
+             * Returns following data in order:
+             * * Final layer flag
+             * * Encoder convolution 1 state
+             * * Encoder renorm 1 state
+             * * Encoder convolution 2 state
+             * * Encoder renorm 2 
+             * * Decoder convolution 1 state
+             * * Decoder renorm 1 state
+             * * Decoder convolution 2 state
+             * * Decoder renorm 2 state
+             * * Decoder convolution 3 state
+             * * Decoder renorm 3 state
+             * * Extra encoder convolution 1 state, if final layer flag is set
+             * * Extra encoder norm 1 state, if final layer flag is set
+             * * Extra encoder convolution 2 state, if final layer flag is set
+             * * Extra encoder norm 2 state, if final layer flag is set
+             * 
+             * 
              * @return (in channels, out channels, optimizer args..., kernels, biases)
              */
             py::tuple getstate() const { 
                 return py::make_tuple(
                     is_final,
                     conv_enc_1.getstate(),
+                    norm_enc_1.getstate(),
                     conv_enc_2.getstate(),
+                    norm_enc_2.getstate(),
                     conv_dec_1.getstate(),
+                    norm_dec_1.getstate(),
                     conv_dec_2.getstate(),
-                    conv_dec_3.getstate()
+                    norm_dec_2.getstate(),
+                    conv_dec_3.getstate(),
+                    norm_dec_3.getstate(),
+                    is_final ? conv_enc_3->getstate() : py::tuple(),
+                    is_final ? norm_enc_3->getstate() : py::tuple(),
+                    is_final ? conv_enc_4->getstate() : py::tuple(),
+                    is_final ? norm_enc_4->getstate() : py::tuple()
                 ); 
             }
 #endif
 
         protected:
-            bool is_final; 
-            Activation2D<T, ActivationFunc::ReLU> relu; // 2D ReLU has no state, so one instance can be shared
+            const bool is_final; 
+            Layer2D<T, ActivationFunc::ReLU> relu; // 2D ReLU has no state, so one instance can be shared
             Convolution2D<T, 3, C> conv_enc_1, conv_enc_2;
+            ReNorm2D<T,C> norm_enc_1, norm_enc_2, norm_dec_1, norm_dec_2, norm_dec_3;
             Convolution2D<T, 3, C> conv_dec_1;
             Convolution2D<T, 3, C> conv_dec_2, conv_dec_3;
+            
+            // Extra layers for final model
+            std::unique_ptr<Convolution2D<T, 3, C>> conv_enc_3, conv_enc_4;
+            std::unique_ptr<ReNorm2D<T,C>> norm_enc_3, norm_enc_4;
+
             Pool2D<T,2,PoolMode::Max> pool;
             UnPool2D<T,2,PoolMode::Mean> unpool;
-
-            Eigen::Tensor<T,3> inter, grad_inter; // Intermediate value concatenated during decoding and its gradient
+            // Intermediate data shared between encode and decode. Used for both forward data and gradients.
+            Eigen::Tensor<T,3> inter;
     };
 }
 

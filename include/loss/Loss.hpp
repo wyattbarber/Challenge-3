@@ -14,6 +14,8 @@ namespace loss
     class Loss
     {
         public:
+        virtual ~Loss(){}
+        
         /** Evaluates the loss gradient.
          * 
          * Returns the partial gradient of the loss with respect

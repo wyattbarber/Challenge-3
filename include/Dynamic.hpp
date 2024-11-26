@@ -10,6 +10,7 @@ namespace neuralnet
     class DynamicModel
     {
         public:
+        virtual ~DynamicModel(){};
 
         typedef T InputType; 
         typedef T OutputType; 

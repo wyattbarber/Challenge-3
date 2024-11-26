@@ -23,10 +23,7 @@ namespace neuralnet {
             Convolution2D(Eigen::Index in_channels, Eigen::Index out_channels, double b1, double b2)
             { setup(in_channels, out_channels, b1, b2); }
             Convolution2D(Eigen::Index in_channels, Eigen::Index out_channels)
-            { 
-                static_assert(C==OptimizerClass::None, "Adam parameters missing"); 
-                setup(in_channels, out_channels); 
-            }
+            { setup(in_channels, out_channels); }
 #ifndef NOPYTHON
             Convolution2D(py::tuple data)
             {

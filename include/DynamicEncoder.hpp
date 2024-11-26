@@ -11,7 +11,7 @@ namespace neuralnet
     class DynamicEncoder : public DynamicModel<T>
     {
         public:
-
+    
         typedef T InputType; 
         typedef T OutputType; 
         typedef V LatentType; 

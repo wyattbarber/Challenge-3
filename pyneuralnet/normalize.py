@@ -1,1 +1,1 @@
-from neuralnet import ReNorm2D
+from neuralnet import BatchRenorm2D
