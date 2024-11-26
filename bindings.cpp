@@ -117,14 +117,14 @@ PYBIND11_MODULE(neuralnet, m)
     m.doc() = "Various neural network implementations";
     m.attr("__version__") = py::cast(PROJECT_VERSION);
 
-    py::class_<DataSource<VectorXd, VectorXd>, 
-                DataSourceTrampoline<VectorXd, VectorXd>,
-                std::shared_ptr<DataSource<VectorXd, VectorXd>>>(
+    py::class_<DataSource<Vector<PkgScalar, Eigen::Dynamic>, Vector<PkgScalar, Eigen::Dynamic>>, 
+                DataSourceTrampoline<Vector<PkgScalar, Eigen::Dynamic>, Vector<PkgScalar, Eigen::Dynamic>>,
+                std::shared_ptr<DataSource<Vector<PkgScalar, Eigen::Dynamic>, Vector<PkgScalar, Eigen::Dynamic>>>>(
         m, "DataSource"
     )
         .def(py::init<>())
-        .def("size", &DataSource<VectorXd, VectorXd>::size)
-        .def("sample", &DataSource<VectorXd, VectorXd>::sample);
+        .def("size", &DataSource<Vector<PkgScalar, Eigen::Dynamic>, Vector<PkgScalar, Eigen::Dynamic>>::size)
+        .def("sample", &DataSource<Vector<PkgScalar, Eigen::Dynamic>, Vector<PkgScalar, Eigen::Dynamic>>::sample);
     py::class_<DataSource<Tensor<PkgScalar,3>, Tensor<PkgScalar,3>>,  
                 DataSourceTrampoline<Tensor<PkgScalar,3>, Tensor<PkgScalar,3>>,
                 std::shared_ptr<DataSource<Tensor<PkgScalar,3>, Tensor<PkgScalar,3>>>>(
@@ -134,10 +134,10 @@ PYBIND11_MODULE(neuralnet, m)
             .def("size", &DataSource<Tensor<PkgScalar,3>, Tensor<PkgScalar,3>>::size)
             .def("sample", &DataSource<Tensor<PkgScalar,3>, Tensor<PkgScalar,3>>::sample);
 
-    py::class_<DynamicModel<VectorXd>, std::shared_ptr<DynamicModel<VectorXd>>, DynamicModelTrampoline<VectorXd>>(m, "Model")
+    py::class_<DynamicModel<Vector<PkgScalar, Eigen::Dynamic>>, std::shared_ptr<DynamicModel<Vector<PkgScalar, Eigen::Dynamic>>>, DynamicModelTrampoline<Vector<PkgScalar, Eigen::Dynamic>>>(m, "Model")
         .def(py::init<>());
-    py::class_<DynamicEncoder<VectorXd, VectorXd>, DynamicModel<VectorXd>,
-        std::shared_ptr<DynamicEncoder<VectorXd, VectorXd>>, DynamicEncoderTrampoline<VectorXd, VectorXd>>(m, "Encoder")
+    py::class_<DynamicEncoder<Vector<PkgScalar, Eigen::Dynamic>, Vector<PkgScalar, Eigen::Dynamic>>, DynamicModel<Vector<PkgScalar, Eigen::Dynamic>>,
+        std::shared_ptr<DynamicEncoder<Vector<PkgScalar, Eigen::Dynamic>, Vector<PkgScalar, Eigen::Dynamic>>>, DynamicEncoderTrampoline<Vector<PkgScalar, Eigen::Dynamic>, Vector<PkgScalar, Eigen::Dynamic>>>(m, "Encoder")
         .def(py::init<>());
     py::class_<DynamicModel<Tensor<PkgScalar,3>>, std::shared_ptr<DynamicModel<Tensor<PkgScalar,3>>>, DynamicModelTrampoline<Tensor<PkgScalar,3>>>(m, "Model2D")
         .def(py::init<>());
@@ -178,13 +178,13 @@ PYBIND11_MODULE(neuralnet, m)
         .def("backward", &Reshape1D<PkgScalar>::backward<Vector<PkgScalar,Dynamic>&>, "Performs backpropagation through the model.")
         .def("update", &Reshape1D<PkgScalar>::update, "Updates trainable parameters based on current gradient.");
 
-    py::class_<training::Trainer<DynamicModel<VectorXd>>>(m, "Trainer")
+    py::class_<training::Trainer<DynamicModel<Vector<PkgScalar, Eigen::Dynamic>>>>(m, "Trainer")
         .def(py::init<
-            DynamicModel<VectorXd>&,
-            DataSource<DynamicModel<VectorXd>::InputType, DynamicModel<VectorXd>::OutputType>&,
+            DynamicModel<Vector<PkgScalar, Eigen::Dynamic>>&,
+            DataSource<DynamicModel<Vector<PkgScalar, Eigen::Dynamic>>::InputType, DynamicModel<Vector<PkgScalar, Eigen::Dynamic>>::OutputType>&,
             Loss<PkgScalar>&
         >())
-        .def("train", &training::Trainer<DynamicModel<VectorXd>>::train, "Trains a model", py::return_value_policy::automatic);
+        .def("train", &training::Trainer<DynamicModel<Vector<PkgScalar, Eigen::Dynamic>>>::train, "Trains a model", py::return_value_policy::automatic);
     
     py::class_<training::Trainer<DynamicModel<Tensor<PkgScalar,3>>>>(m, "Trainer2D")
         .def(py::init<

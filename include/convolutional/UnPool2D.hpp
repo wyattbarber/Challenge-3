@@ -26,7 +26,7 @@ namespace neuralnet {
             this->y_indices = &y_indices;
         }
 #ifndef NOPYTHON
-        UnPool2D(py::tuple){}
+        UnPool2D(const py::tuple&){}
 #endif
 
         template<typename X>

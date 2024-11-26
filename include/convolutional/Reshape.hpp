@@ -21,7 +21,7 @@ namespace neuralnet {
 
 #ifndef NOPYTHON
         Reshape1D(){}
-        Reshape1D(py::tuple){}
+        Reshape1D(const py::tuple&){}
 #endif
         
         template<typename X>

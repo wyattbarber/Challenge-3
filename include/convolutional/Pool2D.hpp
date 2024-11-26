@@ -31,7 +31,7 @@ namespace neuralnet {
             this->y_indices_shared = &y_indices;
         }
 #ifndef NOPYTHON
-        Pool2D(py::tuple){ std::cout << "Pool unpickled at " << this << std::endl; }
+        Pool2D(const py::tuple&){ std::cout << "Pool unpickled at " << this << std::endl; }
 #endif
 
         template<typename X>
@@ -70,7 +70,12 @@ namespace neuralnet {
     {
         Eigen::Tensor<T, 3> out(in.dimension(0) / K, in.dimension(1) / K, in.dimension(2));
         out.setZero();
-        
+        if(!share_indices && (in.dimensions() != x_indices.dimensions()))
+        {
+            x_indices.resize(in.dimensions());
+            y_indices.resize(in.dimensions());
+        }
+
         for(int y = 0; y < in.dimension(0); y+=K)
         {
             for(int x = 0; x < in.dimension(1); x+=K)

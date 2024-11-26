@@ -25,7 +25,7 @@ namespace neuralnet {
             Convolution2D(Eigen::Index in_channels, Eigen::Index out_channels)
             { setup(in_channels, out_channels); }
 #ifndef NOPYTHON
-            Convolution2D(py::tuple data)
+            Convolution2D(const py::tuple& data)
             {
                 std::vector<T> k, b;
                 Eigen::Index chn_in = data[0].cast<Eigen::Index>();
@@ -208,6 +208,7 @@ namespace neuralnet {
     template <typename T, int K, OptimizerClass C>
     py::tuple Convolution2D<T,K,C>::getstate() const
     {
+        std::cout << "Pickling conv" << std::endl;
         if constexpr (C == OptimizerClass::Adam)
         {
             return py::make_tuple(

@@ -39,7 +39,7 @@ namespace neuralnet
             setup(in_size, out_size); 
         }
 #ifndef NOPYTHON
-        Layer(py::tuple data)
+        Layer(const py::tuple& data)
         {
             std::vector<T> w, b;
             int in = data[0].cast<int>();

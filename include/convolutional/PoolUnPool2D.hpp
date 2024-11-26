@@ -25,7 +25,7 @@ namespace neuralnet {
             unpool = UnPool2D<T,K,M>(this->x_indices, this->y_indices);
         }
 #ifndef NOPYTHON
-        PoolUnPool2D(py::tuple)
+        PoolUnPool2D(const py::tuple&)
         {
             std::cout << "Pooling encoder unpickled with indices at " <<
                 &x_indices << ", " << &y_indices << std::endl;

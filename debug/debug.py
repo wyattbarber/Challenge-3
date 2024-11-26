@@ -82,14 +82,19 @@ data = Data()
 # model = Model()
 # model = nn.MaxPoolEncoder2D()
 model = nn.UNet(1, 0.6, 0.9, 0.999, True)
+# model = nn.BatchRenorm2D(1, 0.8, 0.9, 0.999)
 
 import pickle
+import time
 
+print("Running forward pass")
+out1 = model.forward(data.sample(0)[0])
+print(f"{np.min(out1)} - {np.mean(out1)} - {np.max(out1)}")
 print(f"Pickling with format {pickle.format_version}...")
 bts = pickle.dumps(model)
 print("Unpickling...")
 sour_model = pickle.loads(bts)
-out1 = model.forward(data.sample(0)[0])
+time.sleep(2.0)
 print("Pickled Model...")
 out2 = sour_model.forward(data.sample(0)[0])
 diff = abs(out1 - out2)

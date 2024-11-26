@@ -113,28 +113,28 @@ namespace neuralnet {
             /** Unpickling constructor
              * 
              */
-            UNet(py::tuple data) :
+            UNet(const py::tuple& data) :
                 is_final(data[0].cast<bool>()),
                 relu(),
-                conv_enc_1(data[1].cast<py::tuple>()),
-                norm_enc_1(data[2].cast<py::tuple>()),
-                conv_enc_2(data[3].cast<py::tuple>()),
-                norm_enc_2(data[4].cast<py::tuple>()),
-                conv_dec_1(data[5].cast<py::tuple>()),
-                norm_dec_1(data[6].cast<py::tuple>()),
-                conv_dec_2(data[7].cast<py::tuple>()),
-                norm_dec_2(data[8].cast<py::tuple>()),
-                conv_dec_3(data[9].cast<py::tuple>()),
-                norm_dec_3(data[10].cast<py::tuple>()),
+                conv_enc_1(data[1]),
+                norm_enc_1(data[2]),
+                conv_enc_2(data[3]),
+                norm_enc_2(data[4]),
+                conv_dec_1(data[5]),
+                norm_dec_1(data[6]),
+                conv_dec_2(data[7]),
+                norm_dec_2(data[8]),
+                conv_dec_3(data[9]),
+                norm_dec_3(data[10]),
                 pool(),
                 unpool()
             {
                 if(is_final)
                 {
-                    conv_enc_3 = std::make_unique<Convolution2D<T, 3, C>>(data[11].cast<py::tuple>());
-                    norm_enc_3 = std::make_unique<ReNorm2D<T,C>>(data[12].cast<py::tuple>());
-                    conv_enc_4 = std::make_unique<Convolution2D<T, 3, C>>(data[13].cast<py::tuple>());
-                    norm_enc_4 = std::make_unique<ReNorm2D<T,C>>(data[14].cast<py::tuple>());
+                    conv_enc_3 = std::make_unique<Convolution2D<T, 3, C>>(data[11]);
+                    norm_enc_3 = std::make_unique<ReNorm2D<T,C>>(data[12]);
+                    conv_enc_4 = std::make_unique<Convolution2D<T, 3, C>>(data[13]);
+                    norm_enc_4 = std::make_unique<ReNorm2D<T,C>>(data[14]);
                 }
             }
 #endif
@@ -329,6 +329,7 @@ namespace neuralnet {
              * @return (in channels, out channels, optimizer args..., kernels, biases)
              */
             py::tuple getstate() const { 
+                std::cout << "Pickling unet" << std::endl;
                 return py::make_tuple(
                     is_final,
                     conv_enc_1.getstate(),

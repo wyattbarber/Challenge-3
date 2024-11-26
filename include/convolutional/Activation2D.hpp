@@ -22,7 +22,7 @@ namespace neuralnet
 
 #ifndef NOPYTHON
         Layer2D(){}
-        Layer2D(py::tuple){}
+        Layer2D(const py::tuple&){}
 #endif
 
         template<typename X>      

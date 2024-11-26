@@ -21,11 +21,6 @@ namespace neuralnet
     class Model
     {
 
-// #ifndef NOPYTHON
-//         static_assert(std::is_constructible_v<ModelType, py::tuple>, 
-//             "Model types must be constructible from python tuple for pickle support.");
-// #endif
-
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
                 

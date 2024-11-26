@@ -25,7 +25,7 @@ namespace neuralnet {
             setup(in_size, latent_size); 
         }
 #ifndef NOPYTHON
-        AutoEncoder(py::tuple data)
+        AutoEncoder(const py::tuple& data)
         { 
             std::vector<T> w, bl, br;
             int in = data[0].cast<int>();
