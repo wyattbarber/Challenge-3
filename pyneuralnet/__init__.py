@@ -7,6 +7,7 @@ from . import convolution
 from . import fullconnect
 from . import autoencoder
 from . import compound
+from . import normalize
 
 __version__ = importlib.metadata.version("pyneuralnet")
 

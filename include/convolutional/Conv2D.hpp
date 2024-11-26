@@ -2,7 +2,6 @@
 #define _CONV2D_HPP
 
 #include "../Model.hpp"
-#include "../basic/Activation.hpp"
 #include "../optimizers/Optimizer.hpp"
 #include <algorithm>
 
