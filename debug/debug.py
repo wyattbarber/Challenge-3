@@ -80,7 +80,8 @@ class Data(nn.DataSource2D):
 
 data = Data()
 # model = Model()
-model = nn.MaxPoolEncoder2D()
+# model = nn.MaxPoolEncoder2D()
+model = nn.UNet(1, 0.6, 0.9, 0.999, True)
 
 import pickle
 
