@@ -62,10 +62,14 @@ namespace neuralnet {
             */
             UNet(int N, T alpha, bool final = false) :
                 is_final(final),
-                relu(),
+                relu_enc_1(),
+                relu_enc_2(),
+                relu_dec_1(),
+                relu_dec_2(),
+                relu_dec_3(),
                 conv_enc_1(N, 2*N),
                 norm_enc_1(2*N, alpha),
-                conv_enc_2(2*N, N),
+                conv_enc_2(2*N, 2*N),
                 norm_enc_2(N, alpha),
                 conv_dec_1(4*N, 2*N),
                 norm_dec_1(2*N, alpha),
@@ -79,17 +83,23 @@ namespace neuralnet {
                 if(is_final)
                 {
                     conv_enc_3 = std::make_unique<Convolution2D<T, 3, C>>(2*N, 4*N);
+                    relu_enc_3 = std::make_unique<Layer2D<T, ActivationFunc::ReLU>>();
                     norm_enc_3 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha);
                     conv_enc_4 = std::make_unique<Convolution2D<T, 3, C>>(4*N, 4*N);
+                    relu_enc_4 = std::make_unique<Layer2D<T, ActivationFunc::ReLU>>();
                     norm_enc_4 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha);
                 }
             }
             UNet(int N, T alpha, T b1, T b2,  bool final = false) :
                 is_final(final),
-                relu(),
+                relu_enc_1(),
+                relu_enc_2(),
+                relu_dec_1(),
+                relu_dec_2(),
+                relu_dec_3(),
                 conv_enc_1(N, 2*N, b1, b2),
                 norm_enc_1(2*N, alpha, b1, b2),
-                conv_enc_2(2*N, N, b1, b2),
+                conv_enc_2(2*N, 2*N, b1, b2),
                 norm_enc_2(N, alpha, b1, b2),
                 conv_dec_1(4*N, 2*N, b1, b2),
                 norm_dec_1(2*N, alpha, b1, b2),
@@ -103,8 +113,10 @@ namespace neuralnet {
                 if(is_final)
                 {
                     conv_enc_3 = std::make_unique<Convolution2D<T, 3, C>>(2*N, 4*N, b1, b2);
+                    relu_enc_3 = std::make_unique<Layer2D<T, ActivationFunc::ReLU>>();
                     norm_enc_3 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha, b1, b2);
                     conv_enc_4 = std::make_unique<Convolution2D<T, 3, C>>(4*N, 4*N, b1, b2);
+                    relu_enc_4 = std::make_unique<Layer2D<T, ActivationFunc::ReLU>>();
                     norm_enc_4 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha, b1, b2); 
                 }
             }
@@ -115,7 +127,11 @@ namespace neuralnet {
              */
             UNet(const py::tuple& data) :
                 is_final(data[0].cast<bool>()),
-                relu(),
+                relu_enc_1(),
+                relu_enc_2(),
+                relu_dec_1(),
+                relu_dec_2(),
+                relu_dec_3(),
                 conv_enc_1(data[1]),
                 norm_enc_1(data[2]),
                 conv_enc_2(data[3]),
@@ -132,8 +148,10 @@ namespace neuralnet {
                 if(is_final)
                 {
                     conv_enc_3 = std::make_unique<Convolution2D<T, 3, C>>(data[11]);
+                    relu_enc_3 = std::make_unique<Layer2D<T, ActivationFunc::ReLU>>();
                     norm_enc_3 = std::make_unique<ReNorm2D<T,C>>(data[12]);
                     conv_enc_4 = std::make_unique<Convolution2D<T, 3, C>>(data[13]);
+                    relu_enc_4 = std::make_unique<Layer2D<T, ActivationFunc::ReLU>>();
                     norm_enc_4 = std::make_unique<ReNorm2D<T,C>>(data[14]);
                 }
             }
@@ -147,10 +165,10 @@ namespace neuralnet {
             template<typename X>
             LatentType encode(X&& input)
             {
-                inter = relu.forward(
+                inter = relu_enc_2.forward(
                     norm_enc_2.forward(
                         conv_enc_2.forward(
-                            relu.forward(
+                            relu_enc_1.forward(
                                 norm_enc_1.forward(
                                     conv_enc_1.forward(
                                         std::forward<X>(input)
@@ -162,12 +180,12 @@ namespace neuralnet {
                 );
                 
                 return is_final ? 
-                    relu.forward(
+                    relu_enc_4->forward(
                         norm_enc_4->forward(
                             conv_enc_4->forward(
-                                relu.forward(
-                                    norm_enc_4->forward(
-                                        conv_enc_4->forward(
+                                relu_enc_3->forward(
+                                    norm_enc_3->forward(
+                                        conv_enc_3->forward(
                                             pool.forward( 
                                                 inter
                                             )
@@ -187,7 +205,7 @@ namespace neuralnet {
             {
                 // Upsample
                 auto tmp = unpool.forward(
-                    relu.forward(
+                    relu_dec_1.forward(
                         norm_dec_1.forward(
                             conv_dec_1.forward(
                                 std::forward<X>(embed)
@@ -196,10 +214,10 @@ namespace neuralnet {
                     )
                 );
                 // Concatenate and continue
-                return relu.forward(
+                return relu_dec_3.forward(
                     norm_dec_3.forward(
                         conv_dec_3.forward(
-                            relu.forward(
+                            relu_dec_2.forward(
                                 norm_dec_2.forward(
                                     conv_dec_2.forward(
                                         static_cast<Eigen::Tensor<T,3>>(tmp.concatenate(inter,2))
@@ -218,10 +236,10 @@ namespace neuralnet {
                 auto tmp = pool.backward( is_final ? 
                     conv_enc_3->backward(
                         norm_enc_3->backward(
-                            relu.backward(
+                            relu_enc_3->backward(
                                 conv_enc_4->backward(
                                     norm_enc_4->backward(
-                                        relu.backward(
+                                        relu_enc_4->backward(
                                             std::forward<X>(error)
                                         )
                                     )
@@ -235,10 +253,10 @@ namespace neuralnet {
                 // complete backpropagation with combined gradient
                 return conv_enc_1.backward(
                     norm_enc_1.backward(
-                        relu.backward(
+                        relu_enc_1.backward(
                             conv_enc_2.backward(
                                 norm_enc_2.backward(
-                                    relu.backward(
+                                    relu_enc_2.backward(
                                         static_cast<Eigen::Tensor<T,3>>(tmp + inter)
                                     )
                                 )
@@ -254,10 +272,10 @@ namespace neuralnet {
                 // Backpropagate upsampled data
                 auto tmp = conv_dec_2.backward(
                     norm_dec_2.backward(
-                        relu.backward(
+                        relu_dec_2.backward(
                             conv_dec_3.backward(
                                 norm_dec_3.backward(
-                                    relu.backward(
+                                    relu_dec_3.backward(
                                         std::forward<X>(error)
                                     )
                                 )
@@ -275,7 +293,7 @@ namespace neuralnet {
                 // Complete backpropagation over upsampler
                 return conv_dec_1.backward(
                     norm_dec_1.backward(
-                        relu.backward(
+                        relu_dec_1.backward(
                             unpool.backward(
                                 static_cast<Eigen::Tensor<T,3>>(tmp.slice(slice_tmp_start, slice_size))
                             )
@@ -352,7 +370,9 @@ namespace neuralnet {
 
         protected:
             const bool is_final; 
-            Layer2D<T, ActivationFunc::ReLU> relu; // 2D ReLU has no state, so one instance can be shared
+
+            Layer2D<T, ActivationFunc::ReLU> relu_enc_1, relu_enc_2, relu_dec_1, relu_dec_2, relu_dec_3;
+
             Convolution2D<T, 3, C> conv_enc_1, conv_enc_2;
             ReNorm2D<T,C> norm_enc_1, norm_enc_2, norm_dec_1, norm_dec_2, norm_dec_3;
             Convolution2D<T, 3, C> conv_dec_1;
@@ -361,6 +381,7 @@ namespace neuralnet {
             // Extra layers for final model
             std::unique_ptr<Convolution2D<T, 3, C>> conv_enc_3, conv_enc_4;
             std::unique_ptr<ReNorm2D<T,C>> norm_enc_3, norm_enc_4;
+            std::unique_ptr<Layer2D<T, ActivationFunc::ReLU>> relu_enc_3, relu_enc_4;
 
             Pool2D<T,2,PoolMode::Max> pool;
             UnPool2D<T,2,PoolMode::Mean> unpool;

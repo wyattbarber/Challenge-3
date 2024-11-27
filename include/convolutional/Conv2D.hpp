@@ -141,6 +141,10 @@ namespace neuralnet {
         };
         padded = input.pad(paddings);
 
+        std::cout << "Forward conv with " << in_channels << " -> " << out_channels << " channels" << std::endl;
+        std::cout << "Forward conv padded image size " <<
+            padded.dimension(0) << ',' << padded.dimension(1) << ',' << padded.dimension(2) << std::endl;
+        
         for(int k = 0; k < out_channels; ++k)
         {
             out.chip(k,2) = padded.convolve(kernels.chip(k,3), dims).sum(dimsum) + bias(k);
@@ -154,6 +158,12 @@ namespace neuralnet {
     template<typename X>
     Convolution2D<T,K,C>::InputType Convolution2D<T,K,C>::backward(X&& error)
     {   
+        std::cout << "Conv input error size " <<
+            error.dimension(0) << ',' << error.dimension(1) << ',' << error.dimension(2) << std::endl;
+        std::cout << "Conv padded image size " <<
+            padded.dimension(0) << ',' << padded.dimension(1) << ',' << padded.dimension(2) << std::endl;
+        std::cout << "Conv kernel size " <<
+            kernels.dimension(0) << ',' << kernels.dimension(1) << ',' << kernels.dimension(2) << ',' << kernels.dimension(3) << std::endl;
         const int x = error.dimension(1);
         const int y = error.dimension(0);
 
@@ -185,6 +195,8 @@ namespace neuralnet {
             }
         }
 
+        std::cout << "Conv backpropagated error size " <<
+            grad_out.dimension(0) << ',' << grad_out.dimension(1) << ',' << grad_out.dimension(2) << std::endl;
         return grad_out;
     }
 

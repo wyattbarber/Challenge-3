@@ -8,50 +8,39 @@ from typing import List, Any
 np.random.seed(123)
 
 
-class Model(nn.Model2D):
+class ModelUNet(nn.Model2D):
+    _unet : nn.UNet
+    _conv: nn.Conv2D
+    _bin : nn.Sigmoid2D
+
     def __init__(self):
         super().__init__()
-        self._pool = nn.MaxPoolEncoder2D()
-        self._layer1 = nn.Conv2D(1,3, 0.9,0.999)
-        # self._layer2 = nn.convolution.MaxPool2D()
-        self._layer3 = nn.Conv2D(3,3, 0.9,0.999)
-        # self._layer4 = nn.convolution.MaxUnPool2D(self._layer2)
-        self._layer5 = nn.Conv2D(3,1, 0.9,0.999)
-        self._layer6 = nn.Sigmoid2D()
-    
+        self._unet = nn.UNet(1, 0.6, 0.9, 0.999, True)
+        self._conv = nn.Conv2D(2, 1, 0.9, 0.999)
+        self._bin =  nn.Sigmoid2D()
+        
     def forward(self, input):
-        x = self._layer3.forward(
-                self._pool.encode(
-                    self._layer1.forward(input)
-                )
-            )
-        return  self._layer6.forward(
-                    self._layer5.forward(
-                        self._pool.decode(
-                            x
-                        )
+        return  self._bin.forward(
+                    self._conv.forward(
+                            self._unet.forward(
+                                input
+                            )
                     )
                 )
     
     def backward(self, error):
-        x = self._layer3.backward(
-                            self._pool.backward_decode(
-                                self._layer5.backward(
-                                    self._layer6.backward(error)
-                                )
+        return  self._unet.backward(
+                    self._conv.backward(
+                            self._bin.backward(
+                                error
                             )
-                        )
-        return  self._layer1.backward(
-                    self._pool.backward_encode(
-                        x
                     )
                 )
     
     def update(self, rate):
-        self._layer1.update(rate)
-        self._layer3.update(rate)
-        self._layer5.update(rate)
-        self._layer6.update(rate)
+        self._unet.update(rate)
+        self._conv.update(rate)
+        self._bin.update(rate)
 
     def __getstate__(self):
         return self.__dict__
@@ -81,21 +70,25 @@ class Data(nn.DataSource2D):
 data = Data()
 # model = Model()
 # model = nn.MaxPoolEncoder2D()
-model = nn.UNet(1, 0.6, 0.9, 0.999, True)
+# model = nn.UNet(1, 0.6, 0.9, 0.999, True)
 # model = nn.BatchRenorm2D(1, 0.8, 0.9, 0.999)
+model = ModelUNet()
 
 import pickle
 import time
 
 print("Running forward pass")
-out1 = model.forward(data.sample(0)[0])
-print(f"{np.min(out1)} - {np.mean(out1)} - {np.max(out1)}")
-print(f"Pickling with format {pickle.format_version}...")
+out = model.forward(data.sample(0)[0])
+print("Calculating error")
+error = out - data.sample(0)[1]
+print("Backpropagating")
+model.backward(error)
+print("Updating")
+model.update(0.0001)
+
 bts = pickle.dumps(model)
-print("Unpickling...")
 sour_model = pickle.loads(bts)
-time.sleep(2.0)
-print("Pickled Model...")
-out2 = sour_model.forward(data.sample(0)[0])
-diff = abs(out1 - out2)
-print(f"{np.min(diff)} - {np.mean(diff)} - {np.max(diff)}")
+
+out = sour_model.forward(data.sample(0)[0])
+error = out - data.sample(0)[1]
+sour_model.backward(error)

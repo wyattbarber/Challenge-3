@@ -156,7 +156,7 @@ namespace neuralnet
         // Intermediates stored between forward and backward pass for gradient calculation
         static const inline T epsilon {1e-9};
         Eigen::Tensor<T,2> batch_dev, r;
-        Eigen::Tensor<T,3> y, diff_sqr;
+        Eigen::Tensor<T,3> xhat, diff;
         // Optimizer data
         adam::AdamData<Eigen::Tensor<T,2>> adam_lambda, adam_beta;
 
@@ -201,39 +201,37 @@ namespace neuralnet
     template<typename X>      
     ReNorm2D<T,C>::OutputType ReNorm2D<T,C>::forward(X&& input)
     {
-        std::cout << "Renorm forward" << std::endl;
-        auto M = input.dimension(0) * input.dimension(1);
-        y = Eigen::Tensor<T,3>(input.dimensions());
-        diff_sqr = Eigen::Tensor<T,3>(input.dimensions());
+        auto M = static_cast<T>(input.dimension(0) * input.dimension(1));
+        auto y = Eigen::Tensor<T,3>(input.dimensions());
+        xhat = Eigen::Tensor<T,3>(input.dimensions());
+        diff = Eigen::Tensor<T,3>(input.dimensions());
         Eigen::Tensor<T,0> res;
         Eigen::Tensor<T,2> batch_mean(N,1);
 
         for(int i = 0; i < N; ++i)
         {
             // Calculate stats
-            std::cout << "Calculating mean" << std::endl;
             res = input.chip(i,2).mean();
             batch_mean(i,0) = res(0);
-            std::cout << "Calculating deviation" << std::endl;
-            diff_sqr.chip(i,2) = (input.chip(i,2) - batch_mean(i,0)).square();
-            res = diff_sqr.chip(i,2).sum();
+            diff.chip(i,2) = (input.chip(i,2) - batch_mean(i,0));
+            res = diff.chip(i,2).square().sum();
             batch_dev(i,0) = std::sqrt((res(0) / M) + epsilon);
 
             // Renormalize input
-            std::cout << "Normalizing input" << std::endl;
             r(i,0) = batch_dev(i,0) / (dev(i,0) + epsilon);
             auto d = (batch_mean(i,0) - mean(i,0)) / (dev(i,0) + epsilon);
-            auto xhat = (((input.chip(i,2) - batch_mean(i,0)) / batch_dev(i,0)) * r(i,0)) + d;
+            xhat.chip(i,2) = (((input.chip(i,2) - batch_mean(i,0)) / batch_dev(i,0)) * r(i,0)) + d;
 
             // Transform to create output
-            std::cout << "Transforming output" << std::endl;
-            y.chip(i,2) = (lambda(i,0) * xhat) + beta(i,0);
+            y.chip(i,2) = (lambda(i,0) * xhat.chip(i,2)) + beta(i,0);
         }
 
         // Update moving averages
-        std::cout << "Calculating averages" << std::endl;
         mean += avg_rate * (batch_mean - mean);
         dev += avg_rate * (batch_dev - dev);
+        
+        std::cout << "Renorm forward image size " <<
+            y.dimension(0) << ',' << y.dimension(1) << ',' << y.dimension(2) << std::endl;
 
         return y;
     }
@@ -243,24 +241,32 @@ namespace neuralnet
     template<typename X>
     ReNorm2D<T,C>::InputType ReNorm2D<T,C>::backward(X&& error)
     {
-        auto M = error.dimension(0) * error.dimension(1);
+        auto M = static_cast<T>(error.dimension(0) * error.dimension(1));
 
-        Eigen::Tensor<T,3> out;
-     
+        Eigen::Tensor<T,3> out(error.dimensions());
+        Eigen::Tensor<T,2> batch_dev_sqr = batch_dev.square();
         Eigen::Tensor<T,0> res;
+
         for(int i = 0; i < N; ++i)
         {
             // Calculate parameter gradients
-            res = (y.chip(i,2) * error.chip(i,2)).sum();
+            res = (xhat.chip(i,2) * error.chip(i,2)).sum();
             grad_lambda(i,0) = res(0);
             res = error.chip(i,2).sum();
             grad_beta(i,0) = res(0);
             // Backpropagate error
-            auto a = diff_sqr.chip(i,2) * T(2) / batch_dev(i,0);
-            auto b = a + (batch_dev(i,0) / M);
-            out.chip(i,2) = b * -(r(i,0) / std::pow(batch_dev(i,0), T(2)));
+            auto dl_dxh = error.chip(i,2) * lambda(i,0);
+            auto dl_ds_1 = (diff.chip(i,2) * dl_dxh).sum();
+            Eigen::Tensor<T,0> dl_ds = -(r(i,0) / batch_dev_sqr(i,0)) * dl_ds_1;
+            auto dl_dm = -(r(i,0) / batch_dev(i,0)) * dl_dxh.sum();
+            Eigen::Tensor<T,2> a = dl_dxh * r(i,0) / batch_dev(i,0);
+            T _b = dl_ds(0) / (M * batch_dev(i,0));
+            Eigen::Tensor<T,2> b = _b * diff.chip(i,2);
+            Eigen::Tensor<T,0> c = dl_dm / M;
+            out.chip(i,2) = (a + b) + c(0);
         }
-
+        std::cout << "Renorm backpropagated error size " <<
+            out.dimension(0) << ',' << out.dimension(1) << ',' << out.dimension(2) << std::endl;
         return out;
     }
 
