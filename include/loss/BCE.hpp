@@ -13,9 +13,6 @@ namespace loss
     template<typename T>
     class BCE : public Loss<T>
     {
-        protected:
-            static constexpr double epsilon = 1e-9;
-
         public:
         /** Evaluates the binary cross entropy loss gradient
          * 
@@ -49,7 +46,9 @@ namespace loss
         template<typename X>
         static auto eps(X& x)
         { 
-            return x.unaryExpr([](T x){ return x + ((x < T(0)) ? -T(epsilon) : T(epsilon)); } );
+            return x.unaryExpr([](T x){ 
+                return x + ((x < T(0)) ? -Eigen::NumTraits<T>::epsilon() : Eigen::NumTraits<T>::epsilon()); 
+                } );
         }
 
     };

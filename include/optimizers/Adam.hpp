@@ -28,7 +28,7 @@ namespace optimization
             Scalar b2;
             Scalar b1powt;
             Scalar b2powt;
-            Scalar epsilon = {1e-9};
+            Scalar epsilon = Eigen::NumTraits<Scalar>::epsilon();
             MatType m;
             MatType v;
         };
@@ -99,12 +99,12 @@ namespace optimization
             S decay2 = 1.0 - data.b2powt;
 
             // Update weight moments
-            data.m = (data.b1 * data.m) + ((1.0 - data.b1) * gradient);
-            data.v = (data.b2 * data.v) + ((1.0 - data.b2) * gradient.cwiseProduct(gradient));
+            data.m = (data.b1 * data.m) + ((S(1) - data.b1) * gradient);
+            data.v = (data.b2 * data.v) + ((S(1) - data.b2) * gradient.cwiseProduct(gradient));
             auto mhat = data.m / decay1;
             auto vhat = (data.v / decay2).cwiseSqrt();
-            params -= rate * mhat.cwiseQuotient(vhat.unaryExpr([epsilon = data.epsilon](double x)
-                                                               { return x + epsilon; }));
+            params -= rate * mhat.cwiseQuotient(vhat.unaryExpr([](S x)
+                                                               { return x + Eigen::NumTraits<S>::epsilon(); }));
             // Increment exponential decays
             data.b1powt *= data.b1;
             data.b2powt *= data.b2;
@@ -119,11 +119,11 @@ namespace optimization
             S decay2 = 1.0 - data.b2powt;
 
             // Update weight moments
-            data.m = (data.b1 * data.m) + ((1.0 - data.b1) * gradient);
-            data.v = (data.b2 * data.v) + ((1.0 - data.b2) * gradient.square());
+            data.m = (data.b1 * data.m) + ((S(1) - data.b1) * gradient);
+            data.v = (data.b2 * data.v) + ((S(1) - data.b2) * gradient.square());
             auto mhat = data.m / decay1;
             auto vhat = (data.v / decay2).sqrt();
-            params -= rate * mhat / (vhat + data.epsilon);
+            params -= rate * mhat / (vhat + Eigen::NumTraits<S>::epsilon());
             // Increment exponential decays
             data.b1powt *= data.b1;
             data.b2powt *= data.b2;

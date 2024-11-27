@@ -29,7 +29,7 @@ namespace neuralnet {
         {
             Eigen::Tensor<T, 1> flat = input.reshape(Eigen::array<Eigen::Index, 1>{input.size()});
             dims = input.dimensions();
-            return Eigen::Map<Eigen::VectorXd>(flat.data(), flat.size());
+            return Eigen::Map<Eigen::Vector<T,Eigen::Dynamic>>(flat.data(), flat.size());
         }
 
         template<typename X>

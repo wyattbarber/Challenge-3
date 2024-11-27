@@ -187,7 +187,7 @@ Eigen::Tensor<T, 3> neuralnet::Activation2D<T, neuralnet::ActivationFunc::SoftMa
     {
         for(int x = 0; y < input.dimension(1); ++x)
         {
-            auto e = out.chip(y,0).chip(x,1).exp().cwiseMin(1e300); // Prevent exploding values
+            auto e = out.chip(y,0).chip(x,1).exp().cwiseMin(Eigen::NumTraits<T>::highest()); // Prevent values exploding to inf
             Eigen::Tensor<T,0> sum = e.sum();
             T div = abs(sum(0)) < epsilon ? (epsilon * (std::signbit(sum(0)) ? T(-1) : T(1))) : sum(0);
             out.chip(y,0).chip(x,0) = e / div;

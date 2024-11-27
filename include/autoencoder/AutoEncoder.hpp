@@ -86,12 +86,12 @@ namespace neuralnet {
     protected:
         size_t in_size, latent_size;
 
-        Eigen::MatrixXd W;
-        Eigen::VectorXd blt, brc;
-        Eigen::VectorXd in, latent;
-        Eigen::VectorXd zlt, zrc;
-        Eigen::VectorXd alt, arc;
-        Eigen::VectorXd drc, dlt;
+        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> W;
+        Eigen::Vector<T, Eigen::Dynamic> blt, brc;
+        Eigen::Vector<T, Eigen::Dynamic> in, latent;
+        Eigen::Vector<T, Eigen::Dynamic> zlt, zrc;
+        Eigen::Vector<T, Eigen::Dynamic> alt, arc;
+        Eigen::Vector<T, Eigen::Dynamic> drc, dlt;
 
         // Adam optimization data
         adam::AdamData<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> adam_w;
@@ -107,8 +107,8 @@ namespace neuralnet {
             this->latent_size = std::get<1>(args);
 
             // Apply he initialization
-            this->W = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, latent_size).unaryExpr([in_size = in_size](double x)
-                                                                                        { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
+            this->W = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, latent_size).unaryExpr([in_size = in_size](T x)
+                                                                                        { return x * std::sqrt(T(2) / static_cast<T>(in_size)); });
 
             this->blt = LatentType::Zero(latent_size);
             this->alt = LatentType::Zero(latent_size);

@@ -70,7 +70,7 @@ namespace neuralnet {
                 conv_enc_1(N, 2*N),
                 norm_enc_1(2*N, alpha),
                 conv_enc_2(2*N, 2*N),
-                norm_enc_2(N, alpha),
+                norm_enc_2(2*N, alpha),
                 conv_dec_1(4*N, 2*N),
                 norm_dec_1(2*N, alpha),
                 conv_dec_2(4*N, 2*N),
@@ -100,7 +100,7 @@ namespace neuralnet {
                 conv_enc_1(N, 2*N, b1, b2),
                 norm_enc_1(2*N, alpha, b1, b2),
                 conv_enc_2(2*N, 2*N, b1, b2),
-                norm_enc_2(N, alpha, b1, b2),
+                norm_enc_2(2*N, alpha, b1, b2),
                 conv_dec_1(4*N, 2*N, b1, b2),
                 norm_dec_1(2*N, alpha, b1, b2),
                 conv_dec_2(4*N, 2*N, b1, b2),
@@ -233,17 +233,18 @@ namespace neuralnet {
             InputType backward_encode(X&& error)
             {
                 // backpropagate downsampling
-                auto tmp = pool.backward( is_final ? 
+                auto tmp = pool.backward( 
+                    is_final ? 
                     conv_enc_3->backward(
                         norm_enc_3->backward(
                             relu_enc_3->backward(
-                                conv_enc_4->backward(
-                                    norm_enc_4->backward(
-                                        relu_enc_4->backward(
+                                // conv_enc_4->backward(
+                                //     norm_enc_4->backward(
+                                //         relu_enc_4->backward(
                                             std::forward<X>(error)
-                                        )
-                                    )
-                                )
+                                //         )
+                                //     )
+                                // )
                             )
                         )
                     )

@@ -19,7 +19,7 @@ namespace training
     /** Handles training of a model on a dataset
      *
      */
-    template<class ModelType>
+    template<class ModelType, typename ScalarType = float>
     class Trainer
     {
     public:
@@ -33,7 +33,7 @@ namespace training
          * @param inputs Input dataset for training
          * @param outputs Output dataset for training
          */
-        Trainer(ModelType& model, DataSource<InputType, OutputType>& data, Loss<double>& loss) : 
+        Trainer(ModelType& model, DataSource<InputType, OutputType>& data, Loss<ScalarType>& loss) : 
             model(model),
             data(data),
             loss(loss)
@@ -46,25 +46,25 @@ namespace training
          * @param rate Learning rate
          * @return Averaged loss for each epoch
         */
-        std::vector<double> train(unsigned N, double rate);
+        std::vector<ScalarType> train(unsigned N, ScalarType rate);
 
     protected:
         ModelType& model;
         DataSource<InputType, OutputType>& data;
-        Loss<double>& loss;
+        Loss<ScalarType>& loss;
     };  
 }
 
 
-template<class ModelType>
-std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
+template<class ModelType, typename ScalarType>
+std::vector<ScalarType> training::Trainer<ModelType,ScalarType>::train(unsigned N, ScalarType rate)
 {
 
-    std::vector<double> avg_err;
+    std::vector<ScalarType> avg_err;
     
     for (int iter = 0; iter < N; ++iter)
     {
-        double e = 0.0;
+        ScalarType e = 0.0;
         for (int i = 0; i < data.size(); ++i)
         {
             // Test forward pass and calculate error for this input set
@@ -72,7 +72,7 @@ std::vector<double> training::Trainer<ModelType>::train(unsigned N, double rate)
             OutputType out = model.forward(sample.first);
 
             // Run backward pass
-            double ei;
+            ScalarType ei;
             OutputType eg = loss.grad(out, sample.second, ei);
             e += ei;
             model.backward(eg);

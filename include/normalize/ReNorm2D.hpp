@@ -153,7 +153,6 @@ namespace neuralnet
         // gradients
         Eigen::Tensor<T,2> grad_lambda, grad_beta;
         // Intermediates stored between forward and backward pass for gradient calculation
-        static const inline T epsilon {1e-9};
         Eigen::Tensor<T,2> batch_dev, r;
         Eigen::Tensor<T,3> xhat, diff;
         // Optimizer data
@@ -167,8 +166,8 @@ namespace neuralnet
             avg_rate = std::get<1>(args);
            
             mean.setZero();
-            dev.setZero();
-            lambda.setRandom();
+            dev.setConstant(T(1));
+            lambda.setConstant(T(1));
             beta.setZero();
 
             if constexpr (C == OptimizerClass::Adam)
@@ -214,12 +213,15 @@ namespace neuralnet
             batch_mean(i,0) = res(0);
             diff.chip(i,2) = (input.chip(i,2) - batch_mean(i,0));
             res = diff.chip(i,2).square().sum();
-            batch_dev(i,0) = std::sqrt((res(0) / M) + epsilon);
+            batch_dev(i,0) = std::sqrt((res(0) / M)  + Eigen::NumTraits<T>::epsilon());
 
             // Renormalize input
-            r(i,0) = batch_dev(i,0) / (dev(i,0) + epsilon);
-            auto d = (batch_mean(i,0) - mean(i,0)) / (dev(i,0) + epsilon);
-            xhat.chip(i,2) = (((input.chip(i,2) - batch_mean(i,0)) / batch_dev(i,0)) * r(i,0)) + d;
+            // r(i,0) = batch_dev(i,0) / (dev(i,0) + Eigen::NumTraits<T>::epsilon());
+            r(i,0) = T(1);
+            // auto d = (batch_mean(i,0) - mean(i,0)) / (dev(i,0) + Eigen::NumTraits<T>::epsilon());
+            auto d = T(0);
+            xhat.chip(i,2) = (((diff.chip(i,2) / batch_dev(i,0)) * r(i,0)) + d)
+                .cwiseMin(Eigen::NumTraits<T>::highest()).cwiseMax(Eigen::NumTraits<T>::lowest());
 
             // Transform to create output
             y.chip(i,2) = (lambda(i,0) * xhat.chip(i,2)) + beta(i,0);

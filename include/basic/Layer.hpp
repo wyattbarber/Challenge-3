@@ -103,8 +103,8 @@ namespace neuralnet
             int out_size = std::get<1>(args);
 
             // Apply he initialization
-            this->weights = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, out_size).unaryExpr([in_size](double x)
-                                                                                        { return x * std::sqrt(2.0 / static_cast<double>(in_size)); });
+            this->weights = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, out_size).unaryExpr([in_size](T x)
+                                                                                        { return x * std::sqrt(T(2) / static_cast<T>(in_size)); });
 
             this->biases = OutputType::Zero(out_size);
             this->z = OutputType::Zero(out_size);

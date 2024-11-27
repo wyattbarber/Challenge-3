@@ -183,7 +183,7 @@ Eigen::Vector<T, N> neuralnet::Activation<N, T, neuralnet::ActivationFunc::SoftM
     Eigen::Vector<T, N> out = Eigen::Vector<T, N>(input.size());
     for (int i = 0; i < input.size(); ++i)
     {
-        out(i) = std::min(std::exp(input(i)), 1e300); // Prevent exploding values
+        out(i) = std::min(std::exp(input(i)), Eigen::NumTraits<T>::highest()); // Prevent exploding values
     }
     double sum = out.array().sum();
     out /= abs(sum) < epsilon ? (epsilon * (std::signbit(sum) ? -T(1) : T(1))) : sum;
