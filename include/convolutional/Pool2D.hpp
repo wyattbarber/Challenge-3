@@ -24,14 +24,12 @@ namespace neuralnet {
         Pool2D(){ share_indices = false; }
         Pool2D(Eigen::Tensor<int, 3>& x_indices, Eigen::Tensor<int, 3>& y_indices)
         {   
-            std::cout << "Pooler created with indices at " <<
-                &x_indices << ", " << &y_indices << std::endl;
             share_indices = true;
             this->x_indices_shared = &x_indices;
             this->y_indices_shared = &y_indices;
         }
 #ifndef NOPYTHON
-        Pool2D(const py::tuple&){ std::cout << "Pool unpickled at " << this << std::endl; }
+        Pool2D(const py::tuple&){}
 #endif
 
         template<typename X>

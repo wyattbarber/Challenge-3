@@ -37,7 +37,9 @@ using namespace datasource;
 using namespace loss;
 using namespace Eigen;
 
-using PkgScalar = double; // Scalar datatype used by all python models
+// Scalar datatype and optimizer function used by all installed python models
+using PkgScalar = float; 
+constexpr OptimizerClass PkgOptimizer = OptimizerClass::None;
 
 template<class T, typename... Ts>
 auto make_model(py::module m, const char* name)
@@ -145,24 +147,24 @@ PYBIND11_MODULE(neuralnet, m)
         std::shared_ptr<DynamicEncoder<Tensor<PkgScalar,3>, Tensor<PkgScalar,3>>>, DynamicEncoderTrampoline<Tensor<PkgScalar,3>, Tensor<PkgScalar,3>>>(m, "Encoder2D")
         .def(py::init<>());
 
-    make_model<Layer<PkgScalar, ActivationFunc::Linear, OptimizerClass::Adam>, size_t, size_t, PkgScalar, PkgScalar>(m, "Linear");
-    make_model<Layer<PkgScalar, ActivationFunc::ReLU, OptimizerClass::Adam>, size_t, size_t, PkgScalar, PkgScalar>(m, "ReLU");
-    make_model<Layer<PkgScalar, ActivationFunc::Sigmoid, OptimizerClass::Adam>, size_t, size_t, PkgScalar, PkgScalar>(m, "Sigmoid");
-    make_model<Layer<PkgScalar, ActivationFunc::TanH, OptimizerClass::Adam>, size_t, size_t, PkgScalar, PkgScalar>(m, "TanH");
-    make_model<Layer<PkgScalar, ActivationFunc::SoftMax, OptimizerClass::Adam>, size_t, size_t, PkgScalar, PkgScalar>(m, "SoftMax");
+    make_model<Layer<PkgScalar, ActivationFunc::Linear, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "Linear");
+    make_model<Layer<PkgScalar, ActivationFunc::ReLU, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "ReLU");
+    make_model<Layer<PkgScalar, ActivationFunc::Sigmoid, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "Sigmoid");
+    make_model<Layer<PkgScalar, ActivationFunc::TanH, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "TanH");
+    make_model<Layer<PkgScalar, ActivationFunc::SoftMax, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "SoftMax");
 
-    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::Linear, OptimizerClass::Adam>, size_t, size_t, PkgScalar, PkgScalar>(m, "LinearAutoEncoder");
-    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::ReLU, OptimizerClass::Adam>, size_t, size_t, PkgScalar, PkgScalar>(m, "ReLUAutoEncoder");
-    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::Sigmoid, OptimizerClass::Adam>, size_t, size_t, PkgScalar, PkgScalar>(m, "SigmoidAutoEncoder");
-    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::TanH, OptimizerClass::Adam>, size_t, size_t, PkgScalar, PkgScalar>(m, "TanHAutoEncoder");
-    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::SoftMax, OptimizerClass::Adam>, size_t, size_t, PkgScalar, PkgScalar>(m, "SoftMaxAutoEncoder");
+    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::Linear, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "LinearAutoEncoder");
+    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::ReLU, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "ReLUAutoEncoder");
+    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::Sigmoid, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "SigmoidAutoEncoder");
+    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::TanH, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "TanHAutoEncoder");
+    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::SoftMax, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "SoftMaxAutoEncoder");
 
-    make_model<Convolution2D<PkgScalar, 5, OptimizerClass::Adam>, Index, Index, PkgScalar, PkgScalar>(m, "Conv2D");
+    make_model<Convolution2D<PkgScalar, 5, PkgOptimizer>, Index, Index, PkgScalar, PkgScalar>(m, "Conv2D");
     make_model<Layer2D<PkgScalar, ActivationFunc::ReLU>>(m, "ReLU2D");
     make_model<Layer2D<PkgScalar, ActivationFunc::Sigmoid>>(m, "Sigmoid2D");
     make_model<Layer2D<PkgScalar, ActivationFunc::TanH>>(m, "TanH2D");
     make_model<Layer2D<PkgScalar, ActivationFunc::SoftMax>>(m, "SoftMax2D");
-    make_model<ReNorm2D<PkgScalar, OptimizerClass::Adam>, int, PkgScalar, PkgScalar, PkgScalar>(m, "BatchRenorm2D");
+    make_model<ReNorm2D<PkgScalar, PkgOptimizer>, int, PkgScalar, PkgScalar, PkgScalar>(m, "BatchRenorm2D");
     make_model<Pool2D<PkgScalar, 2, PoolMode::Max>>(m, "MaxPool2D");
     make_model<Pool2D<PkgScalar, 2, PoolMode::Min>>(m, "MinPool2D");
     make_model<Pool2D<PkgScalar, 2, PoolMode::Mean>>(m, "MeanPool2D");
@@ -170,7 +172,7 @@ PYBIND11_MODULE(neuralnet, m)
     make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Mean>>(m, "MeanPoolEncoder2D");
     make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Max>>(m, "MaxPoolEncoder2D");
     make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Min>>(m, "MinPoolEncoder2D");
-    make_encoder<UNet<PkgScalar, OptimizerClass::Adam>, Index, PkgScalar, PkgScalar, PkgScalar>(m, "UNet")
+    make_encoder<UNet<PkgScalar, PkgOptimizer>, Index, PkgScalar, PkgScalar, PkgScalar>(m, "UNet")
         .def(py::init<Index, PkgScalar, PkgScalar, PkgScalar, bool>());
     py::class_<Reshape1D<PkgScalar>>(m, "Reshape1D")
         .def(py::init<>())

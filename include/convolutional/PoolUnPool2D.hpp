@@ -19,16 +19,12 @@ namespace neuralnet {
 
         PoolUnPool2D()
         {
-            std::cout << "Pooling encoder created with indices at " <<
-                &x_indices << ", " << &y_indices << std::endl;
             pool = Pool2D<T,K,M>(this->x_indices, this->y_indices);
             unpool = UnPool2D<T,K,M>(this->x_indices, this->y_indices);
         }
 #ifndef NOPYTHON
         PoolUnPool2D(const py::tuple&)
         {
-            std::cout << "Pooling encoder unpickled with indices at " <<
-                &x_indices << ", " << &y_indices << std::endl;
             pool = Pool2D<T,K,M>(this->x_indices, this->y_indices);
             unpool = UnPool2D<T,K,M>(this->x_indices, this->y_indices);
         }

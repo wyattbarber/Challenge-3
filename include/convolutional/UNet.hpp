@@ -347,7 +347,6 @@ namespace neuralnet {
              * @return (in channels, out channels, optimizer args..., kernels, biases)
              */
             py::tuple getstate() const { 
-                std::cout << "Pickling unet" << std::endl;
                 return py::make_tuple(
                     is_final,
                     conv_enc_1.getstate(),

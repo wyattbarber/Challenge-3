@@ -116,7 +116,6 @@ namespace neuralnet
          */
         py::tuple getstate() const 
         { 
-            std::cout << "Pickling renorm" << std::endl;
             if constexpr (C == OptimizerClass::Adam)
             {
                 return py::make_tuple(N, avg_rate,
@@ -230,9 +229,6 @@ namespace neuralnet
         mean += avg_rate * (batch_mean - mean);
         dev += avg_rate * (batch_dev - dev);
         
-        std::cout << "Renorm forward image size " <<
-            y.dimension(0) << ',' << y.dimension(1) << ',' << y.dimension(2) << std::endl;
-
         return y;
     }
     
@@ -265,8 +261,6 @@ namespace neuralnet
             Eigen::Tensor<T,0> c = dl_dm / M;
             out.chip(i,2) = (a + b) + c(0);
         }
-        std::cout << "Renorm backpropagated error size " <<
-            out.dimension(0) << ',' << out.dimension(1) << ',' << out.dimension(2) << std::endl;
         return out;
     }
 

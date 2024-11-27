@@ -19,9 +19,6 @@ namespace neuralnet {
         UnPool2D() {}
         UnPool2D(Eigen::Tensor<int, 3>& x_indices, Eigen::Tensor<int, 3>& y_indices)
         {
-            std::cout << "Unpooler created with indices at " <<
-                &x_indices << ", " << &y_indices << std::endl;
-
             this->x_indices = &x_indices;
             this->y_indices = &y_indices;
         }
