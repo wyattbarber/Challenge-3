@@ -192,15 +192,17 @@ namespace neuralnet {
     template<typename T, int K, OptimizerClass C>
     void Convolution2D<T,K,C>::update(double rate)
     {
+        auto gk = grad_kernels.cwiseMax(T(-1)).cwiseMin(T(1));
+        auto gb = grad_bias.cwiseMax(T(-1)).cwiseMin(T(1));
         if constexpr (C == OptimizerClass::Adam)
         {
-            adam::adam_update_params(rate, adam_kernels, kernels, grad_kernels);
-            adam::adam_update_params(rate, adam_bias, bias, grad_bias);
+            adam::adam_update_params(rate, adam_kernels, kernels, gk);
+            adam::adam_update_params(rate, adam_bias, bias, gb);
         }
         else
         {
-            kernels -= rate * grad_kernels;
-            bias -= rate * grad_bias;
+            kernels -= rate * gk;
+            bias -= rate * gb;
         }
     }
 

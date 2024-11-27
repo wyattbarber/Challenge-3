@@ -157,6 +157,8 @@ namespace neuralnet
         Eigen::Tensor<T,3> xhat, diff;
         // Optimizer data
         adam::AdamData<Eigen::Tensor<T,2>> adam_lambda, adam_beta;
+        // Timestep and relaxation rate for limits on r and d
+
 
         template<typename... Ts>
         void setup(Ts... Args)
@@ -216,10 +218,8 @@ namespace neuralnet
             batch_dev(i,0) = std::sqrt((res(0) / M)  + Eigen::NumTraits<T>::epsilon());
 
             // Renormalize input
-            // r(i,0) = batch_dev(i,0) / (dev(i,0) + Eigen::NumTraits<T>::epsilon());
-            r(i,0) = T(1);
-            // auto d = (batch_mean(i,0) - mean(i,0)) / (dev(i,0) + Eigen::NumTraits<T>::epsilon());
-            auto d = T(0);
+            r(i,0) = batch_dev(i,0) / (dev(i,0) + Eigen::NumTraits<T>::epsilon());
+            auto d = (batch_mean(i,0) - mean(i,0)) / (dev(i,0) + Eigen::NumTraits<T>::epsilon());
             xhat.chip(i,2) = (((diff.chip(i,2) / batch_dev(i,0)) * r(i,0)) + d)
                 .cwiseMin(Eigen::NumTraits<T>::highest()).cwiseMax(Eigen::NumTraits<T>::lowest());
 
@@ -270,15 +270,18 @@ namespace neuralnet
     template <typename T, OptimizerClass C>
     void ReNorm2D<T,C>::update(double rate)
     {
+        auto gl = grad_lambda.cwiseMax(T(-1)).cwiseMin(T(1));
+        auto gb = grad_beta.cwiseMax(T(-1)).cwiseMin(T(1));
+
         if constexpr (C == OptimizerClass::Adam)
         {
-            adam::adam_update_params(rate, adam_lambda, lambda, grad_lambda);
-            adam::adam_update_params(rate, adam_beta, beta, grad_beta);
+            adam::adam_update_params(rate, adam_lambda, lambda, gl);
+            adam::adam_update_params(rate, adam_beta, beta, gb);
         }
         else
         {
-            lambda -= rate * grad_lambda;
-            beta -= rate * grad_beta;
+            lambda -= rate * gl;
+            beta -= rate * gb;
         }
     }
 }
