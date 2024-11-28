@@ -3,7 +3,7 @@
 #include "include/Dynamic.hpp"
 #include "include/DynamicEncoder.hpp"
 #include "include/basic/Layer.hpp"
-// #include "include/autoencoder/AutoEncoder.hpp"
+#include "include/autoencoder/AutoEncoder.hpp"
 #include "include/training/Trainer.hpp"
 #include "include/optimizers/Optimizer.hpp"
 // #include "include/convolutional/Conv2D.hpp"
@@ -153,11 +153,11 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<Layer<PkgScalar, ActivationFunc::TanH, PkgOptimizer>, size_t, size_t>(m, "TanH");
     make_model<Layer<PkgScalar, ActivationFunc::SoftMax, PkgOptimizer>, size_t, size_t>(m, "SoftMax");
 
-    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::Linear, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "LinearAutoEncoder");
-    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::ReLU, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "ReLUAutoEncoder");
-    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::Sigmoid, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "SigmoidAutoEncoder");
-    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::TanH, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "TanHAutoEncoder");
-    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::SoftMax, PkgOptimizer>, size_t, size_t, PkgScalar, PkgScalar>(m, "SoftMaxAutoEncoder");
+    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::Linear, PkgOptimizer>, size_t, size_t>(m, "LinearAutoEncoder");
+    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::ReLU, PkgOptimizer>, size_t, size_t>(m, "ReLUAutoEncoder");
+    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::Sigmoid, PkgOptimizer>, size_t, size_t>(m, "SigmoidAutoEncoder");
+    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::TanH, PkgOptimizer>, size_t, size_t>(m, "TanHAutoEncoder");
+    make_encoder<AutoEncoder<PkgScalar, ActivationFunc::SoftMax, PkgOptimizer>, size_t, size_t>(m, "SoftMaxAutoEncoder");
 
     // make_model<Convolution2D<PkgScalar, 5, PkgOptimizer>, Index, Index, PkgScalar, PkgScalar>(m, "Conv2D");
     // make_model<Layer2D<PkgScalar, ActivationFunc::ReLU>>(m, "ReLU2D");

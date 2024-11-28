@@ -9,45 +9,27 @@ using namespace optimization;
 
 namespace neuralnet {
 
-    template <typename T, ActivationFunc F, OptimizerClass C>
+    template <typename T, ActivationFunc F, template<typename,typename> class C>
     class AutoEncoder : public Encoder<AutoEncoder<T, F, C>>
     {
     public:
+        typedef T Scalar;
         typedef Eigen::Vector<T, Eigen::Dynamic> InputType;
         typedef InputType OutputType;
         typedef Eigen::Vector<T, Eigen::Dynamic> LatentType;
 
-        AutoEncoder(){ setup(0,0,0,0); }
-        AutoEncoder(int in_size, int latent_size, double b1, double b2){ setup(in_size, latent_size, b1, b2); }
-        AutoEncoder(int in_size, int latent_size)
-        { 
-            static_assert(C==OptimizerClass::None, "Adam parameters missing"); 
-            setup(in_size, latent_size); 
-        }
+        AutoEncoder(int in_size, int latent_size) : w_update(in_size, latent_size), b_lt_update(latent_size), b_rc_update(in_size) { setup(in_size, latent_size); }
 #ifndef NOPYTHON
-        AutoEncoder(const py::tuple& data)
+        AutoEncoder(const py::tuple& data) : w_update(data[5]), b_lt_update(data[6]), b_rc_update(data[7])
         { 
             std::vector<T> w, bl, br;
             int in = data[0].cast<int>();
             int lt = data[1].cast<int>();
 
-            if constexpr (C == OptimizerClass::Adam)
-            {
-                setup(in, lt, data[2].cast<T>(), data[3].cast<T>()); 
-                w = data[4].cast<std::vector<T>>();
-                bl = data[5].cast<std::vector<T>>();
-                br = data[6].cast<std::vector<T>>();
-                adam::unpickle(data[7], adam_w);
-                adam::unpickle(data[8], adam_blt);
-                adam::unpickle(data[9], adam_brc);
-            }
-            else
-            {
-                setup(in, lt);
-                w = data[2].cast<std::vector<T>>();
-                bl = data[3].cast<std::vector<T>>();
-                br = data[4].cast<std::vector<T>>();
-            }
+            setup(in, lt);
+            w = data[2].cast<std::vector<T>>();
+            bl = data[3].cast<std::vector<T>>();
+            br = data[4].cast<std::vector<T>>();
 
             W = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(w.data(), in, lt);
             blt = Eigen::Map<Eigen::Vector<T, Eigen::Dynamic>>(bl.data(), lt);
@@ -94,22 +76,15 @@ namespace neuralnet {
         Eigen::Vector<T, Eigen::Dynamic> drc, dlt;
 
         // Adam optimization data
-        adam::AdamData<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> adam_w;
-        adam::AdamData<LatentType> adam_blt;
-        adam::AdamData<OutputType> adam_brc;
+        C<T,Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> w_update;
+        C<T,LatentType> b_lt_update;
+        C<T,OutputType> b_rc_update;
 
-        template<typename... Ts>
-        void setup(Ts... Args)
+        void setup(int in_size, int latent_size)
         {
-            auto args = std::tuple<Ts...>(Args...);
-
-            this->in_size = std::get<0>(args);
-            this->latent_size = std::get<1>(args);
-
             // Apply he initialization
             this->W = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, latent_size).unaryExpr([in_size = in_size](T x)
                                                                                         { return x * std::sqrt(T(2) / static_cast<T>(in_size)); });
-
             this->blt = LatentType::Zero(latent_size);
             this->alt = LatentType::Zero(latent_size);
             this->dlt = LatentType::Zero(latent_size);
@@ -121,36 +96,12 @@ namespace neuralnet {
             this->zrc = LatentType::Zero(latent_size);
 
             this->in = InputType::Zero(in_size);
-
-            if constexpr (C == OptimizerClass::Adam)
-            {
-                adam_w.m = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, latent_size);
-                adam_w.v = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Zero(in_size, latent_size);
-                adam_brc.m = InputType::Zero(in_size);
-                adam_brc.v = InputType::Zero(in_size);                
-                adam_blt.m = LatentType::Zero(latent_size);
-                adam_blt.v = LatentType::Zero(latent_size);
-
-                adam_w.b1 = std::get<2>(args);
-                adam_w.b2 = std::get<3>(args);
-                adam_brc.b1 = std::get<2>(args);
-                adam_brc.b2 = std::get<3>(args);
-                adam_blt.b1 = std::get<2>(args);
-                adam_blt.b2 = std::get<3>(args);
-
-                adam_w.b1powt = adam_w.b1;
-                adam_w.b2powt = adam_w.b2;
-                adam_brc.b1powt = adam_brc.b1;
-                adam_brc.b2powt = adam_brc.b2;
-                adam_blt.b1powt = adam_blt.b1;
-                adam_blt.b2powt = adam_blt.b2;
-            }
         }
     };
 }
 
 
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
 template<typename X>
 neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::encode(X&& input)
 {
@@ -164,7 +115,7 @@ neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::enc
 }
 
 
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
 template<typename X>
 neuralnet::AutoEncoder<T, F, C>::OutputType neuralnet::AutoEncoder<T, F, C>::decode(X&& input)
 {
@@ -176,7 +127,7 @@ neuralnet::AutoEncoder<T, F, C>::OutputType neuralnet::AutoEncoder<T, F, C>::dec
 }
 
 
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
 template<typename X>
 neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::backward_decode(X&& err)
 {
@@ -187,7 +138,7 @@ neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::bac
 }
 
 
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
 template<typename X>
 neuralnet::AutoEncoder<T, F, C>::InputType neuralnet::AutoEncoder<T, F, C>::backward_encode(X&& err)
 {
@@ -198,50 +149,28 @@ neuralnet::AutoEncoder<T, F, C>::InputType neuralnet::AutoEncoder<T, F, C>::back
 }
 
 
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
 void neuralnet::AutoEncoder<T, F, C>::update(double rate)
 {
-    if constexpr (C == OptimizerClass::Adam)
-    {
-        auto tmp = ((in * dlt.transpose()) + (drc * alt.transpose()));
-        adam::adam_update_params(rate / 2.0, adam_w, W, tmp);
-        adam::adam_update_params(rate, adam_blt, blt, dlt);
-        adam::adam_update_params(rate, adam_brc, brc, drc);
-    }
-    else
-    {
-        W -= ((in * dlt.transpose()) + (drc * alt.transpose())) * (rate / 2.0);
-        blt -= rate * dlt;
-        brc -= rate * drc;
-    }
+    w_update.grad(rate, W, (in * dlt.transpose()) + (drc * alt.transpose()));
+    b_lt_update.grad(rate, blt, dlt);
+    b_rc_update.grad(rate, brc, drc);
 }
 
+
 #ifndef NOPYTHON
-template <typename T, neuralnet::ActivationFunc F, OptimizerClass C>
+template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
 py::tuple neuralnet::AutoEncoder<T, F, C>::getstate() const
 {
-    if constexpr (C == OptimizerClass::Adam)
-    {
-        return py::make_tuple(
-            W.rows(), W.cols(),
-            adam_w.b1, adam_w.b2,
-            std::vector<T>(W.data(), W.data() + W.size()),
-            std::vector<T>(blt.data(), blt.data() + blt.size()),            
-            std::vector<T>(brc.data(), brc.data() + brc.size()),
-            adam::pickle(adam_w),
-            adam::pickle(adam_blt),
-            adam::pickle(adam_brc)
-        );
-    }
-    else
-    {
-        return py::make_tuple(
-            W.rows(), W.cols(),
-            std::vector<T>(W.data(), W.data() + W.size()),
-            std::vector<T>(blt.data(), blt.data() + blt.size()),            
-            std::vector<T>(brc.data(), brc.data() + brc.size())
-        );
-    }
+    return py::make_tuple(
+        W.rows(), W.cols(),
+        std::vector<T>(W.data(), W.data() + W.size()),
+        std::vector<T>(blt.data(), blt.data() + blt.size()),            
+        std::vector<T>(brc.data(), brc.data() + brc.size()),
+        w_update.getstate(),
+        b_lt_update.getstate(),
+        b_rc_update.getstate()
+    );
 }
 #endif
 
