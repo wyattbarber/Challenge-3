@@ -12,6 +12,7 @@ namespace neuralnet {
     class UnPool2D : public Model<UnPool2D<T, K, M>>
     {
         public:
+        typedef T Scalar;
         typedef Eigen::Tensor<T, 3> InputType;
         typedef Eigen::Tensor<T, 3> OutputType;
 

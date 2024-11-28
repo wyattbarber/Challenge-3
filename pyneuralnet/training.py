@@ -1,1 +1,1 @@
-from neuralnet import Trainer#, Trainer2D
+from neuralnet import Trainer, Trainer2D

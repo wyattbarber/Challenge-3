@@ -17,6 +17,7 @@ namespace neuralnet
     {
 
     public:
+        typedef T Scalar;
         typedef Eigen::Tensor<T, 3> InputType;
         typedef Eigen::Tensor<T, 3> OutputType;
 

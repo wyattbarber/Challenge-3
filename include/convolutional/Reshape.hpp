@@ -16,6 +16,7 @@ namespace neuralnet {
     class Reshape1D : public Model<Reshape1D<T>>
     {
         public:
+        typedef T Scalar;
         typedef Eigen::Tensor<T,3> InputType;
         typedef Eigen::Vector<T,Eigen::Dynamic> OutputType;
 

@@ -18,6 +18,7 @@ namespace neuralnet {
     class Pool2D : public Model<Pool2D<T, K, M>>
     {
         public:
+        typedef T Scalar;
         typedef Eigen::Tensor<T, 3> InputType;
         typedef Eigen::Tensor<T, 3> OutputType;
         

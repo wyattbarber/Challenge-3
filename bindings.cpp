@@ -6,14 +6,14 @@
 #include "include/autoencoder/AutoEncoder.hpp"
 #include "include/training/Trainer.hpp"
 #include "include/optimizers/Optimizer.hpp"
-// #include "include/convolutional/Conv2D.hpp"
-// #include "include/convolutional/Pool2D.hpp"
-// #include "include/convolutional/UnPool2D.hpp"
-// #include "include/convolutional/PoolUnPool2D.hpp"
-// #include "include/convolutional/Activation2D.hpp"
-// #include "include/convolutional/Reshape.hpp"
-// #include "include/convolutional/UNet.hpp"
-// #include "include/normalize/ReNorm2D.hpp"
+#include "include/convolutional/Conv2D.hpp"
+#include "include/convolutional/Pool2D.hpp"
+#include "include/convolutional/UnPool2D.hpp"
+#include "include/convolutional/PoolUnPool2D.hpp"
+#include "include/convolutional/Activation2D.hpp"
+#include "include/convolutional/Reshape.hpp"
+#include "include/convolutional/UNet.hpp"
+#include "include/normalize/ReNorm2D.hpp"
 #include "include/datasource/DataSource.hpp"
 #include "include/loss/Loss.hpp"
 #include "include/loss/L1.hpp"
@@ -159,26 +159,26 @@ PYBIND11_MODULE(neuralnet, m)
     make_encoder<AutoEncoder<PkgScalar, ActivationFunc::TanH, PkgOptimizer>, size_t, size_t>(m, "TanHAutoEncoder");
     make_encoder<AutoEncoder<PkgScalar, ActivationFunc::SoftMax, PkgOptimizer>, size_t, size_t>(m, "SoftMaxAutoEncoder");
 
-    // make_model<Convolution2D<PkgScalar, 5, PkgOptimizer>, Index, Index, PkgScalar, PkgScalar>(m, "Conv2D");
-    // make_model<Layer2D<PkgScalar, ActivationFunc::ReLU>>(m, "ReLU2D");
-    // make_model<Layer2D<PkgScalar, ActivationFunc::Sigmoid>>(m, "Sigmoid2D");
-    // make_model<Layer2D<PkgScalar, ActivationFunc::TanH>>(m, "TanH2D");
-    // make_model<Layer2D<PkgScalar, ActivationFunc::SoftMax>>(m, "SoftMax2D");
-    // make_model<ReNorm2D<PkgScalar, PkgOptimizer>, int, PkgScalar, PkgScalar, PkgScalar>(m, "BatchRenorm2D");
-    // make_model<Pool2D<PkgScalar, 2, PoolMode::Max>>(m, "MaxPool2D");
-    // make_model<Pool2D<PkgScalar, 2, PoolMode::Min>>(m, "MinPool2D");
-    // make_model<Pool2D<PkgScalar, 2, PoolMode::Mean>>(m, "MeanPool2D");
-    // make_model<UnPool2D<PkgScalar, 2, PoolMode::Mean>>(m, "MeanUnPool2D");
-    // make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Mean>>(m, "MeanPoolEncoder2D");
-    // make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Max>>(m, "MaxPoolEncoder2D");
-    // make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Min>>(m, "MinPoolEncoder2D");
-    // make_encoder<UNet<PkgScalar, PkgOptimizer>, Index, PkgScalar, PkgScalar, PkgScalar>(m, "UNet")
-    //     .def(py::init<Index, PkgScalar, PkgScalar, PkgScalar, bool>());
-    // py::class_<Reshape1D<PkgScalar>>(m, "Reshape1D")
-    //     .def(py::init<>())
-    //     .def("forward", &Reshape1D<PkgScalar>::forward<Tensor<PkgScalar,3>&>, "Performs a forward pass through the model.")
-    //     .def("backward", &Reshape1D<PkgScalar>::backward<Vector<PkgScalar,Dynamic>&>, "Performs backpropagation through the model.")
-    //     .def("update", &Reshape1D<PkgScalar>::update, "Updates trainable parameters based on current gradient.");
+    make_model<Convolution2D<PkgScalar, 5, PkgOptimizer>, Index, Index>(m, "Conv2D");
+    make_model<Layer2D<PkgScalar, ActivationFunc::ReLU>>(m, "ReLU2D");
+    make_model<Layer2D<PkgScalar, ActivationFunc::Sigmoid>>(m, "Sigmoid2D");
+    make_model<Layer2D<PkgScalar, ActivationFunc::TanH>>(m, "TanH2D");
+    make_model<Layer2D<PkgScalar, ActivationFunc::SoftMax>>(m, "SoftMax2D");
+    make_model<ReNorm2D<PkgScalar, PkgOptimizer>, int, PkgScalar>(m, "BatchRenorm2D");
+    make_model<Pool2D<PkgScalar, 2, PoolMode::Max>>(m, "MaxPool2D");
+    make_model<Pool2D<PkgScalar, 2, PoolMode::Min>>(m, "MinPool2D");
+    make_model<Pool2D<PkgScalar, 2, PoolMode::Mean>>(m, "MeanPool2D");
+    make_model<UnPool2D<PkgScalar, 2, PoolMode::Mean>>(m, "MeanUnPool2D");
+    make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Mean>>(m, "MeanPoolEncoder2D");
+    make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Max>>(m, "MaxPoolEncoder2D");
+    make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Min>>(m, "MinPoolEncoder2D");
+    make_encoder<UNet<PkgScalar, PkgOptimizer>, Index, PkgScalar>(m, "UNet")
+        .def(py::init<Index, PkgScalar, bool>());
+    py::class_<Reshape1D<PkgScalar>>(m, "Reshape1D")
+        .def(py::init<>())
+        .def("forward", &Reshape1D<PkgScalar>::forward<Tensor<PkgScalar,3>&>, "Performs a forward pass through the model.")
+        .def("backward", &Reshape1D<PkgScalar>::backward<Vector<PkgScalar,Dynamic>&>, "Performs backpropagation through the model.")
+        .def("update", &Reshape1D<PkgScalar>::update, "Updates trainable parameters based on current gradient.");
 
     py::class_<training::Trainer<DynamicModel<Vector<PkgScalar, Eigen::Dynamic>>>>(m, "Trainer")
         .def(py::init<
@@ -188,14 +188,14 @@ PYBIND11_MODULE(neuralnet, m)
         >())
         .def("train", &training::Trainer<DynamicModel<Vector<PkgScalar, Eigen::Dynamic>>>::train, "Trains a model", py::return_value_policy::automatic);
     
-    // py::class_<training::Trainer<DynamicModel<Tensor<PkgScalar,3>>>>(m, "Trainer2D")
-    //     .def(py::init<
-    //         DynamicModel<Tensor<PkgScalar,3>>&,
-    //         DataSource<DynamicModel<Tensor<PkgScalar,3>>::InputType, DynamicModel<Tensor<PkgScalar,3>>::OutputType>&,
-    //         Loss<PkgScalar>&
-    //     >())
-    //     .def("train", &training::Trainer<DynamicModel<Tensor<PkgScalar,3>>>::train, "Trains a model", py::return_value_policy::automatic, 
-    //         py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
+    py::class_<training::Trainer<DynamicModel<Tensor<PkgScalar,3>>>>(m, "Trainer2D")
+        .def(py::init<
+            DynamicModel<Tensor<PkgScalar,3>>&,
+            DataSource<DynamicModel<Tensor<PkgScalar,3>>::InputType, DynamicModel<Tensor<PkgScalar,3>>::OutputType>&,
+            Loss<PkgScalar>&
+        >())
+        .def("train", &training::Trainer<DynamicModel<Tensor<PkgScalar,3>>>::train, "Trains a model", py::return_value_policy::automatic, 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
 
     py::class_<loss::Loss<PkgScalar>, LossTrampoline<PkgScalar>, std::shared_ptr<Loss<PkgScalar>>>(m, "LossBase");
     py::class_<loss::L1<PkgScalar>, loss::Loss<PkgScalar>, std::shared_ptr<L1<PkgScalar>>>(m, "L1Loss").def(py::init<>());

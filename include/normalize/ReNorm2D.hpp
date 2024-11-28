@@ -13,10 +13,11 @@ namespace neuralnet
      *  
      *  A learned linear transformation is also applied to the renormalized data.
      */
-    template <typename T, OptimizerClass C>
+    template <typename T, template<typename,typename> class C>
     class ReNorm2D : public Model<ReNorm2D<T, C>>
     {
         public:
+        typedef T Scalar;
         typedef Eigen::Tensor<T, 3> InputType;
         typedef Eigen::Tensor<T, 3> OutputType;
 
@@ -35,22 +36,14 @@ namespace neuralnet
             grad_lambda(N,1),
             grad_beta(N,1),
             batch_dev(N,1),
-            r(N,1)
+            r(N,1),
+            update_lambda(N,1),
+            update_beta(N,1)
         {
             setup(N, rate);
-        }        
-        ReNorm2D(int N, T rate, T b1, T b2) :
-            mean(N,1),
-            dev(N,1),
-            lambda(N,1),
-            beta(N,1),
-            grad_lambda(N,1),
-            grad_beta(N,1),
-            batch_dev(N,1),
-            r(N,1)
-        {
-            setup(N, rate, b1, b2);
         }
+        
+
 #ifndef NOPYTHON
         /** Unpickling constructor
          * 
@@ -64,18 +57,12 @@ namespace neuralnet
             grad_lambda(N,1),
             grad_beta(N,1),
             batch_dev(N,1),
-            r(N,1)
+            r(N,1),
+            update_lambda(data[6]),
+            update_beta(data[7])
         {
-            if constexpr (C == OptimizerClass::Adam)
-            {
-                setup(data[0].cast<int>(), data[1].cast<T>(), data[8].cast<T>(), data[9].cast<T>());
-                adam::unpickle(data[6], adam_lambda);
-                adam::unpickle(data[7], adam_beta);
-            }
-            else
-            {
-                setup(data[0].cast<int>(), data[1].cast<T>());
-            }
+            setup(data[0].cast<int>(), data[1].cast<T>());
+
             // Trying to do these unpacking operations in one line each seems to cause segfaults
             auto m = data[2].cast<std::vector<T>>();
             mean = Eigen::TensorMap<Eigen::Tensor<T,2>>(m.data(), N, 1);
@@ -116,37 +103,24 @@ namespace neuralnet
          */
         py::tuple getstate() const 
         { 
-            if constexpr (C == OptimizerClass::Adam)
-            {
-                return py::make_tuple(N, avg_rate,
-                    std::vector<T>(mean.data(), mean.data() + mean.size()), 
-                    std::vector<T>(dev.data(), dev.data() + dev.size()), 
-                    std::vector<T>(lambda.data(), lambda.data() + lambda.size()), 
-                    std::vector<T>(beta.data(), beta.data() + beta.size()),
-                    adam::pickle(adam_lambda),
-                    adam::pickle(adam_beta),
-                    adam_lambda.b1,
-                    adam_lambda.b2
-                    );
-            }
-            else
-            {
-                return py::make_tuple(N, avg_rate, 
-                    std::vector<T>(mean.data(), mean.data() + mean.size()), 
-                    std::vector<T>(dev.data(), dev.data() + dev.size()), 
-                    std::vector<T>(lambda.data(), lambda.data() + lambda.size()), 
-                    std::vector<T>(beta.data(), beta.data() + beta.size())
-                    );
-            }
+            return py::make_tuple(N, avg_rate,
+                std::vector<T>(mean.data(), mean.data() + mean.size()), 
+                std::vector<T>(dev.data(), dev.data() + dev.size()), 
+                std::vector<T>(lambda.data(), lambda.data() + lambda.size()), 
+                std::vector<T>(beta.data(), beta.data() + beta.size()),
+                update_lambda.getstate(),
+                update_beta.getstate()
+                );
         }
 #endif
         protected:
         int N;
         T avg_rate;
         /** @note 
-            Rank two tensors are used for 1D data due to apparent bug in Tensor<T,1>. Using () operator 
+            Rank two tensors are used for 1D data due to issues using 1D tensor. Using () operator 
             in operations results in assertions failing due to index out of bounds, but using it
-            to simply access data such as `cout << tensor(0)` succeeds.
+            to simply access data such as `cout << tensor(0)` succeeds. Haven't figured out what was causing
+            or tried reverting it after fixing other issues.
         */
         // Stored and learned parameters for each channel
         Eigen::Tensor<T,2> mean, dev, lambda, beta;
@@ -156,48 +130,24 @@ namespace neuralnet
         Eigen::Tensor<T,2> batch_dev, r;
         Eigen::Tensor<T,3> xhat, diff;
         // Optimizer data
-        adam::AdamData<Eigen::Tensor<T,2>> adam_lambda, adam_beta;
+        C<T,Eigen::Tensor<T,2>> update_lambda, update_beta;
         // Timestep and relaxation rate for limits on r and d
 
 
-        template<typename... Ts>
-        void setup(Ts... Args)
+        void setup(int N, T avg_rate)
         {
-            auto args = std::tuple<Ts...>(Args...);
-            N = std::get<0>(args);
-            avg_rate = std::get<1>(args);
+            this->N = N;
+            this->avg_rate = avg_rate;
            
             mean.setZero();
             dev.setConstant(T(1));
             lambda.setConstant(T(1));
             beta.setZero();
-
-            if constexpr (C == OptimizerClass::Adam)
-            {
-                adam_lambda.m = Eigen::Tensor<T,2>(N,1);
-                adam_lambda.m.setZero();
-                adam_lambda.v= Eigen::Tensor<T,2>(N,1);
-                adam_lambda.v.setZero();
-                adam_lambda.b1 = std::get<2>(args);
-                adam_lambda.b2 = std::get<3>(args);
-                adam_lambda.b1powt = adam_lambda.b1;
-                adam_lambda.b2powt = adam_lambda.b2;
-
-                adam_beta.m = Eigen::Tensor<T,2>(N,1);
-                adam_beta.m.setZero();
-                adam_beta.v= Eigen::Tensor<T,2>(N,1);
-                adam_beta.v.setZero();
-                adam_beta.b1 = std::get<2>(args);
-                adam_beta.b2 = std::get<3>(args);
-                adam_beta.b1powt = adam_beta.b1;
-                adam_beta.b2powt = adam_beta.b2;
-            }
         }
-
     };
 
 
-    template <typename T, OptimizerClass C>
+    template <typename T, template<typename,typename> class C>
     template<typename X>      
     ReNorm2D<T,C>::OutputType ReNorm2D<T,C>::forward(X&& input)
     {
@@ -235,7 +185,7 @@ namespace neuralnet
     }
     
 
-    template <typename T, OptimizerClass C>
+    template <typename T, template<typename,typename> class C>
     template<typename X>
     ReNorm2D<T,C>::InputType ReNorm2D<T,C>::backward(X&& error)
     {
@@ -267,22 +217,11 @@ namespace neuralnet
     }
 
 
-    template <typename T, OptimizerClass C>
+    template <typename T, template<typename,typename> class C>
     void ReNorm2D<T,C>::update(double rate)
     {
-        auto gl = grad_lambda.cwiseMax(T(-1)).cwiseMin(T(1));
-        auto gb = grad_beta.cwiseMax(T(-1)).cwiseMin(T(1));
-
-        if constexpr (C == OptimizerClass::Adam)
-        {
-            adam::adam_update_params(rate, adam_lambda, lambda, gl);
-            adam::adam_update_params(rate, adam_beta, beta, gb);
-        }
-        else
-        {
-            lambda -= rate * gl;
-            beta -= rate * gb;
-        }
+        update_lambda.grad(rate, lambda, grad_lambda);
+        update_beta.grad(rate, beta, grad_beta);
     }
 }
 #endif
