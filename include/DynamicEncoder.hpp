@@ -11,7 +11,8 @@ namespace neuralnet
     class DynamicEncoder : public DynamicModel<T>
     {
         public:
-    
+        
+        typedef T::Scalar Scalar;
         typedef T InputType; 
         typedef T OutputType; 
         typedef V LatentType; 
@@ -31,6 +32,7 @@ namespace neuralnet
         public:
             using DynamicEncoder<T,V>::DynamicEncoder;
             
+            typedef DynamicEncoder<T,V>::Scalar Scalar;
             typedef DynamicEncoder<T,V>::InputType InputType; 
             typedef DynamicEncoder<T,V>::OutputType OutputType; 
             typedef DynamicEncoder<T,V>::LatentType LatentType; 
@@ -114,6 +116,7 @@ namespace neuralnet
     class DynamicEncoderBinder : public DynamicEncoder<typename ModelType::InputType, typename ModelType::LatentType>
     {
         public:
+        typedef DynamicEncoder<typename ModelType::InputType, typename ModelType::LatentType>::Scalar Scalar; 
         typedef DynamicEncoder<typename ModelType::InputType, typename ModelType::LatentType>::InputType InputType; 
         typedef DynamicEncoder<typename ModelType::InputType, typename ModelType::LatentType>::OutputType OutputType; 
         typedef DynamicEncoder<typename ModelType::InputType, typename ModelType::LatentType>::LatentType LatentType; 

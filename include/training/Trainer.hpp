@@ -4,9 +4,7 @@
 
 #include "../Model.hpp"
 #include "../datasource/DataSource.hpp"
-#include "../loss/L1.hpp"
-#include "../loss/L2.hpp"
-#include <unsupported/Eigen/CXX11/Tensor>
+#include "../loss/Loss.hpp"
 #include <iostream>
 
 using namespace neuralnet;
@@ -19,10 +17,11 @@ namespace training
     /** Handles training of a model on a dataset
      *
      */
-    template<class ModelType, typename ScalarType = float>
+    template<class ModelType>
     class Trainer
     {
     public:
+        typedef ModelType::Scalar ScalarType;
         typedef ModelType::InputType InputType;
         typedef ModelType::OutputType OutputType;
         typedef DataSource<InputType, OutputType>::SampleType SampleType;
@@ -56,8 +55,8 @@ namespace training
 }
 
 
-template<class ModelType, typename ScalarType>
-std::vector<ScalarType> training::Trainer<ModelType,ScalarType>::train(unsigned N, ScalarType rate)
+template<class ModelType>
+std::vector<typename training::Trainer<ModelType>::ScalarType> training::Trainer<ModelType>::train(unsigned N, training::Trainer<ModelType>::ScalarType rate)
 {
 
     std::vector<ScalarType> avg_err;

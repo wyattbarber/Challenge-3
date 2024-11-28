@@ -3,11 +3,11 @@ import neuralnet
 from . import abstract
 from . import loss
 from . import training
-from . import convolution
+# from . import convolution
 from . import fullconnect
-from . import autoencoder
+# from . import autoencoder
 from . import compound
-from . import normalize
+# from . import normalize
 
 __version__ = importlib.metadata.version("pyneuralnet")
 

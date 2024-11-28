@@ -1,6 +1,6 @@
 from .abstract import Model, Encoder
 from typing import List, Any
-from neuralnet import UNet
+# from neuralnet import UNet
 
 class Sequence(Model):
     _layers : List[Any]

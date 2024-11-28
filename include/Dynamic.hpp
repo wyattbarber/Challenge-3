@@ -12,6 +12,7 @@ namespace neuralnet
         public:
         virtual ~DynamicModel(){};
 
+        typedef T::Scalar Scalar;
         typedef T InputType; 
         typedef T OutputType; 
 
@@ -28,6 +29,7 @@ namespace neuralnet
         public:
             using DynamicModel<T>::DynamicModel;
             
+            typedef DynamicModel<T>::Scalar Scalar;
             typedef DynamicModel<T>::InputType InputType; 
             typedef DynamicModel<T>::OutputType OutputType; 
 
@@ -68,6 +70,7 @@ namespace neuralnet
     class DynamicBinder : public DynamicModel<typename ModelType::InputType>
     {
         public:
+        typedef DynamicModel<typename ModelType::InputType>::Scalar Scalar;
         typedef DynamicModel<typename ModelType::InputType>::InputType InputType; 
         typedef DynamicModel<typename ModelType::InputType>::OutputType OutputType; 
 
