@@ -6,6 +6,9 @@
 #include "include/autoencoder/AutoEncoder.hpp"
 #include "include/training/Trainer.hpp"
 #include "include/optimizers/Adam.hpp"
+#include "include/optimizers/L1.hpp"
+#include "include/optimizers/L2.hpp"
+#include "include/optimizers/Clip.hpp"
 #include "include/convolutional/Conv2D.hpp"
 #include "include/convolutional/Pool2D.hpp"
 #include "include/convolutional/UnPool2D.hpp"
@@ -32,14 +35,13 @@
 
 namespace py = pybind11;
 using namespace neuralnet;
-using namespace optimization;
 using namespace datasource;
-using namespace loss;
 using namespace Eigen;
 
 // Scalar datatype and optimizer function used by all installed python models
 using PkgScalar = float; 
-template<typename P> using PkgOptimizer = Adam<P, PkgScalar(0.9), PkgScalar(0.999)>;
+template<typename P> using L2O = optimization::L2<P, 0.01>;
+template<typename P> using PkgOptimizer = optimization::Adam<P, PkgScalar(0.9), PkgScalar(0.999), L2O>;
 
 template<class T, typename... Ts>
 auto make_model(py::module m, const char* name)
@@ -197,9 +199,9 @@ PYBIND11_MODULE(neuralnet, m)
         .def("train", &training::Trainer<DynamicModel<Tensor<PkgScalar,3>>>::train, "Trains a model", py::return_value_policy::automatic, 
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>());
 
-    py::class_<loss::Loss<PkgScalar>, LossTrampoline<PkgScalar>, std::shared_ptr<Loss<PkgScalar>>>(m, "LossBase");
-    py::class_<loss::L1<PkgScalar>, loss::Loss<PkgScalar>, std::shared_ptr<L1<PkgScalar>>>(m, "L1Loss").def(py::init<>());
-    py::class_<loss::L2<PkgScalar>, loss::Loss<PkgScalar>, std::shared_ptr<L2<PkgScalar>>>(m, "L2Loss").def(py::init<>());
-    py::class_<loss::IoU<PkgScalar>, loss::Loss<PkgScalar>, std::shared_ptr<IoU<PkgScalar>>>(m, "IoULoss").def(py::init<>());
-    py::class_<loss::BCE<PkgScalar>, loss::Loss<PkgScalar>, std::shared_ptr<BCE<PkgScalar>>>(m, "BCELoss").def(py::init<>());
+    py::class_<loss::Loss<PkgScalar>, LossTrampoline<PkgScalar>, std::shared_ptr<loss::Loss<PkgScalar>>>(m, "LossBase");
+    py::class_<loss::L1<PkgScalar>, loss::Loss<PkgScalar>, std::shared_ptr<loss::L1<PkgScalar>>>(m, "L1Loss").def(py::init<>());
+    py::class_<loss::L2<PkgScalar>, loss::Loss<PkgScalar>, std::shared_ptr<loss::L2<PkgScalar>>>(m, "L2Loss").def(py::init<>());
+    py::class_<loss::IoU<PkgScalar>, loss::Loss<PkgScalar>, std::shared_ptr<loss::IoU<PkgScalar>>>(m, "IoULoss").def(py::init<>());
+    py::class_<loss::BCE<PkgScalar>, loss::Loss<PkgScalar>, std::shared_ptr<loss::BCE<PkgScalar>>>(m, "BCELoss").def(py::init<>());
 }

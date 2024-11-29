@@ -161,13 +161,15 @@ template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 void neuralnet::AutoEncoder<T, F, C>::update(double rate)
 {
 #ifndef NDEBUG
-        std::cout << "Updating autoencoder layer" << std::endl;
+    std::cout << "Updating autoencoder layer" << std::endl;
 #endif
+
     w_update.grad(rate, W, (in * dlt.transpose()) + (drc * alt.transpose()));
     b_lt_update.grad(rate, blt, dlt);
     b_rc_update.grad(rate, brc, drc);
+    
 #ifndef NDEBUG
-        std::cout << "New average weight magnitude "<<W.cwiseAbs().sum() / static_cast<T>(W.size())<< std::endl;
+    std::cout << "New average weight magnitude "<<W.cwiseAbs().sum() / static_cast<T>(W.size())<< std::endl;
 #endif
 }
 
