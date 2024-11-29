@@ -159,7 +159,7 @@ namespace optimization
             { 
                 return py::make_tuple(
                     P::NumDimensions,
-                    m.dimensions(),
+                    static_cast<Eigen::array<Eigen::Index,P::NumDimensions>>(m.dimensions()),
                     std::vector<Scalar>(m.data(), m.data() + m.size()),
                     std::vector<Scalar>(v.data(), v.data() + v.size()),
                     static_cast<unsigned>(std::log(b1powt) / std::log(B1)),

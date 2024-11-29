@@ -83,13 +83,13 @@ class Data1(nn.DataSource):
         return (self._train_in[i], self._train_out[i])
     
 
-data = Data1()
+data = Data()
 # model = Model()
 # model = nn.MaxPoolEncoder2D()
 # model = nn.UNet(1, 0.6, 0.9, 0.999, True)
 # model = nn.BatchRenorm2D(1, 0.8, 0.9, 0.999)
-# model = ModelUNet()
-model = nn.SigmoidAutoEncoder(28**2, 10)
+model = ModelUNet()
+# model = nn.SigmoidAutoEncoder(28**2, 10)
 
 import pickle
 import time

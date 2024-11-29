@@ -40,7 +40,7 @@ using namespace Eigen;
 
 // Scalar datatype and optimizer function used by all installed python models
 using PkgScalar = float; 
-template<typename P> using L2O = optimization::L2<P, 0.01>;
+template<typename P> using L2O = optimization::L2<P, PkgScalar(0.01)>;
 template<typename P> using PkgOptimizer = optimization::Adam<P, PkgScalar(0.9), PkgScalar(0.999), L2O>;
 
 template<class T, typename... Ts>

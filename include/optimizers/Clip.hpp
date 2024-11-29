@@ -26,8 +26,8 @@ namespace optimization
             typedef P::Scalar Scalar;   
 
             template<typename... Ts>
-            L1(Eigen::Index dim0, Ts... Dims) : next(dim0, Dims...) {}
-            L1(const py::tuple& data) : next(data[0]) {}
+            Clip(Eigen::Index dim0, Ts... Dims) : next(dim0, Dims...) {}
+            Clip(const py::tuple& data) : next(data[0]) {}
 
             template<typename X>
             void grad(Scalar rate, P& params, X&& gradient)
