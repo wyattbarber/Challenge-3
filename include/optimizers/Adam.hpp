@@ -1,6 +1,7 @@
 #ifndef _ADAM_HPP
 #define _ADAM_HPP
 
+#include "Optimizer.hpp"
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <Eigen/Dense>
 
@@ -12,123 +13,165 @@ namespace py = pybind11;
 
 namespace optimization
 {
-    namespace adam
+    template <typename P, P::Scalar B1, P::Scalar B2, template<typename> class Next = NoOpt, typename enabler = bool>
+    class Adam : public Optimizer<Adam<P,B1,B2,Next>>{};
+
+    template <typename P, P::Scalar B1, P::Scalar B2, template<typename> class Next>
+    class Adam<P, B1, B2, Next, std::enable_if_t<std::is_base_of_v<Eigen::MatrixBase<P>,P>, bool>>: public Optimizer<Adam<P,B1,B2,Next,bool>>
     {
-        template <typename MatType>
-        class AdamData
-        {
-            public:
-            typedef MatType::Scalar Scalar;
-
+        public:
             EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-            AdamData(){}
-            ~AdamData(){}
 
-            Scalar b1;
-            Scalar b2;
-            Scalar b1powt;
-            Scalar b2powt;
-            Scalar epsilon = Eigen::NumTraits<Scalar>::epsilon();
-            MatType m;
-            MatType v;
-        };
+            typedef P::Scalar Scalar;   
+
+            template<typename... Ts>
+            Adam(Eigen::Index dim0, Ts... Dims) : 
+                m(dim0, Dims...), 
+                v(dim0, Dims...), 
+                next(dim0, Dims...)
+            {
+                b1powt = B1;
+                b2powt = B2;
+            }
+            Adam(const py::tuple& data) : next(data[5])
+            {
+                std::cout << "Unpickling adam data" << std::endl;
+
+                auto dims = data[1].cast<Eigen::array<Eigen::Index,2>>();
+                auto _m = data[2].cast<std::vector<Scalar>>();
+                auto _v = data[3].cast<std::vector<Scalar>>();
+                b1powt = std::pow(B1, data[4].cast<unsigned>());
+                b2powt = std::pow(B2, data[4].cast<unsigned>());
+
+                std::cout << "Unpickling adam state matrices" << std::endl;
+                
+                m = Eigen::Map<P>(m.data(), dims[0], dims[1]);
+                v = Eigen::Map<P>(v.data(), dims[0], dims[1]);
+            }
+            
+            template<typename X>
+            void grad(Scalar rate, P& params, X&& gradient)
+            {
+                Scalar decay1 = Scalar(1) - b1powt;
+                Scalar decay2 = Scalar(1) - b2powt;
+
+                // Update weight moments
+                m = (B1 * m) + ((Scalar(1) - B1) * gradient);
+                v = (B2 * v) + ((Scalar(1) - B2) * gradient.cwiseProduct(gradient));
+                auto mhat = m / decay1;
+                auto vhat = (v / decay2).cwiseSqrt();
+
+                // Apply nested updates
+                next.grad(rate, params, 
+                    mhat.cwiseQuotient(vhat.unaryExpr([](Scalar x)
+                        { return x + Eigen::NumTraits<Scalar>::epsilon(); })
+                        )
+                    );
+                // Increment exponential decays
+                b1powt *= B1;
+                b2powt *= B2;
+            }
 
 #ifndef NOPYTHON
-        /** Serializes an Adam state struct.
-         * 
-         * Stores momentum, velocity, and timestep info in a way that can be pickled
-         * with pybind11. The weights b1 and b2 are not included, as they are expected to be 
-         * part of the data already pickled with a models constructor args.
-         * 
-         * The data is stored in the returned tuple in the following order:
-         * 1. Momentum
-         * 2. Velocity
-         * 3. timestep
-         * 
-         * @param data Adam state to serialize
-         * 
-         * @return py::tuple containing serializable state data 
-         */
-        template<typename MatType>
-        py::tuple pickle(const AdamData<MatType>& data)
-        {
-            using T = MatType::Scalar;
-            return py::make_tuple(
-                std::vector<T>(data.m.data(), data.m.data() + data.m.size()),
-                std::vector<T>(data.v.data(), data.v.data() + data.v.size()),
-                static_cast<unsigned>(std::log(data.b1powt) / std::log(data.b1))
-            );
-        }
-
-        /** Restores Adam state from serialized data.
-         * 
-         * @param pickled Output from a call to adam::pickle
-         * @param data Adam state struct to restore with pickled data
-         */
-        template<typename MatType>
-        void unpickle(const py::tuple& pickled, AdamData<MatType>& data)
-        {
-            using T = MatType::Scalar;
-            std::vector<T> m = pickled[0].cast<std::vector<T>>();
-            std::vector<T> v = pickled[1].cast<std::vector<T>>();
-            unsigned t = pickled[2].cast<unsigned>();
-
-            data.b1powt = std::pow(data.b1, t);
-            data.b2powt = std::pow(data.b2, t);
-
-            if constexpr (std::is_base_of_v<Eigen::TensorBase<MatType>, MatType>)
-            {
-                data.m = Eigen::TensorMap<MatType>(m.data(), data.m.dimensions());
-                data.v = Eigen::TensorMap<MatType>(v.data(), data.v.dimensions());
+            /** Encodes constructor and state info
+             * 
+             * * Parameter rank
+             * * Dimension vector
+             * * Moment values
+             * * Velocity values
+             * * Timestep
+             * * Nested optimizer state
+             * 
+             * @return tuple containing the above data in order
+             */
+            py::tuple getstate() const 
+            { 
+                return py::make_tuple(
+                    2,
+                    Eigen::array<Eigen::Index,2>{m.rows(), m.cols()},
+                    std::vector<Scalar>(m.data(), m.data() + m.size()),
+                    std::vector<Scalar>(v.data(), v.data() + v.size()),
+                    static_cast<unsigned>(std::log(b1powt) / std::log(B1)),
+                    next.getstate()
+                );
             }
-            else
-            {
-                data.m = Eigen::Map<MatType>(m.data(), data.m.rows(), data.m.cols());
-                data.v = Eigen::Map<MatType>(v.data(), data.v.rows(), data.v.cols());
-            }
-        }
-
 #endif
+        protected:
+            P m, v;
+            Scalar b1powt, b2powt;
+            Next<P> next;
+    };
 
-        template <typename Derived, typename DerivedGrad>
-        void adam_update_params(double rate, AdamData<Derived> &data, Eigen::MatrixBase<Derived> &params, Eigen::MatrixBase<DerivedGrad>& gradient)
-        {
-            using S = AdamData<Derived>::Scalar;
+    /** Specialization for tensor types */
+    template <typename P, P::Scalar B1, P::Scalar B2, template<typename> class Next>
+    class Adam<P, B1, B2, Next, std::enable_if_t<std::is_base_of_v<Eigen::TensorBase<P>,P>, bool>> : public Optimizer<Adam<P,B1,B2,Next,bool>>
+    {
+        public:
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-            S decay1 = 1.0 - data.b1powt;
-            S decay2 = 1.0 - data.b2powt;
+            typedef P::Scalar Scalar;   
 
-            // Update weight moments
-            data.m = (data.b1 * data.m) + ((S(1) - data.b1) * gradient);
-            data.v = (data.b2 * data.v) + ((S(1) - data.b2) * gradient.cwiseProduct(gradient));
-            auto mhat = data.m / decay1;
-            auto vhat = (data.v / decay2).cwiseSqrt();
-            params -= rate * mhat.cwiseQuotient(vhat.unaryExpr([](S x)
-                                                               { return x + Eigen::NumTraits<S>::epsilon(); }));
-            // Increment exponential decays
-            data.b1powt *= data.b1;
-            data.b2powt *= data.b2;
-        }
+            template<typename... Ts>
+            Adam(Eigen::Index dim0, Ts... Dims) : 
+                m(dim0, Dims...), 
+                v(dim0, Dims...), 
+                next(dim0, Dims...)
+            {
+                b1powt = B1;
+                b2powt = B2;
+            }
+            Adam(const py::tuple& data) : next(data[5])
+            {
+                auto dims = data[1].cast<Eigen::array<Eigen::Index,P::NumDimensions>>();
+                auto _m = data[2].cast<std::vector<Scalar>>();
+                auto _v = data[3].cast<std::vector<Scalar>>();
+                b1powt = std::pow(B1, data[4].cast<unsigned>());
+                b2powt = std::pow(B2, data[4].cast<unsigned>());
+                
+                m = Eigen::TensorMap<P>(m.data(), dims);
+                v = Eigen::TensorMap<P>(v.data(), dims);
+            }
+            
+            template<typename X>
+            void grad(Scalar rate, P& params, X&& gradient)
+            {
+                Scalar decay1 = Scalar(1) - b1powt;
+                Scalar decay2 = Scalar(1) - b2powt;
 
-        template <typename Derived, typename DerivedGrad>
-        void adam_update_params(double rate, AdamData<Derived> &data, Eigen::TensorBase<Derived> &params, Eigen::TensorBase<DerivedGrad>& gradient)
-        {
-            using S = AdamData<Derived>::Scalar;
+                // Update weight moments
+                m = (B1 * m) + ((Scalar(1) - B1) * gradient);
+                v = (B2 * v) + ((Scalar(1) - B2) * gradient.square());
+                auto mhat = m / decay1;
+                auto vhat = (v / decay2).sqrt();
+                
+                // Apply nested updates
+                next.grad(rate, params, 
+                    mhat / (vhat + Eigen::NumTraits<Scalar>::epsilon())
+                    );
 
-            S decay1 = 1.0 - data.b1powt;
-            S decay2 = 1.0 - data.b2powt;
+                // Increment exponential decays
+                b1powt *= B1;
+                b2powt *= B2;
+            }
 
-            // Update weight moments
-            data.m = (data.b1 * data.m) + ((S(1) - data.b1) * gradient);
-            data.v = (data.b2 * data.v) + ((S(1) - data.b2) * gradient.square());
-            auto mhat = data.m / decay1;
-            auto vhat = (data.v / decay2).sqrt();
-            params -= rate * mhat / (vhat + Eigen::NumTraits<S>::epsilon());
-            // Increment exponential decays
-            data.b1powt *= data.b1;
-            data.b2powt *= data.b2;
-        }
-    }
+#ifndef NOPYTHON
+            py::tuple getstate() const 
+            { 
+                return py::make_tuple(
+                    P::NumDimensions,
+                    m.dimensions(),
+                    std::vector<Scalar>(m.data(), m.data() + m.size()),
+                    std::vector<Scalar>(v.data(), v.data() + v.size()),
+                    static_cast<unsigned>(std::log(b1powt) / std::log(B1)),
+                    next.getstate()
+                );
+            }
+#endif
+        protected:
+            P m, v;
+            Scalar b1powt, b2powt;
+            Next<P> next;
+    };
 }
  
 #endif

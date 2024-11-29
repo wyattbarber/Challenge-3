@@ -4,12 +4,13 @@
 #include "../Model.hpp"
 #include "../basic/Activation.hpp"
 #include "../optimizers/Optimizer.hpp"
+#include <iostream>
 
 using namespace optimization;
 
 namespace neuralnet {
 
-    template <typename T, ActivationFunc F, template<typename,typename> class C>
+    template <typename T, ActivationFunc F, template<typename> class C>
     class AutoEncoder : public Encoder<AutoEncoder<T, F, C>>
     {
     public:
@@ -18,7 +19,11 @@ namespace neuralnet {
         typedef InputType OutputType;
         typedef Eigen::Vector<T, Eigen::Dynamic> LatentType;
 
-        AutoEncoder(int in_size, int latent_size) : w_update(in_size, latent_size), b_lt_update(latent_size), b_rc_update(in_size) { setup(in_size, latent_size); }
+        AutoEncoder(int in_size, int latent_size) : 
+            w_update(in_size, latent_size), 
+            b_lt_update(latent_size), 
+            b_rc_update(in_size)
+        { setup(in_size, latent_size); }
 #ifndef NOPYTHON
         AutoEncoder(const py::tuple& data) : w_update(data[5]), b_lt_update(data[6]), b_rc_update(data[7])
         { 
@@ -76,9 +81,9 @@ namespace neuralnet {
         Eigen::Vector<T, Eigen::Dynamic> drc, dlt;
 
         // Adam optimization data
-        C<T,Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> w_update;
-        C<T,LatentType> b_lt_update;
-        C<T,OutputType> b_rc_update;
+        C<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> w_update;
+        C<LatentType> b_lt_update;
+        C<OutputType> b_rc_update;
 
         void setup(int in_size, int latent_size)
         {
@@ -104,7 +109,7 @@ namespace neuralnet {
 }
 
 
-template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
+template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 template<typename X>
 neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::encode(X&& input)
 {
@@ -118,7 +123,7 @@ neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::enc
 }
 
 
-template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
+template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 template<typename X>
 neuralnet::AutoEncoder<T, F, C>::OutputType neuralnet::AutoEncoder<T, F, C>::decode(X&& input)
 {
@@ -130,7 +135,7 @@ neuralnet::AutoEncoder<T, F, C>::OutputType neuralnet::AutoEncoder<T, F, C>::dec
 }
 
 
-template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
+template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 template<typename X>
 neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::backward_decode(X&& err)
 {
@@ -141,7 +146,7 @@ neuralnet::AutoEncoder<T, F, C>::LatentType neuralnet::AutoEncoder<T, F, C>::bac
 }
 
 
-template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
+template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 template<typename X>
 neuralnet::AutoEncoder<T, F, C>::InputType neuralnet::AutoEncoder<T, F, C>::backward_encode(X&& err)
 {
@@ -152,17 +157,23 @@ neuralnet::AutoEncoder<T, F, C>::InputType neuralnet::AutoEncoder<T, F, C>::back
 }
 
 
-template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
+template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 void neuralnet::AutoEncoder<T, F, C>::update(double rate)
 {
+#ifndef NDEBUG
+        std::cout << "Updating autoencoder layer" << std::endl;
+#endif
     w_update.grad(rate, W, (in * dlt.transpose()) + (drc * alt.transpose()));
     b_lt_update.grad(rate, blt, dlt);
     b_rc_update.grad(rate, brc, drc);
+#ifndef NDEBUG
+        std::cout << "New average weight magnitude "<<W.cwiseAbs().sum() / static_cast<T>(W.size())<< std::endl;
+#endif
 }
 
 
 #ifndef NOPYTHON
-template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
+template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 py::tuple neuralnet::AutoEncoder<T, F, C>::getstate() const
 {
     return py::make_tuple(

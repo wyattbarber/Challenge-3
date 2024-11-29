@@ -13,7 +13,7 @@ namespace neuralnet
      *  
      *  A learned linear transformation is also applied to the renormalized data.
      */
-    template <typename T, template<typename,typename> class C>
+    template <typename T, template<typename> class C>
     class ReNorm2D : public Model<ReNorm2D<T, C>>
     {
         public:
@@ -130,7 +130,7 @@ namespace neuralnet
         Eigen::Tensor<T,2> batch_dev, r;
         Eigen::Tensor<T,3> xhat, diff;
         // Optimizer data
-        C<T,Eigen::Tensor<T,2>> update_lambda, update_beta;
+        C<Eigen::Tensor<T,2>> update_lambda, update_beta;
         // Timestep and relaxation rate for limits on r and d
 
 
@@ -147,7 +147,7 @@ namespace neuralnet
     };
 
 
-    template <typename T, template<typename,typename> class C>
+    template <typename T, template<typename> class C>
     template<typename X>      
     ReNorm2D<T,C>::OutputType ReNorm2D<T,C>::forward(X&& input)
     {
@@ -190,7 +190,7 @@ namespace neuralnet
     }
     
 
-    template <typename T, template<typename,typename> class C>
+    template <typename T, template<typename> class C>
     template<typename X>
     ReNorm2D<T,C>::InputType ReNorm2D<T,C>::backward(X&& error)
     {
@@ -226,7 +226,7 @@ namespace neuralnet
     }
 
 
-    template <typename T, template<typename,typename> class C>
+    template <typename T, template<typename> class C>
     void ReNorm2D<T,C>::update(double rate)
     {
         update_lambda.grad(rate, lambda, grad_lambda);

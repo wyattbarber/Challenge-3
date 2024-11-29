@@ -10,7 +10,7 @@ using namespace optimization;
 
 namespace neuralnet {
 
-    template <typename T, int K, template<typename,typename> class C>
+    template <typename T, int K, template<typename> class C>
     class Convolution2D : public Model<Convolution2D<T, K, C>>
     {
         static_assert((K % 2) == 1, "Kernel size K must be odd.");
@@ -20,7 +20,9 @@ namespace neuralnet {
             typedef Eigen::Tensor<T, 3> InputType;
             typedef Eigen::Tensor<T, 3> OutputType;
 
-            Convolution2D(Eigen::Index in_channels, Eigen::Index out_channels) : kernel_update(K,K,in_channels,out_channels), bias_update(out_channels)
+            Convolution2D(Eigen::Index in_channels, Eigen::Index out_channels) : 
+                kernel_update(K,K,in_channels,out_channels), 
+                bias_update(out_channels)
             { setup(in_channels, out_channels); }
 #ifndef NOPYTHON
             Convolution2D(const py::tuple& data) : kernel_update(data[4]), bias_update(data[5])
@@ -66,8 +68,8 @@ namespace neuralnet {
             Eigen::Tensor<T,3> padded; // stores input between forward and backward pass
 
             // Adam optimization data
-            C<T,Eigen::Tensor<T,4>> kernel_update;
-            C<T,Eigen::Tensor<T,1>> bias_update;
+            C<Eigen::Tensor<T,4>> kernel_update;
+            C<Eigen::Tensor<T,1>> bias_update;
 
             void setup(Eigen::Index in_channels, Eigen::Index out_channels)
             {
@@ -91,7 +93,7 @@ namespace neuralnet {
     };
 
 
-    template<typename T, int K, template<typename,typename> class C>
+    template<typename T, int K, template<typename> class C>
     template<typename X>
     Convolution2D<T,K,C>::OutputType Convolution2D<T,K,C>::forward(X&& input)
     {
@@ -123,7 +125,7 @@ namespace neuralnet {
     }
 
 
-    template<typename T, int K, template<typename,typename> class C>
+    template<typename T, int K, template<typename> class C>
     template<typename X>
     Convolution2D<T,K,C>::InputType Convolution2D<T,K,C>::backward(X&& error)
     {   
@@ -166,7 +168,7 @@ namespace neuralnet {
     }
 
 
-    template<typename T, int K, template<typename,typename> class C>
+    template<typename T, int K, template<typename> class C>
     void Convolution2D<T,K,C>::update(double rate)
     {
 #ifndef NDEBUG
@@ -181,7 +183,7 @@ namespace neuralnet {
     
 
 #ifndef NOPYTHON
-    template <typename T, int K, template<typename,typename> class C>
+    template <typename T, int K, template<typename> class C>
     py::tuple Convolution2D<T,K,C>::getstate() const
     {
         return py::make_tuple(

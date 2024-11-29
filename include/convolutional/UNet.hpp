@@ -40,7 +40,7 @@ namespace neuralnet {
      *  * 4N-to-4N channel 3x3 convolution
      *  * Normalize and ReLU
      */
-    template <typename T, template<typename,typename> class C>
+    template <typename T, template<typename> class C>
     class UNet : public Encoder<UNet<T, C>>
     {   
         public:

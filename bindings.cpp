@@ -5,7 +5,7 @@
 #include "include/basic/Layer.hpp"
 #include "include/autoencoder/AutoEncoder.hpp"
 #include "include/training/Trainer.hpp"
-#include "include/optimizers/Optimizer.hpp"
+#include "include/optimizers/Adam.hpp"
 #include "include/convolutional/Conv2D.hpp"
 #include "include/convolutional/Pool2D.hpp"
 #include "include/convolutional/UnPool2D.hpp"
@@ -39,7 +39,7 @@ using namespace Eigen;
 
 // Scalar datatype and optimizer function used by all installed python models
 using PkgScalar = float; 
-template<typename T, typename P> using PkgOptimizer = NoOpt<T,P>;
+template<typename P> using PkgOptimizer = Adam<P, 0.9, 0.999>;
 
 template<class T, typename... Ts>
 auto make_model(py::module m, const char* name)

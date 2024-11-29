@@ -17,7 +17,7 @@ namespace neuralnet
      * @tparam F Enumerated activation function to use in this layer
      * @tparam C Optimization function class
      */
-    template <typename T, ActivationFunc F, template<typename,typename> class C>
+    template <typename T, ActivationFunc F, template<typename> class C>
     class Layer : public Model<Layer<T, F, C>>
     {
 
@@ -34,7 +34,9 @@ namespace neuralnet
          * @param in_size size of the input vector to this layer
          * @param out_size size of the output vector from this layer
          */
-        Layer(int in_size, int out_size) : weight_update(in_size,out_size), bias_update(out_size) 
+        Layer(int in_size, int out_size) : 
+            weight_update(in_size,out_size), 
+            bias_update(out_size) 
         { 
             setup(in_size, out_size); 
         }
@@ -79,8 +81,8 @@ namespace neuralnet
         InputType in;
 
         // Optimizers
-        C<T,Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>> weight_update;
-        C<T,Eigen::Vector<T,Eigen::Dynamic>> bias_update;
+        C<Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>> weight_update;
+        C<Eigen::Vector<T,Eigen::Dynamic>> bias_update;
 
         template <typename... Ts>
         void setup(int in_size, int out_size)
@@ -97,14 +99,14 @@ namespace neuralnet
     };
 }
 
-template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
+template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 void neuralnet::Layer<T, F, C>::update(double rate)
 {
     weight_update.grad(rate, weights, in * d.transpose());
     bias_update.grad(rate, biases, d);
 }
 
-template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
+template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 template<typename X>
 neuralnet::Layer<T, F, C>::OutputType neuralnet::Layer<T, F, C>::forward(X&& input)
 {
@@ -117,7 +119,7 @@ neuralnet::Layer<T, F, C>::OutputType neuralnet::Layer<T, F, C>::forward(X&& inp
     return a;
 }
 
-template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
+template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 template<typename X>
 neuralnet::Layer<T, F, C>::InputType neuralnet::Layer<T, F, C>::backward(X&& err)
 {
@@ -129,7 +131,7 @@ neuralnet::Layer<T, F, C>::InputType neuralnet::Layer<T, F, C>::backward(X&& err
 
 
 #ifndef NOPYTHON
-template <typename T, neuralnet::ActivationFunc F, template<typename,typename> class C>
+template <typename T, neuralnet::ActivationFunc F, template<typename> class C>
 py::tuple neuralnet::Layer<T, F, C>::getstate() const
 {
     return py::make_tuple(
