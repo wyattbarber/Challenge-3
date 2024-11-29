@@ -66,13 +66,30 @@ class Data(nn.DataSource2D):
     def sample(self, i : int):
         return (self._train_in[i], self._train_out[i])
     
+class Data1(nn.DataSource):
+    _train_in : List[Any]
+    _train_out : List[Any]
 
-data = Data()
+    def __init__(self):
+        super().__init__()
+        train_in, _ = pickle.load(open('test/data/mnist_preprocessed.pickle', 'rb'))
+        self._train_in = [x.astype(np.float32) for x in train_in]
+        self._train_out = [x.astype(np.float32) for x in train_in]
+
+    def size(self):
+        return len(self._train_in)
+
+    def sample(self, i : int):
+        return (self._train_in[i], self._train_out[i])
+    
+
+data = Data1()
 # model = Model()
 # model = nn.MaxPoolEncoder2D()
 # model = nn.UNet(1, 0.6, 0.9, 0.999, True)
 # model = nn.BatchRenorm2D(1, 0.8, 0.9, 0.999)
-model = ModelUNet()
+# model = ModelUNet()
+model = nn.SigmoidAutoEncoder(28**2, 10)
 
 import pickle
 import time

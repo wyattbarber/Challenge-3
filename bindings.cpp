@@ -39,7 +39,7 @@ using namespace Eigen;
 
 // Scalar datatype and optimizer function used by all installed python models
 using PkgScalar = float; 
-template<typename P> using PkgOptimizer = Adam<P, 0.9, 0.999>;
+template<typename P> using PkgOptimizer = Adam<P, PkgScalar(0.9), PkgScalar(0.999)>;
 
 template<class T, typename... Ts>
 auto make_model(py::module m, const char* name)

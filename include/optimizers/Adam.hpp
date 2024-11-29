@@ -30,23 +30,21 @@ namespace optimization
                 v(dim0, Dims...), 
                 next(dim0, Dims...)
             {
+                m = m.unaryExpr([](Scalar){ return Scalar(0); });
+                v = v.unaryExpr([](Scalar){ return Scalar(0); });
                 b1powt = B1;
                 b2powt = B2;
             }
             Adam(const py::tuple& data) : next(data[5])
             {
-                std::cout << "Unpickling adam data" << std::endl;
-
                 auto dims = data[1].cast<Eigen::array<Eigen::Index,2>>();
                 auto _m = data[2].cast<std::vector<Scalar>>();
                 auto _v = data[3].cast<std::vector<Scalar>>();
                 b1powt = std::pow(B1, data[4].cast<unsigned>());
                 b2powt = std::pow(B2, data[4].cast<unsigned>());
-
-                std::cout << "Unpickling adam state matrices" << std::endl;
                 
-                m = Eigen::Map<P>(m.data(), dims[0], dims[1]);
-                v = Eigen::Map<P>(v.data(), dims[0], dims[1]);
+                m = Eigen::Map<P>(_m.data(), dims[0], dims[1]);
+                v = Eigen::Map<P>(_v.data(), dims[0], dims[1]);
             }
             
             template<typename X>
@@ -117,6 +115,8 @@ namespace optimization
                 v(dim0, Dims...), 
                 next(dim0, Dims...)
             {
+                m = m.unaryExpr([](Scalar){ return Scalar(0); });
+                v = v.unaryExpr([](Scalar){ return Scalar(0); });
                 b1powt = B1;
                 b2powt = B2;
             }
@@ -128,8 +128,8 @@ namespace optimization
                 b1powt = std::pow(B1, data[4].cast<unsigned>());
                 b2powt = std::pow(B2, data[4].cast<unsigned>());
                 
-                m = Eigen::TensorMap<P>(m.data(), dims);
-                v = Eigen::TensorMap<P>(v.data(), dims);
+                m = Eigen::TensorMap<P>(_m.data(), dims);
+                v = Eigen::TensorMap<P>(_v.data(), dims);
             }
             
             template<typename X>
