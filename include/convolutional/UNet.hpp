@@ -64,8 +64,8 @@ namespace neuralnet {
                 is_final(final),
                 relu_enc_1(),
                 relu_enc_2(),
-                relu_dec_1(),
                 relu_dec_2(),
+                relu_dec_3(),
                 conv_enc_1(N, 2*N),
                 norm_enc_1(2*N, alpha),
                 conv_enc_2(2*N, 2*N),
@@ -98,8 +98,8 @@ namespace neuralnet {
                 is_final(data[0].cast<bool>()),
                 relu_enc_1(),
                 relu_enc_2(),
-                relu_dec_1(),
                 relu_dec_2(),
+                relu_dec_3(),
                 conv_enc_1(data[1]),
                 norm_enc_1(data[2]),
                 conv_enc_2(data[3]),
@@ -133,17 +133,18 @@ namespace neuralnet {
             template<typename X>
             LatentType encode(X&& input)
             {
-                inter = relu_enc_2.forward(
-                    norm_enc_2.forward(
-                        conv_enc_2.forward(
-                            relu_enc_1.forward(
+                auto a = relu_enc_1.forward(
                                 norm_enc_1.forward(
                                     conv_enc_1.forward(
                                         std::forward<X>(input)
                                     )
                                 )
-                            )
-                        )
+                            );
+                inter = relu_enc_2.forward(
+                    norm_enc_2.forward(
+                        conv_enc_2.forward(
+                            a
+                        )   
                     )
                 );
                 
@@ -172,8 +173,8 @@ namespace neuralnet {
             OutputType decode(X&& embed)
             {
                 // Upsample
-                auto tmp =  norm_dec_3.forward(
-                                conv_dec_3.forward(
+                auto tmp =  norm_dec_1.forward(
+                                conv_dec_1.forward(
                                     unpool.forward(
                                         std::forward<X>(embed)
                                     )
@@ -181,12 +182,12 @@ namespace neuralnet {
                             );
 
                 // Concatenate and continue
-                return relu_dec_2.forward(
-                    norm_dec_2.forward(
-                        conv_dec_2.forward(
-                            relu_dec_1.forward(
-                                norm_dec_1.forward(
-                                    conv_dec_1.forward(
+                return relu_dec_3.forward(
+                    norm_dec_3.forward(
+                        conv_dec_3.forward(
+                            relu_dec_2.forward(
+                                norm_dec_2.forward(
+                                    conv_dec_2.forward(
                                         static_cast<Eigen::Tensor<T,3>>(tmp.concatenate(inter,2))
                                     )
                                 )
@@ -238,12 +239,12 @@ namespace neuralnet {
             LatentType backward_decode(X&& error)
             {
                 // Backpropagate upsampled data
-                auto tmp = conv_dec_1.backward(
-                    norm_dec_1.backward(
-                        relu_dec_1.backward(
-                            conv_dec_2.backward(
-                                norm_dec_2.backward(
-                                    relu_dec_2.backward(
+                auto tmp = conv_dec_2.backward(
+                    norm_dec_2.backward(
+                        relu_dec_2.backward(
+                            conv_dec_3.backward(
+                                norm_dec_3.backward(
+                                    relu_dec_3.backward(
                                         std::forward<X>(error)
                                     )
                                 )
@@ -260,8 +261,8 @@ namespace neuralnet {
 
                 // Complete backpropagation over upsampler
                 return  unpool.backward(
-                            conv_dec_3.backward(
-                                norm_dec_3.backward(static_cast<Eigen::Tensor<T,3>>(tmp.slice(slice_tmp_start, slice_size)))
+                            conv_dec_1.backward(
+                                norm_dec_1.backward(static_cast<Eigen::Tensor<T,3>>(tmp.slice(slice_tmp_start, slice_size)))
                             )
                         );
             }
@@ -334,7 +335,7 @@ namespace neuralnet {
         protected:
             const bool is_final; 
 
-            Layer2D<T, ActivationFunc::ReLU> relu_enc_1, relu_enc_2, relu_dec_1, relu_dec_2;
+            Layer2D<T, ActivationFunc::ReLU> relu_enc_1, relu_enc_2, relu_dec_2, relu_dec_3;
 
             Convolution2D<T, 3, C> conv_enc_1, conv_enc_2;
             ReNorm2D<T,C> norm_enc_1, norm_enc_2, norm_dec_1, norm_dec_2, norm_dec_3;

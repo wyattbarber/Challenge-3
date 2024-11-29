@@ -82,6 +82,9 @@ namespace neuralnet {
 
         void setup(int in_size, int latent_size)
         {
+            this->in_size = in_size;
+            this->latent_size = latent_size;
+            
             // Apply he initialization
             this->W = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Random(in_size, latent_size).unaryExpr([in_size = in_size](T x)
                                                                                         { return x * std::sqrt(T(2) / static_cast<T>(in_size)); });

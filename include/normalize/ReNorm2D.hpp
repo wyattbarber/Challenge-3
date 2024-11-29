@@ -158,6 +158,11 @@ namespace neuralnet
         Eigen::Tensor<T,0> res;
         Eigen::Tensor<T,2> batch_mean(N,1);
 
+#ifndef NDEBUG
+        std::cout << "Renormalizing "<<
+            input.dimension(0)<<'x'<<input.dimension(1)<<'x'<<input.dimension(2)<<" tensor" << std::endl;
+#endif
+
         for(int i = 0; i < N; ++i)
         {
             // Calculate stats
@@ -189,6 +194,10 @@ namespace neuralnet
     template<typename X>
     ReNorm2D<T,C>::InputType ReNorm2D<T,C>::backward(X&& error)
     {
+#ifndef NDEBUG
+        std::cout << "ReNorm2D backpropagating "<<
+            error.dimension(0)<<'x'<<error.dimension(1)<<'x'<<error.dimension(2)<<" gradient" << std::endl;
+#endif
         auto M = static_cast<T>(error.dimension(0) * error.dimension(1));
 
         Eigen::Tensor<T,3> out(error.dimensions());

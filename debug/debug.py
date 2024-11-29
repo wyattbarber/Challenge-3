@@ -15,8 +15,8 @@ class ModelUNet(nn.Model2D):
 
     def __init__(self):
         super().__init__()
-        self._unet = nn.UNet(1, 0.6, 0.9, 0.999, True)
-        self._conv = nn.Conv2D(2, 1, 0.9, 0.999)
+        self._unet = nn.UNet(1, 0.6, True)
+        self._conv = nn.Conv2D(2, 1)
         self._bin =  nn.Sigmoid2D()
         
     def forward(self, input):
@@ -57,8 +57,8 @@ class Data(nn.DataSource2D):
     def __init__(self):
         super().__init__()
         train_in, _ = pickle.load(open('test/data/mnist_preprocessed.pickle', 'rb'))
-        self._train_in = [np.reshape(x, (28,28,1)) for x in train_in]
-        self._train_out = [np.reshape(x, (28,28,1)) for x in train_in]
+        self._train_in = [np.reshape(x, (28,28,1)).astype(np.float32) for x in train_in]
+        self._train_out = [np.reshape(x, (28,28,1)).astype(np.float32) for x in train_in]
 
     def size(self):
         return len(self._train_in)
