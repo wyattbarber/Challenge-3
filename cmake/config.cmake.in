@@ -3,6 +3,6 @@
 include(CMakeFindDependencyMacro)
 find_dependency(Eigen3)
 
-include("${CMAKE_CURRENT_LIST_DIR}/neuralnet-targets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/cneuralnet-targets.cmake")
 
-check_required_components(neuralnet)
+check_required_components(cneuralnet)
