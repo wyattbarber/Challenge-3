@@ -13,10 +13,10 @@ namespace py = pybind11;
 
 namespace optimization
 {
-    template <typename P, P::Scalar B1, P::Scalar B2, template<typename> class Next = NoOpt, typename enabler = bool>
+    template <typename P, double B1,  double B2, template<typename> class Next = NoOpt, typename enabler = bool>
     class Adam : public Optimizer<Adam<P,B1,B2,Next>>{};
 
-    template <typename P, P::Scalar B1, P::Scalar B2, template<typename> class Next>
+    template <typename P, double B1, double B2, template<typename> class Next>
     class Adam<P, B1, B2, Next, std::enable_if_t<std::is_base_of_v<Eigen::MatrixBase<P>,P>, bool>>: public Optimizer<Adam<P,B1,B2,Next,bool>>
     {
         public:
@@ -32,16 +32,16 @@ namespace optimization
             {
                 m = m.unaryExpr([](Scalar){ return Scalar(0); });
                 v = v.unaryExpr([](Scalar){ return Scalar(0); });
-                b1powt = B1;
-                b2powt = B2;
+                b1powt = Scalar(B1);
+                b2powt = Scalar(B2);
             }
             Adam(const py::tuple& data) : next(data[5])
             {
                 auto dims = data[1].cast<Eigen::array<Eigen::Index,2>>();
                 auto _m = data[2].cast<std::vector<Scalar>>();
                 auto _v = data[3].cast<std::vector<Scalar>>();
-                b1powt = std::pow(B1, data[4].cast<unsigned>());
-                b2powt = std::pow(B2, data[4].cast<unsigned>());
+                b1powt = std::pow(Scalar(B1), data[4].cast<unsigned>());
+                b2powt = std::pow(Scalar(B2), data[4].cast<unsigned>());
                 
                 m = Eigen::Map<P>(_m.data(), dims[0], dims[1]);
                 v = Eigen::Map<P>(_v.data(), dims[0], dims[1]);
@@ -51,11 +51,11 @@ namespace optimization
             void grad(double rate, P& params, X&& gradient)
             {
                 Scalar decay1 = Scalar(1) - b1powt;
-                Scalar decay2 = Scalar(1) - b2powt;
+                Scalar decay2 = Scalar(1) - b1powt;
 
                 // Update weight moments
-                m = (B1 * m) + ((Scalar(1) - B1) * gradient);
-                v = (B2 * v) + ((Scalar(1) - B2) * gradient.cwiseProduct(gradient));
+                m = (Scalar(B1) * m) + ((Scalar(1) - Scalar(B1)) * gradient);
+                v = (Scalar(B2) * v) + ((Scalar(1) - Scalar(B2)) * gradient.cwiseProduct(gradient));
                 auto mhat = m / decay1;
                 auto vhat = (v / decay2).cwiseSqrt();
 
@@ -66,8 +66,8 @@ namespace optimization
                         )
                     );
                 // Increment exponential decays
-                b1powt *= B1;
-                b2powt *= B2;
+                b1powt *= Scalar(B1);
+                b2powt *= Scalar(B2);
             }
 
 #ifndef NOPYTHON
@@ -89,7 +89,7 @@ namespace optimization
                     Eigen::array<Eigen::Index,2>{m.rows(), m.cols()},
                     std::vector<Scalar>(m.data(), m.data() + m.size()),
                     std::vector<Scalar>(v.data(), v.data() + v.size()),
-                    static_cast<unsigned>(std::log(b1powt) / std::log(B1)),
+                    static_cast<unsigned>(std::log(b1powt) / std::log(Scalar(B1))),
                     next.getstate()
                 );
             }
@@ -101,7 +101,7 @@ namespace optimization
     };
 
     /** Specialization for tensor types */
-    template <typename P, P::Scalar B1, P::Scalar B2, template<typename> class Next>
+    template <typename P, double B1, double B2, template<typename> class Next>
     class Adam<P, B1, B2, Next, std::enable_if_t<std::is_base_of_v<Eigen::TensorBase<P>,P>, bool>> : public Optimizer<Adam<P,B1,B2,Next,bool>>
     {
         public:
@@ -117,16 +117,16 @@ namespace optimization
             {
                 m = m.unaryExpr([](Scalar){ return Scalar(0); });
                 v = v.unaryExpr([](Scalar){ return Scalar(0); });
-                b1powt = B1;
-                b2powt = B2;
+                b1powt = Scalar(B1);
+                b2powt = Scalar(B2);
             }
             Adam(const py::tuple& data) : next(data[5])
             {
                 auto dims = data[1].cast<Eigen::array<Eigen::Index,P::NumDimensions>>();
                 auto _m = data[2].cast<std::vector<Scalar>>();
                 auto _v = data[3].cast<std::vector<Scalar>>();
-                b1powt = std::pow(B1, data[4].cast<unsigned>());
-                b2powt = std::pow(B2, data[4].cast<unsigned>());
+                b1powt = std::pow(Scalar(B1), data[4].cast<unsigned>());
+                b2powt = std::pow(Scalar(B2), data[4].cast<unsigned>());
                 
                 m = Eigen::TensorMap<P>(_m.data(), dims);
                 v = Eigen::TensorMap<P>(_v.data(), dims);
@@ -139,8 +139,8 @@ namespace optimization
                 Scalar decay2 = Scalar(1) - b2powt;
 
                 // Update weight moments
-                m = (B1 * m) + ((Scalar(1) - B1) * gradient);
-                v = (B2 * v) + ((Scalar(1) - B2) * gradient.square());
+                m = (Scalar(B1) * m) + ((Scalar(1) - Scalar(B1)) * gradient);
+                v = (Scalar(B2) * v) + ((Scalar(1) - Scalar(B2)) * gradient.square());
                 auto mhat = m / decay1;
                 auto vhat = (v / decay2).sqrt();
                 
@@ -150,8 +150,8 @@ namespace optimization
                     );
 
                 // Increment exponential decays
-                b1powt *= B1;
-                b2powt *= B2;
+                b1powt *= Scalar(B1);
+                b2powt *= Scalar(B2);
             }
 
 #ifndef NOPYTHON
@@ -162,7 +162,7 @@ namespace optimization
                     static_cast<Eigen::array<Eigen::Index,P::NumDimensions>>(m.dimensions()),
                     std::vector<Scalar>(m.data(), m.data() + m.size()),
                     std::vector<Scalar>(v.data(), v.data() + v.size()),
-                    static_cast<unsigned>(std::log(b1powt) / std::log(B1)),
+                    static_cast<unsigned>(std::log(b1powt) / std::log(Scalar(B1))),
                     next.getstate()
                 );
             }

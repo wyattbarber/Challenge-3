@@ -19,7 +19,7 @@ namespace optimization
      * @tparam L limit for clipping
      * @tparam Next nested class to perform subsequent optimization steps.
      */
-    template <typename P, P::Scalar L, template<typename> class Next = NoOpt>
+    template <typename P, double L, template<typename> class Next = NoOpt>
     class Clip: public Optimizer<Clip<P,L,Next>>
     {
         public:
@@ -32,7 +32,7 @@ namespace optimization
             template<typename X>
             void grad(double rate, P& params, X&& gradient)
             { 
-                next.grad(rate, params, gradient.cwiseMax(-L).cwiseMin(L));
+                next.grad(rate, params, gradient.cwiseMax(Scalar(-L)).cwiseMin(Scalar(L)));
             }
 #ifndef NOPYTHON
             py::tuple getstate() const { return py::make_tuple(next.getstate()); }

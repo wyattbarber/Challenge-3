@@ -21,7 +21,7 @@ namespace optimization
      * @tparam L regularization coefficient
      * @tparam Next nested class to perform subsequent optimization steps.
      */
-    template <typename P, P::Scalar L, template<typename> class Next = NoOpt>
+    template <typename P, double L, template<typename> class Next = NoOpt>
     class L1 : public Optimizer<L1<P,L,Next>>
     {
         public:
@@ -34,13 +34,13 @@ namespace optimization
             template<typename X>
             void grad(double rate, P& params, X&& gradient)
             { 
-                next.grad(rate, params, gradient + params.unaryExpr([](Scalar x)
+                next.grad(rate, params, gradient + (Scalar(L) * params.unaryExpr([](Scalar x)
                     {
                         return x == Scalar(0) ? 0 : 
                             (
                                 x > Scalar(0) ? Scalar(1) : Scalar(-1)
                             );
-                    }));
+                    })));
             }
 #ifndef NOPYTHON
             py::tuple getstate() const { return py::make_tuple(next.getstate()); }

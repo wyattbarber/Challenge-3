@@ -81,6 +81,9 @@ std::vector<typename training::Trainer<ModelType>::ScalarType> training::Trainer
             model.update(rate);
         }
         avg_err.push_back(e / data.size());
+
+        std::cout << "Epoch " << iter+1 << " of " << N << 
+            "complete with a loss of " << avg_err.back() << std::endl;
     }
 
     model.eval(); // End training mode
