@@ -25,7 +25,7 @@ namespace optimization
     {
         public:
             template<typename T, typename X, typename Y>
-            void grad(T rate, X& params, Y&& gradient)
+            void grad(double rate, X& params, Y&& gradient)
             { return static_cast<Derived*>(this)->grad(rate, params, std::forward<Y>(gradient)); }
 
 #ifndef NOPYTHON
@@ -52,7 +52,7 @@ namespace optimization
             NoOpt(const py::tuple&){}
 
             template<typename X>
-            void grad(Scalar rate, P& params, X&& gradient){ params -= rate * gradient; }
+            void grad(double rate, P& params, X&& gradient){ params -= Scalar(rate) * gradient; }
 #ifndef NOPYTHON
             py::tuple getstate() const { return py::tuple(); }
 #endif

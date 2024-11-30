@@ -151,7 +151,7 @@ namespace neuralnet {
 
         for(int ko = 0; ko < out_channels; ++ko)
         {
-            grad_bias(ko) = 0;
+            grad_bias(ko) = T(0);
             for(int ki = 0; ki < in_channels; ++ki)
             {
                 auto a = padded.chip(ki,2);

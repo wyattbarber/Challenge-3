@@ -30,7 +30,7 @@ namespace optimization
             Clip(const py::tuple& data) : next(data[0]) {}
 
             template<typename X>
-            void grad(Scalar rate, P& params, X&& gradient)
+            void grad(double rate, P& params, X&& gradient)
             { 
                 next.grad(rate, params, gradient.cwiseMax(-L).cwiseMin(L));
             }

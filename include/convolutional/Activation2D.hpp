@@ -136,7 +136,7 @@ template<typename T>
 template <typename Y, typename Z> 
 Eigen::Tensor<T, 3> neuralnet::Activation2D<T, neuralnet::ActivationFunc::ReLU>::df(Y&& activation, Z&& error)
 {
-    return activation.unaryExpr([](T x){ return x > 0 ? T(1) : T(0); }) * error;
+    return activation.unaryExpr([](T x){ return x > T(0) ? T(1) : T(0); }) * error;
 }
 
 /*

@@ -32,7 +32,7 @@ namespace optimization
             L1(const py::tuple& data) : next(data[0]) {}
 
             template<typename X>
-            void grad(Scalar rate, P& params, X&& gradient)
+            void grad(double rate, P& params, X&& gradient)
             { 
                 next.grad(rate, params, gradient + params.unaryExpr([](Scalar x)
                     {

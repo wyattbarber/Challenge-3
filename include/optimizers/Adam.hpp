@@ -48,7 +48,7 @@ namespace optimization
             }
             
             template<typename X>
-            void grad(Scalar rate, P& params, X&& gradient)
+            void grad(double rate, P& params, X&& gradient)
             {
                 Scalar decay1 = Scalar(1) - b1powt;
                 Scalar decay2 = Scalar(1) - b2powt;
@@ -133,7 +133,7 @@ namespace optimization
             }
             
             template<typename X>
-            void grad(Scalar rate, P& params, X&& gradient)
+            void grad(double rate, P& params, X&& gradient)
             {
                 Scalar decay1 = Scalar(1) - b1powt;
                 Scalar decay2 = Scalar(1) - b2powt;
