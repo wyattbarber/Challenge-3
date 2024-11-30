@@ -125,8 +125,8 @@ namespace optimization
                 auto dims = data[1].cast<Eigen::array<Eigen::Index,P::NumDimensions>>();
                 auto _m = data[2].cast<std::vector<Scalar>>();
                 auto _v = data[3].cast<std::vector<Scalar>>();
-                b1powt = std::pow(Scalar(B1), data[4].cast<unsigned>());
-                b2powt = std::pow(Scalar(B2), data[4].cast<unsigned>());
+                b1powt = Scalar(std::pow(B1, data[4].cast<unsigned>()));
+                b2powt = Scalar(std::pow(B2, data[4].cast<unsigned>()));
                 
                 m = Eigen::TensorMap<P>(_m.data(), dims);
                 v = Eigen::TensorMap<P>(_v.data(), dims);
@@ -162,7 +162,7 @@ namespace optimization
                     static_cast<Eigen::array<Eigen::Index,P::NumDimensions>>(m.dimensions()),
                     std::vector<Scalar>(m.data(), m.data() + m.size()),
                     std::vector<Scalar>(v.data(), v.data() + v.size()),
-                    static_cast<unsigned>(std::log(b1powt) / std::log(Scalar(B1))),
+                    static_cast<unsigned>(std::log(static_cast<double>(b1powt)) / std::log(B1)),
                     next.getstate()
                 );
             }

@@ -170,7 +170,8 @@ namespace neuralnet
             batch_mean(i,0) = res(0);
             diff.chip(i,2) = (input.chip(i,2) - batch_mean(i,0));
             res = diff.chip(i,2).square().sum();
-            batch_dev(i,0) = std::sqrt((res(0) / M)  + Eigen::NumTraits<T>::epsilon());
+            using std::sqrt;
+            batch_dev(i,0) = sqrt((res(0) / M)  + Eigen::NumTraits<T>::epsilon());
 
             // Renormalize input
             r(i,0) = batch_dev(i,0) / (dev(i,0) + Eigen::NumTraits<T>::epsilon());

@@ -82,8 +82,9 @@ namespace neuralnet {
                 kernels = Eigen::Tensor<T,4>(K, K, in_channels, out_channels);
                 // Apply he initialization
                 using RNG = Eigen::internal::NormalRandomGenerator<T>;
+                using std::sqrt;
                 kernels = kernels. template setRandom<RNG>().unaryExpr([](T x)
-                            { return x * std::sqrt(T(2) / static_cast<T>(K)); });
+                            { return x * sqrt(T(2) / static_cast<T>(K)); });
                 bias = Eigen::Tensor<T,1>(out_channels);
                 bias.setZero();
 

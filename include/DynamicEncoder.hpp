@@ -8,7 +8,7 @@
 namespace neuralnet
 {
     template<typename T, typename V>
-    class DynamicEncoder : public DynamicModel<T>
+    class PYBIND11_EXPORT DynamicEncoder : public DynamicModel<T>
     {
         public:
         

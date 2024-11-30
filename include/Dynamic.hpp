@@ -7,7 +7,7 @@
 namespace neuralnet
 {
     template<typename T>
-    class DynamicModel
+    class PYBIND11_EXPORT DynamicModel
     {
         public:
         virtual ~DynamicModel(){};
