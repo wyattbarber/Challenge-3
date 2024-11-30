@@ -109,6 +109,24 @@ namespace neuralnet
                     error
                 );
             }
+
+            void train() override
+            {
+                PYBIND11_OVERRIDE_PURE(
+                    void, /* Return type */
+                    BaseType,      /* Parent class */
+                    train,     /* Name of function in C++ (must match Python name) */
+                );
+            }
+
+            void eval() override
+            {
+                PYBIND11_OVERRIDE_PURE(
+                    void, /* Return type */
+                    BaseType,      /* Parent class */
+                    eval,     /* Name of function in C++ (must match Python name) */
+                );
+            }
     };
 
 
@@ -137,6 +155,10 @@ namespace neuralnet
         LatentType backward_decode(OutputType& error) override { return model.backward_decode(error); }
 
         void update(double rate) override { model.update(rate); }
+        
+        void train() override { model.train(); }
+
+        void eval() override { model.eval(); }
 
 #ifndef NOPYTHON
         py::tuple getstate() const { return model.getstate(); }

@@ -183,8 +183,11 @@ namespace neuralnet
         }
 
         // Update moving averages
-        mean += avg_rate * (batch_mean - mean);
-        dev += avg_rate * (batch_dev - dev);
+        if(this->train_mode)
+        {
+            mean += avg_rate * (batch_mean - mean);
+            dev += avg_rate * (batch_dev - dev);
+        }
         
         return y;
     }

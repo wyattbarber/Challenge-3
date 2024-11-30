@@ -30,6 +30,14 @@ class Sequence(Model):
         for l in self._layers:
             l.update(rate)
 
+    def train(self):
+        for l in self._layers:
+            l.train()
+
+    def eval(self):
+        for l in self._layers:
+            l.eval()
+
 
 class DeepEncoder(Encoder):
     _layers : List[Any]
@@ -76,3 +84,11 @@ class DeepEncoder(Encoder):
     def update(self, rate):
         for l in self._layers:
             l.update(rate)
+
+    def train(self):
+        for l in self._layers:
+            l.train()
+
+    def eval(self):
+        for l in self._layers:
+            l.eval()

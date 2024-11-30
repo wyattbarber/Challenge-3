@@ -5,6 +5,7 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <utility>
 #include <memory>
+#include <iostream>
 
 #ifndef NOPYTHON
 #include <pybind11/pybind11.h>
@@ -47,7 +48,15 @@ namespace neuralnet
          * @return error of the layer preceding this one
          */
         template<typename X>
-        auto backward(X&& error){return static_cast<ModelType*>(this)->backward(std::forward<X>(error));}
+        auto backward(X&& error)
+        {
+            if(!train_mode)
+            {
+                std::cerr << "Cannot perform backward pass in evaluation mode" << std::endl;
+                return;
+            }
+            return static_cast<ModelType*>(this)->backward(std::forward<X>(error));
+        }
 
         /**
          * Updates parameters of this layer
@@ -60,7 +69,55 @@ namespace neuralnet
          *
          * @param rate learning rate
          */
-        void update(double rate){static_cast<ModelType*>(this)->update(rate);}    
+        void update(double rate)
+        {
+            if(!train_mode)
+            {
+                std::cerr << "Cannot update in evaluation mode" << std::endl;
+                return;
+            }
+            static_cast<ModelType*>(this)->update(rate);}    
+
+        /** Sets the model to training mode
+         * 
+         * Enables saving intermediate data for updating model parameters.
+         * 
+         * If a derived type implements `_mode(bool)`, it will be called with 
+         * and argument of true.
+         */
+        void train()
+        {
+#ifndef NDEBUG
+            std::cout << "Setting training mode" << std::endl;
+#endif
+            train_mode = true;
+            if constexpr(has_mode_func<ModelType>::value)
+            {
+                static_cast<ModelType*>(this)->_mode(true);
+            }
+
+        }
+
+        /** Sets the model to evaluation mode
+         * 
+         * Disables updating model parameters, and disables storing intermedate data
+         * that is unused if only forward passes are performed.
+         * 
+         * If a derived type implements `_mode(bool)`, it will be called with 
+         * and argument of false.
+         */
+        void eval()
+        {
+#ifndef NDEBUG
+            std::cout << "Setting evaluation mode" << std::endl;
+#endif
+            train_mode = false;
+            if constexpr(has_mode_func<ModelType>::value)
+            {
+                static_cast<ModelType*>(this)->_mode(false);
+            }
+
+        }
 
 #ifndef NOPYTHON
         /** Gets the models current state for pickling.
@@ -77,6 +134,17 @@ namespace neuralnet
         */
         py::tuple getstate() const { return static_cast<ModelType*>(this)->getstate(); }
 #endif
+    protected:
+        bool train_mode; /// model is in training mode
+
+        template<typename T>
+        struct has_mode_func
+        {
+            template<typename U, void (U::*)()> struct SFINAE {};
+            template<typename U> static char Test(SFINAE<U, &U::_mode>*);
+            template<typename U> static int Test(...);
+            static const bool value = sizeof(Test<T>(0)) == sizeof(char);
+        };
     };
 
 
@@ -84,7 +152,7 @@ namespace neuralnet
      *
      */
     template <class ModelType>
-    class Encoder : Model<ModelType>
+    class Encoder : public Model<ModelType>
     {
         public:
 

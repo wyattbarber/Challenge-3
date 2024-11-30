@@ -21,6 +21,10 @@ namespace neuralnet
         virtual InputType backward(OutputType& error) = 0;
 
         virtual void update(double rate){};
+
+        virtual void train() = 0;
+
+        virtual void eval() = 0;
     };
 
     template<typename T>
@@ -63,6 +67,24 @@ namespace neuralnet
                     rate
                 );
             }
+
+            void train() override
+            {
+                PYBIND11_OVERRIDE_PURE(
+                    void, /* Return type */
+                    DynamicModel<T>,      /* Parent class */
+                    train,     /* Name of function in C++ (must match Python name) */
+                );
+            }
+
+            void eval() override
+            {
+                PYBIND11_OVERRIDE_PURE(
+                    void, /* Return type */
+                    DynamicModel<T>,      /* Parent class */
+                    eval,     /* Name of function in C++ (must match Python name) */
+                );
+            }
     };
 
 
@@ -82,6 +104,10 @@ namespace neuralnet
         InputType backward(OutputType& error) override { return model.backward(error); }
 
         void update(double rate) override { model.update(rate); }
+
+        void train() override { model.train(); }
+
+        void eval() override { model.eval(); }
 
 
 #ifndef NOPYTHON

@@ -58,6 +58,7 @@ namespace training
 template<class ModelType>
 std::vector<typename training::Trainer<ModelType>::ScalarType> training::Trainer<ModelType>::train(unsigned N, training::Trainer<ModelType>::ScalarType rate)
 {
+    model.train(); // Start training mode
 
     std::vector<ScalarType> avg_err;
     
@@ -81,6 +82,9 @@ std::vector<typename training::Trainer<ModelType>::ScalarType> training::Trainer
         }
         avg_err.push_back(e / data.size());
     }
+
+    model.eval(); // End training mode
+
     return avg_err;
 }
 

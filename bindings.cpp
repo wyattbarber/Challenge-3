@@ -63,6 +63,12 @@ auto make_model(py::module m, const char* name)
         .def("update", &DT::update, "Updates trainable parameters based on current gradient.", 
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
 
+        .def("train", &DT::train, "Sets the model to training mode.", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+
+        .def("eval", &DT::eval, "Sets the model to evaluation mode.", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+
         .def(py::pickle(
             [](const DT& obj){ return obj.getstate(); },
             [](py::tuple data){ return DT(data); }
@@ -107,6 +113,12 @@ auto make_encoder(py::module m, const char* name)
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
 
         .def("update", &DT::update, "Updates trainable parameters based on current gradient.", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+
+        .def("train", &DT::train, "Sets the model to training mode.", 
+            py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
+
+        .def("eval", &DT::eval, "Sets the model to evaluation mode.", 
             py::call_guard<py::scoped_ostream_redirect, py::scoped_estream_redirect>())
 
         .def(py::pickle(

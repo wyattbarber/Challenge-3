@@ -331,6 +331,64 @@ namespace neuralnet {
                 ); 
             }
 #endif
+            /** Switch training or evaluation mode
+             * 
+             */
+            void _mode(bool mode)
+            {
+                if(mode)
+                {
+                    conv_enc_1.train();
+                    norm_enc_1.train();
+                    relu_enc_1.train();
+                    conv_enc_2.train();
+                    norm_enc_2.train();
+                    relu_enc_2.train();
+                    conv_dec_1.train();
+                    norm_dec_1.train();
+                    conv_dec_2.train();
+                    norm_dec_2.train();
+                    relu_dec_2.train();
+                    conv_dec_3.train();
+                    norm_dec_3.train();
+                    relu_dec_3.train();
+                    if(is_final)
+                    {
+                        conv_enc_3->train();
+                        norm_enc_3->train();
+                        relu_enc_3->train();
+                        conv_enc_4->train();
+                        norm_enc_4->train();
+                        relu_enc_4->train();
+                    }
+                }
+                else
+                {
+                    conv_enc_1.eval();
+                    norm_enc_1.eval();
+                    relu_enc_1.eval();
+                    conv_enc_2.eval();
+                    norm_enc_2.eval();
+                    relu_enc_2.eval();
+                    conv_dec_1.eval();
+                    norm_dec_1.eval();
+                    conv_dec_2.eval();
+                    norm_dec_2.eval();
+                    relu_dec_2.eval();
+                    conv_dec_3.eval();
+                    norm_dec_3.eval();
+                    relu_dec_3.eval();
+                    if(is_final)
+                    {
+                        conv_enc_3->eval();
+                        norm_enc_3->eval();
+                        relu_enc_3->eval();
+                        conv_enc_4->eval();
+                        norm_enc_4->eval();
+                        relu_enc_4->eval();
+                    }
+                }
+            }
 
         protected:
             const bool is_final; 
