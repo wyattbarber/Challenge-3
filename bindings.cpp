@@ -178,7 +178,7 @@ PYBIND11_MODULE(neuralnet, m)
     make_model<Layer2D<PkgScalar, ActivationFunc::Sigmoid>>(m, "Sigmoid2D");
     make_model<Layer2D<PkgScalar, ActivationFunc::TanH>>(m, "TanH2D");
     make_model<Layer2D<PkgScalar, ActivationFunc::SoftMax>>(m, "SoftMax2D");
-    make_model<ReNorm2D<PkgScalar, PkgOptimizer>, int, PkgScalar>(m, "BatchRenorm2D");
+    make_model<ReNorm2D<PkgScalar, PkgOptimizer>, int, PkgScalar, PkgScalar>(m, "BatchRenorm2D");
     make_model<Pool2D<PkgScalar, 2, PoolMode::Max>>(m, "MaxPool2D");
     make_model<Pool2D<PkgScalar, 2, PoolMode::Min>>(m, "MinPool2D");
     make_model<Pool2D<PkgScalar, 2, PoolMode::Mean>>(m, "MeanPool2D");
@@ -186,8 +186,8 @@ PYBIND11_MODULE(neuralnet, m)
     make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Mean>>(m, "MeanPoolEncoder2D");
     make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Max>>(m, "MaxPoolEncoder2D");
     make_encoder<PoolUnPool2D<PkgScalar, 2, PoolMode::Min>>(m, "MinPoolEncoder2D");
-    make_encoder<UNet<PkgScalar, PkgOptimizer>, Index, PkgScalar>(m, "UNet")
-        .def(py::init<Index, PkgScalar, bool>());
+    make_encoder<UNet<PkgScalar, PkgOptimizer>, Index, PkgScalar, PkgScalar>(m, "UNet")
+        .def(py::init<Index, PkgScalar, PkgScalar, bool>());
     py::class_<Reshape1D<PkgScalar>>(m, "Reshape1D")
         .def(py::init<>())
         .def("forward", &Reshape1D<PkgScalar>::forward<Tensor<PkgScalar,3>&>, "Performs a forward pass through the model.")

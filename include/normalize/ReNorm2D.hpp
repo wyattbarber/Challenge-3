@@ -25,10 +25,9 @@ namespace neuralnet
          * 
          * @param N number of channels in the input tensor
          * @param rate update rate for the moving average of dataset distribution.
-         * @param b1 Adam optimizer momentum decay rate.
-         * @param b2 Adam optimizer velocity decay rate.
+         * @param relax relaxation rate for the limits on r and d
          */
-        ReNorm2D(int N, T rate) :   
+        ReNorm2D(int N, T rate, T relax) :   
             mean(N,1),
             dev(N,1),
             lambda(N,1),
@@ -40,7 +39,7 @@ namespace neuralnet
             update_lambda(N,1),
             update_beta(N,1)
         {
-            setup(N, rate);
+            setup(N, rate, relax);
         }
         
 
@@ -61,7 +60,10 @@ namespace neuralnet
             update_lambda(data[6]),
             update_beta(data[7])
         {
-            setup(data[0].cast<int>(), data[1].cast<T>());
+            setup(data[0].cast<int>(), data[1].cast<T>(), data[10].cast<T>());
+
+            r_lim = data[8].cast<T>();
+            d_lim = data[9].cast<T>();
 
             // Trying to do these unpacking operations in one line each seems to cause segfaults
             auto m = data[2].cast<std::vector<T>>();
@@ -98,6 +100,9 @@ namespace neuralnet
          * * learned beta (bias)
          * * (optimizer states...)
          * * (optimizer constructor args...)
+         * * r limit
+         * * d_limit
+         * * r and d limit relaxation rate
          *  
          * @return Model state
          */
@@ -109,7 +114,10 @@ namespace neuralnet
                 std::vector<T>(lambda.data(), lambda.data() + lambda.size()), 
                 std::vector<T>(beta.data(), beta.data() + beta.size()),
                 update_lambda.getstate(),
-                update_beta.getstate()
+                update_beta.getstate(),
+                r_lim,
+                d_lim,
+                rd_rate
                 );
         }
 #endif
@@ -131,13 +139,15 @@ namespace neuralnet
         Eigen::Tensor<T,3> xhat, diff;
         // Optimizer data
         C<Eigen::Tensor<T,2>> update_lambda, update_beta;
-        // Timestep and relaxation rate for limits on r and d
+        // Limits on r and d and relaxation rate
+        T r_lim, d_lim, rd_rate;
 
-
-        void setup(int N, T avg_rate)
+        void setup(int N, T avg_rate, T rd_rate)
         {
             this->N = N;
             this->avg_rate = avg_rate;
+            r_lim = T(1);
+            d_lim = T(0);
            
             mean.setZero();
             dev.setConstant(T(1));
@@ -174,8 +184,12 @@ namespace neuralnet
             batch_dev(i,0) = sqrt((res(0) / M)  + Eigen::NumTraits<T>::epsilon());
 
             // Renormalize input
+            using std::min;
+            using std::max;
             r(i,0) = batch_dev(i,0) / (dev(i,0) + Eigen::NumTraits<T>::epsilon());
+            r(i,0) = min(max(r(i,0), T(1)/r_lim ), r_lim);
             auto d = (batch_mean(i,0) - mean(i,0)) / (dev(i,0) + Eigen::NumTraits<T>::epsilon());
+            d = min(max(d, -d_lim ), d_lim);
             xhat.chip(i,2) = (((diff.chip(i,2) / batch_dev(i,0)) * r(i,0)) + d)
                 .cwiseMin(Eigen::NumTraits<T>::highest()).cwiseMax(Eigen::NumTraits<T>::lowest());
 
@@ -235,6 +249,8 @@ namespace neuralnet
     {
         update_lambda.grad(rate, lambda, grad_lambda);
         update_beta.grad(rate, beta, grad_beta);
+        r_lim += rd_rate;
+        d_lim += rd_rate;
     }
 }
 #endif

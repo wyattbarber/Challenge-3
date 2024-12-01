@@ -58,24 +58,25 @@ namespace neuralnet {
              * 
              * @param N number of input channels.
              * @param alpha batch renormalization update rate.
+             * @param beta batch renormalization correction limit relaxation rate
              * @param final this is the final (innermost) component.
             */
-            UNet(int N, T alpha, bool final = false) :
+            UNet(int N, T alpha, T beta, bool final = false) :
                 is_final(final),
                 relu_enc_1(),
                 relu_enc_2(),
                 relu_dec_2(),
                 relu_dec_3(),
                 conv_enc_1(N, 2*N),
-                norm_enc_1(2*N, alpha),
+                norm_enc_1(2*N, alpha, beta),
                 conv_enc_2(2*N, 2*N),
-                norm_enc_2(2*N, alpha),
+                norm_enc_2(2*N, alpha, beta),
                 conv_dec_1(4*N, 2*N),
-                norm_dec_1(2*N, alpha),
+                norm_dec_1(2*N, alpha, beta),
                 conv_dec_2(4*N, 2*N),
-                norm_dec_2(2*N, alpha),
+                norm_dec_2(2*N, alpha, beta),
                 conv_dec_3(2*N, 2*N),
-                norm_dec_3(2*N, alpha),
+                norm_dec_3(2*N, alpha, beta),
                 pool(),
                 unpool()
             {
@@ -83,10 +84,10 @@ namespace neuralnet {
                 {
                     conv_enc_3 = std::make_unique<Convolution2D<T, 3, C>>(2*N, 4*N);
                     relu_enc_3 = std::make_unique<Layer2D<T, ActivationFunc::ReLU>>();
-                    norm_enc_3 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha);
+                    norm_enc_3 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha, beta);
                     conv_enc_4 = std::make_unique<Convolution2D<T, 3, C>>(4*N, 4*N);
                     relu_enc_4 = std::make_unique<Layer2D<T, ActivationFunc::ReLU>>();
-                    norm_enc_4 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha);
+                    norm_enc_4 = std::make_unique<ReNorm2D<T,C>>(4*N, alpha, beta);
                 }
             }
 

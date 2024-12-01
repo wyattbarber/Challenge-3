@@ -64,7 +64,7 @@ std::vector<typename training::Trainer<ModelType>::ScalarType> training::Trainer
     
     for (int iter = 0; iter < N; ++iter)
     {
-        ScalarType e = 0.0;
+        ScalarType e(0);
         for (int i = 0; i < data.size(); ++i)
         {
             // Test forward pass and calculate error for this input set
@@ -83,7 +83,7 @@ std::vector<typename training::Trainer<ModelType>::ScalarType> training::Trainer
         avg_err.push_back(e / data.size());
 
         std::cout << "Epoch " << iter+1 << " of " << N << 
-            "complete with a loss of " << avg_err.back() << std::endl;
+            " complete with a loss of " << avg_err.back() << std::endl;
     }
 
     model.eval(); // End training mode
